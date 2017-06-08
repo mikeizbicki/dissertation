@@ -3,6 +3,12 @@
 *.log
 *.pdf
 *.pdfsync
+*.bbl
+*.blg
+*.toc
+*.lot
+*.lof
+
 *.gz
 
 *.swp
