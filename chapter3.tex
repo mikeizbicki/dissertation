@@ -203,10 +203,30 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
     \label{lemma:coverpacking}
     For any metric space $\set X$ and any $\delta>0$,
     \begin{equation}
-        M_{\delta/2}(\set X) \le N_\delta(\set X) \le M_{\delta}(\set X)
+        M_{2\delta}(\set X) \le N_\delta(\set X) \le M_{\delta}(\set X)
         .
     \end{equation}
 \end{lemma}
+
+\begin{proof}
+    To prove the first inequality, let $P$ be a $2\delta$-packing and $C$ be a $\delta$-cover of $\set X$.
+    For every point $p\in P$, there must exist a $c\in C$ such that $\dist{p}{c}\le\delta$.
+    No other $p'\in P$ can also satisfy $\dist{p'}{c}\le\delta$, because then by the triangle inequality
+    \begin{equation}
+        \dist{p'}{p} \le \dist{p'}{c}+\dist{p}{c} \le 2\delta
+        ,
+    \end{equation}
+    which would contradict that $P$ is a $2\delta$-packing.
+    In other words, for each $c\in C$, there is at most one $p\in P$.
+    So $N_\delta \ge |C| \ge |P| \ge M_{2\delta}$.
+
+    To prove the second inequality, let $\set X'\subseteq \set X$ be a maximal $\delta$-packing.
+    Then there does not exist an $x\in\set X$ such that for all $x'\in\set X'$, 
+    $\dist{x}{x'} > \delta$.
+    (Otherwise, $\set X' \cup \{x\}$ would be a packing larger than $\set X'$.)
+    Hence, $\set X'$ is also a $\delta$-cover,
+    and the smallest $\delta$-cover can be no larger.
+\end{proof}
 
 %\cite{nickl2007bracketing} uses metric entropy to prove a version of the central limit theorem.
 %
@@ -255,20 +275,12 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
 \end{lemma}
 
 \begin{proof}
+    Let $\delta=\covdist p/2$.
     Recall that the separating invariant ensures that for all nodes $q_1,q_2\in\children p$,
-    $\dist{q_1}{q_2}\le\covdist p$.
-    So the set \children p is a $\covdist p$-packing of $B(p,\covdist p)$.
-    By Lemma \ref{lemma:coverpacking}, this packing can be no larger than the smallest $2\covdist p$-covering,
+    $\dist{q_1}{q_2}\le2\delta$.
+    So the set \children p is a $2\delta$-packing of $B(p,2\delta)$.
+    By Lemma \ref{lemma:coverpacking}, this packing can be no larger than the smallest $\delta$-covering,
     which by definition can be no larger than $\doubnum \set X$.
-    %The result follows because the doubling number $\doubnum\set X$ is defined to be the 
-    %\begin{align}
-        %|\children(p)| 
-        %&\le
-        %M_{\covdist p}(B(p,\covdist p))
-        %\\
-        %&\le
-        %N_{2\covdist p}(B(p,\covdist p))
-    %\end{align}
 \end{proof}
 
 \begin{definition}
