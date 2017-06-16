@@ -1,2 +1,85 @@
-\chapter{Chapter 2 Title}
+\documentclass[thesis.tex]{subfiles}
 
+\newcommand{\set}[1]{\mathcal {#1}}
+\newcommand{\sized}[1]{\tilde \set {#1}}
+\newcommand{\mappend}[1]{\oplus_{\set {#1}}}
+\newcommand{\mempty}[1]{\epsilon_{\set {#1}}}
+\newcommand{\monoid}[1]{(\set {#1}, \mappend {#1}, \mempty {#1})}
+
+\begin{document}
+\chapter{Chapter 2}
+
+From a certain perspective, everything in this dissertation could be described as ``obvious.''
+One of my main contributions is to formalize the obvious.
+This gives the practitioner a way to easily and systematically derive new algorithms.
+Despite all of these techniques being obvious,
+as we shall see,
+they are not widely used in practice or research.
+
+\begin{definition}
+    A \emph{monoid} is a tuple $(\set A, \mappend A, \mempty A)$,
+    where $\set A$ is a set,
+    $\mappend A : \set A \times \set A \to \set A$ is a binary operation,
+    and $\mempty A \in \set A$ if it obeys the following two laws:
+    \begin{align}
+    \tag{associativity}
+    \forall a_1, a_2, a_3 \in \set A. & (a_1 \mappend A a_2) \mappend A a_3 &= a_1 \mappend A (a_2 \mappend A a_3)
+    \\
+    \tag{identity}
+    \end{align}
+\end{definition}
+
+\begin{definition}
+    A \emph{homomorphism} between two monoids $\monoid A$ and $\monoid B$ is a function  $f: \set A \to \set B$ satisfying
+    \begin{equation}
+        f(a_1 \mappend A a_2) = f(a_1) \mappend B f(a_2)
+    \end{equation}
+\end{definition}
+
+\begin{definition}
+    A \emph{learning algorithm} is a function from $\{\set Z\} \to \set W$.
+    We call a learning algorithm \emph{homomorphic} if there exists an operation $\mappend W$ such that $\monoid W$ is a monoid and $A$ is a homomorphism.
+\end{definition}
+
+%\begin{remark}
+    %For any monoidal parameter space $\monoid W$, we can define the sized monoid %$\monoid {\sized W}$ as follows.
+%\end{remark}
+
+\begin{example}
+    Sized monoid
+\end{example}
+
+\begin{example}
+    product monoid
+\end{example}
+
+\begin{example}
+    trivial learner, bad runtime properties
+\end{example}
+
+\section{Examples}
+
+\subsection{Exponential Family}
+
+\subsection{Moment Estimators}
+
+\subsection{Empirical Characteristic function}
+\cite{yu2004empirical}
+
+\subsection{Ridge Regression}
+
+\subsection{The Free Monoid}
+
+\subsection{High Dimensional Logistic Regression}
+
+\subsection{Information Theoretic Metric Learning}
+
+\subsection{Averaging}
+
+\subsection{Cupulae}
+
+\subsection{One step estimators}
+
+\subsection{MCMC}
+
+\end{document}

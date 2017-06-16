@@ -27,6 +27,79 @@
 % \documentclass[11pt]{ucthesis}
 % \documentclass[11pt]{ucr}
 \documentclass[oneside,final, letterpaper]{ucr}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+%\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{graphicx}
+\usepackage{rotating}
+\usepackage{xcolor}
+\usepackage[inline]{enumitem}
+\usepackage{subfiles}
+\usepackage{lipsum}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+
+%\usepackage{algorithm}
+%\usepackage[noend]{algpseudocode}
+%\usepackage{algorithmicx}
+%\usepackage{algorithm2e}
+
+%\usepackage[authordate,bibencoding=auto,strict,backend=biber,natbib]{biblatex-chicago}
+%\usepackage[round]{natbib}   % omit 'round' option if you prefer square brackets
+%\bibliographystyle{plainnat}
+
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{width=7cm,compat=1.8}
+\definecolor{darkgreen}{RGB}{0,127,0}
+
+\definecolor{wmle}{RGB}{0,0,0}
+\definecolor{wmlei}{RGB}{230,159,0}
+\definecolor{wave}{RGB}{86,180,233}
+\definecolor{wboot}{RGB}{204,121,167}
+\definecolor{wowa}{RGB}{0,158,115}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\vecspan}{span}
+\DeclareMathOperator*{\affspan}{aff}
+\DeclareMathOperator*{\subG}{subG}
+\DeclareMathOperator*{\tr}{tr}
+
+\newcommand{\R}{\mathbb R}
+
+\newcommand{\I}{\mathcal I}
+%\newcommand{\I^{-1}}{\I^{-1}}
+\newcommand{\law}{\ensuremath{\xrightarrow{L}}}
+\newcommand{\normal}[2]{\ensuremath{\mathcal{N}\left({{#1}},{{#2}}\right)}}
+\newcommand{\subnormal}[1]{\ensuremath{\subG\left({{#1}}\right)}}
+\newcommand{\trans}[1]{\ensuremath{{#1}^{\mathsf{T}}}}
+\newcommand{\pinv}[1]{\ensuremath{{#1}^{\mathsf{\dagger}}}}
+\newcommand{\ltwo}[1]{{\lVert {#1} \rVert}}
+\newcommand{\ltwobig}[1]{{\left\lVert {#1} \right\rVert}}
+\newcommand{\lone}[1]{{\lVert {#1} \rVert}_1}
+\newcommand{\lzero}[1]{{\lVert {#1} \rVert}_0}
+\newcommand{\proj}[1]{\pi_{{#1}}}
+\newcommand{\prob}[1]{\Pr\left[{#1}\right]}
+
+\DeclarePairedDelimiterX{\infdivx}[2]{(}{)}{%
+  #1\;\delimsize\|\;#2%
+}
+\newcommand{\kl}{\text{KL}\infdivx}
+
+%\newcommand{\plots}[1]{}
+\newcommand{\plots}[1]{#1}
+\newcommand{\ignore}[1]{}
+\newcommand{\fixme}[1]{\textbf{FIXME:} {#1}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{document}
 
 % Declarations for Front Matter
@@ -76,9 +149,9 @@ To my parents for all the support.
 % \part{First Part}
 
 
-\input{chapter1} %usually intro
-\input{chapter2}
-\input{chapter3}
+\subfile{chapter1} %usually intro
+\subfile{chapter2}
+\subfile{chapter3}
 \input{chapter4}
 \input{conclusions}
 

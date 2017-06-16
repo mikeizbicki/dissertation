@@ -122,7 +122,7 @@
 \usepackage{pdfsync}
 \usepackage{amsmath}
 % \usepackage{amssymb}
-% \usepackage{amsthm}
+\usepackage{amsthm}
 % \usepackage{fancyhdr} 
 \usepackage{fncylab}
 \usepackage[usenames]{color}
@@ -136,7 +136,7 @@
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{acknowledgement}[theorem]{Acknowledgement}
-\newtheorem{algorithm}[theorem]{Algorithm}
+%\newtheorem{algorithm}[theorem]{Algorithm}
 \newtheorem{axiom}[theorem]{Axiom}
 \newtheorem{case}[theorem]{Case}
 \newtheorem{claim}[theorem]{Claim}
@@ -145,6 +145,7 @@
 \newtheorem{conjecture}[theorem]{Conjecture}
 \newtheorem{corollary}[theorem]{Corollary}
 \newtheorem{criterion}[theorem]{Criterion}
+\theoremstyle{definition}
 \newtheorem{definition}[theorem]{Definition}
 \newtheorem{example}[theorem]{Example}
 \newtheorem{exercise}[theorem]{Exercise}
@@ -156,7 +157,7 @@
 \newtheorem{solution}[theorem]{Solution}
 \newtheorem{summary}[theorem]{Summary}
 \newtheorem{observation}[theorem]{Observation}
-\newenvironment{proof}[1][Proof]{\textbf{#1.} }{\ \rule{0.5em}{0.5em}}
+%\newenvironment{proof}[1][Proof]{\textbf{#1.} }{\ \rule{0.5em}{0.5em}}
 
 
 %TCIDATA{OutputFilter=LATEX.DLL}
