@@ -6,6 +6,9 @@
 \newcommand{\radius}{r}
 \newcommand{\dist}[2]{\distf({#1},{#2})}
 \newcommand{\distf}{d}
+\newcommand{\diam}[1]{\rho({#1})}
+\newcommand{\sep}[1]{\sigma({#1})}
+\newcommand{\aspect}[1]{\Delta({#1})}
 
 \newcommand{\minkdim}{\text{dim}_\text{Mink}}
 \newcommand{\krdim}{\text{dim}_\text{kr}}
@@ -20,6 +23,7 @@
 %\newcommand{\children}[1]{\text{\ttfamily children}}
 %\newcommand{\covdist}[1]{\ensuremath{\textup{\text{\ttfamily covdist}}
 \newcommand{\level}[1]{\ensuremath{\textup{\text{\ttfamily level}({#1})}}}
+\newcommand{\parent}[1]{\ensuremath{\textup{\text{\ttfamily parent}({#1})}}}
 \newcommand{\children}[1]{\ensuremath{\textup{\text{\ttfamily children}({#1})}}}
 \newcommand{\covdist}[1]{\ensuremath{\textup{\text{\ttfamily covdist}({#1})}}}
 \newcommand{\descendants}[1]{\ensuremath{\textup{\text{\ttfamily descendants}({#1})}}}
@@ -163,6 +167,8 @@ This value is upper bounded by $2^{\level{p}+1}$, and its exact value can be cac
 
 \section{What is the dimension of a metric space?}
 
+In this section we introduce two 
+
 \begin{definition}
 %A ball of radius $\radius$ in a metric space $\set X$ is defined to be
     We let $B_\set X(x,\radius)$ denote the ball centered around $x$ of radius $r$ in metric space $\set X$.
@@ -261,9 +267,101 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
 \end{definition}
 \cite{gupta2003bounded}
 
+\begin{lemma}[\cite{krauthgamer2004navigating},\cite{gupta2003bounded}]
+    Every finite metric $(\set X,d)$ satisfies
+    \begin{equation}
+        \doubdim\set X \le 4\cdot\krdim\set X
+        .
+    \end{equation}
+\end{lemma}
+%\begin{proof}
+    %Let $k=\krdim(\set X)$.
+    %Fix some ball $B(x,2r)$.
+    %We will show that $B(x,2r)$ can be covered by $k^4$ balls of radius $r$.
+%\end{proof}
+
+\begin{definition}
+    Let $\set X$ be a finite metric space.
+    The \emph{diameter} of $\set X$, denoted by $\diam{\set X}$, is the maximum distance between any two points.
+    The \emph{separation} of $\set X$, denoted by $\sep{\set X}$, is the minimum distance between any two points.
+    The \emph{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, is the ratio of the diameter to the dispersion.
+\end{definition}
+
+\cite{bartal2003metric} discusses the relation between aspect ratios and tree metrics.
+
+\begin{example}
+    This example shows that there is not necessarily a relationship between the aspect ratio of a metric and either its expansion or doubling constants.
+    Let $\set Y=\{y_1,...,y_n\}$ be the discrete metric space of size $n$;
+    that is,
+    \begin{equation}
+        \dist{y_i}{y_j}=
+        \begin{cases}
+            0 & i = j \\
+            1 & \text{otherwise}
+        \end{cases}
+        .
+    \end{equation}
+    Then the aspect ratio of $\set Y$ is 1 (i.e. as small as possible),
+    and both the expansion and doubling constants of $\set Y$ are $n-1$ (i.e. arbitrarily large),
+    Now construct the set $\set Y'=\{y'_1, y'_2, y'_3\}$.
+    Let $r>2$, and define the distance function to be
+    \begin{equation}
+        d(y'_i,y'_j) =
+        \begin{cases}
+            0 & i=j \\
+            1 & i=1, j=2 \\
+            r & i=1, j=3 \\
+            r & i=2, j=3 \\
+        \end{cases}
+        .
+    \end{equation}
+    Then the aspect ratio is $r$ (i.e. arbitrarily large),
+    but the expansion constant is always 2
+    and the doubling constant always 1.
+\end{example}
+
+\begin{lemma}[\cite{krauthgamer2004navigating}]
+    For any metric space $\set X$, we have that
+    %\begin{equation}
+    $
+        |\set X| \le \aspect{\set X}^{O(\doubdim{\set X})}.
+    $
+    %\end{equation}
+\end{lemma}
+\begin{proof}
+    %Assume wlog that the separation distance is 1
+    %(we can rescale all the distances to ensure this).
+    %Then the diameter of $\set X$ is $\aspect{\set X}$.
+\end{proof}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Analysis}
+
+\begin{table}[H]
+    %\newcolumntype{Y}{>{\centering\arraybackslash}p{1in}}
+    %\newcolumntype{Y}{p{0.1in}}
+    %\begin{tabularx}{\textwidth}{lXXY}
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        \vspace{-0.25in}
+        &~\hspace{1.2in}~&~\hspace{1.2in}~&~\hspace{1.2in}~\\
+        data structure & space & find nearest neighbor & insertion \\
+        \midrule
+        ball tree \cite{} & $O(n)$ & $O(n)$ & $O(n)$ \\
+        metric skip list \cite{karger2002finding} & $O(n\log n)$ & $\krnum{}^{O(1)}\log n$ & $\krnum^{O(1)}\log n\log\log n$ \\
+        navigating net \cite{} & $O(n)$ \\
+        cover tree \cite{} & $O(n)$ & $O(\krnum^8\log n)$ & $O(\krnum^{12}\log n)$ \\
+        simplified cover tree & $n$ & $O(\doubnum{}\aspect{}\log n)$ \\
+        \bottomrule
+    \end{tabular}
+    %\end{tabularx}
+    \caption{
+        Summary of the runtime and space usage of several nearest neighbor data structures.
+        Here $n$ represents the size of the dataset.
+    }
+\end{table}
 
 \begin{lemma}
     %The number of children for any node in the tree is bounded by the doubling number of the space.
@@ -283,18 +381,25 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
     which by definition can be no larger than $\doubnum \set X$.
 \end{proof}
 
-\begin{definition}
-    Let $\set X$ be a finite metric space.
-    The \emph{diameter} of $\set X$ is the maximum distance between any two points.
-    The \emph{dispersion} of $\set X$ is the minimum distance between any two points.
-    The \emph{density} of $\set X$ is the ratio of the diameter to the dispersion.
-\end{definition}
-
 \begin{lemma}
-    The depth of a cover tree is upper bounded by the log of the condition number.
+    The depth of a cover tree is upper bounded by the log of the data set's aspect ratio.
 \end{lemma}
 
 \begin{proof}
+    We will bound the level of the root and bottommost lead nodes.
+
+    Let $p$ be the root of the tree.
+    By the covering invariant, we have that the maximum distance from $p$ to a child is $\covdist{p}=2^\level p$; 
+    the maximum distance to a grandchild is $2^\level p + 2^{level p-1}$;
+    and the maximum distance to a descendent in the $n$th generation is $\sum_{i=0}^{n-1} 2^{\level p-i}$.
+    This distance is upper bounded by $2^{\level p+1}$.
+    So we have that $\level{p}\le\diam{\set X}$.
+    %\begin{equation}
+    %$    2\cdot2^\level{p} = 2\cdot\covdist{p}\le\diam{\set X}$, so $\level{p}\le\log_2\diam{\set X}$.
+    %\end{equation}
+
+    Let $q$ be the bottommost leaf in the tree.
+    We have that $2^\level{\parent{q}} = $
 \end{proof}
 
 \end{document}

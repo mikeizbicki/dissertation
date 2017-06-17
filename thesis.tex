@@ -42,6 +42,8 @@
 \usepackage{lipsum}
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
+\usepackage{tabularx}
+\usepackage{booktabs}
 
 %\usepackage{algorithm}
 %\usepackage[noend]{algpseudocode}
@@ -62,6 +64,9 @@
 \definecolor{wave}{RGB}{86,180,233}
 \definecolor{wboot}{RGB}{204,121,167}
 \definecolor{wowa}{RGB}{0,158,115}
+
+\let\emph\relax % there's no \RedeclareTextFontCommand
+\DeclareTextFontCommand{\emph}{\bfseries}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

@@ -1,7 +1,7 @@
-all: *.tex bibfile.bib
+all: *.tex 
 	pdflatex thesis
 
-bibfile.bib: 
+bib:
 	pdflatex thesis
 	bibtex thesis
 	pdflatex thesis
