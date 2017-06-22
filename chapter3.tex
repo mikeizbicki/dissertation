@@ -6,8 +6,8 @@
 \newcommand{\radius}{r}
 \newcommand{\dist}[2]{\distf({#1},{#2})}
 \newcommand{\distf}{d}
-\newcommand{\diam}[1]{\rho({#1})}
-\newcommand{\sep}[1]{\sigma({#1})}
+\newcommand{\diam}[1]{\text{diam}({#1})}
+\newcommand{\codiam}[1]{\text{codiam}({#1})}
 \newcommand{\aspect}[1]{\Delta({#1})}
 
 \newcommand{\minkdim}{\text{dim}_\text{Mink}}
@@ -80,7 +80,7 @@
         Every node $\p$ has an associated real number $\covdist\p=2^{\level\p}$.
         For all nodes $\q\in\children\p$, $\dist \p \q \le \covdist\p$.
         \item \emph{The separating invariant}.
-        For all nodes $\q_1,\q_2\in\children\p$, $\dist {\q_1} {\q_2} \le \covdist\p$.
+        For all nodes $\q_1,\q_2\in\children\p$, $\dist {\q_1} {\q_2} \le \covdist\p/4$.
     \end{enumerate}
 \end{definition}
 
@@ -283,7 +283,7 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
 \begin{definition}
     Let $\set X$ be a finite metric space.
     The \emph{diameter} of $\set X$, denoted by $\diam{\set X}$, is the maximum distance between any two points.
-    The \emph{separation} of $\set X$, denoted by $\sep{\set X}$, is the minimum distance between any two points.
+    The \emph{separation} of $\set X$, denoted by $\codiam{\set X}$, is the minimum distance between any two points.
     The \emph{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, is the ratio of the diameter to the dispersion.
 \end{definition}
 
@@ -302,7 +302,7 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
         .
     \end{equation}
     Then the aspect ratio of $\set Y$ is 1 (i.e. as small as possible),
-    and both the expansion and doubling constants of $\set Y$ are $n-1$ (i.e. arbitrarily large),
+    and both the expansion and doubling constants of $\set Y$ are $n-1$ (i.e. arbitrarily large).
     Now construct the set $\set Y'=\{y'_1, y'_2, y'_3\}$.
     Let $r>2$, and define the distance function to be
     \begin{equation}
@@ -319,6 +319,171 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
     but the expansion constant is always 2
     and the doubling constant always 1.
 \end{example}
+
+\begin{definition}
+    Let $\set X$ be a metric space with a probability measure $\mu$, and
+    let $x$ be a random variable sampled according to $\mu$.
+    We say that $\mu$ is \emph{$\sigma$-subgaussian} if there exists an $\bar x\in\set X$ such that
+    \begin{equation}
+        \prob{\dist{x}{\bar x}\le t} \ge 1-\exp(-\sigma^2t^2)
+        .
+    \end{equation}
+    We further say that $\mu$ is \emph{bounded} if 
+    the density of $\dist{x}{\bar x}$ is bounded.
+\end{definition}
+
+%\begin{example}
+    %The definition above of a subgaussian distribution is a generalization of the definition for vector spaces.
+%\end{example}
+%
+%\begin{lemma}
+    %Let $\set X$ be a metric space with subgaussian probability measure $\mu$.
+    %Let $x_1,x_2$ be i.i.d.\ random variables distributed according to $\mu$.
+    %Then,
+    %\begin{equation}
+    %\end{equation}
+%\end{lemma}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{lemma}
+    Let $\set X$ be a metric space.
+    Let $X=\{x_1,...,x_n\}\subset\set X$ be a sample of $n$ i.i.d.\ points satisfying the following property:
+    There exists a $\bar x\in\set X$ such that $\mu=\E\dist{\bar x}{x_i}$ is finite.
+    Then, 
+    \begin{equation}
+        \E\diam{X} \le 2n\mu
+    \end{equation}
+\end{lemma}
+
+\begin{proof}
+    By the triangle inequality, we have that
+    \begin{align}
+        \diam{X}
+        &= 
+        \max_{i,j} \dist{x_i}{x_j}
+        \le
+        \max_{i,j} (\dist{\bar x}{x_i} + \dist{\bar x}{x_j})
+        %\\ &=
+        %\max_i \dist{\bar x}{x_i} + \max_j\dist{\bar x}{x_j}
+        =
+        2\max_i \dist{\bar x}{x_i}
+        .
+    \end{align}
+    And so,
+    \begin{align}
+        \prob{\diam{X} > t}
+        & \le
+        \prob{\max_i 2\dist{\bar x}{x_i} > t}
+        \\ &\le
+        \sum_{i=1}^n\prob{2\dist{\bar x}{x_i} > t}
+        \label{eq:Ediamub}
+        \\ &=
+        n\prob{2\dist{\bar x}{x_1} > t}
+        \label{eq:Ediamiid}
+        .
+    \end{align}
+    Equation \eqref{eq:Ediamub} follows from the union bound, 
+    and \eqref{eq:Ediamiid} follows because the $x_i$s are i.i.d.
+    Since the diameter is always nonnegative, 
+    \begin{align}
+        \E\diam{X} 
+        &= 
+        \int_0^\infty \prob{\diam{X} > t} dt
+        \\ &\le
+        \int_0^\infty n\prob{2\dist{\bar x}{x_1} > t} dt
+        \\ &=
+        n\int_0^\infty \prob{2\dist{\bar x}{x_1} > t} dt
+        \\ &=
+        2n \E\dist{\bar x}{x_1}
+        \label{eq:Ediamproof}
+        .
+    \end{align}
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{lemma}
+    Let $\set X$ be a metric space.
+    Let $\mu$ be a distribution over $\set X$ with bounded density and finite expectation.
+    Let $X=\{x_1,...,x_n\}\subset\set X$ be a sample of $n$ i.i.d.\ points from $\mu$.
+    Then the expected aspect ratio of $X$ is polynomial in $n$.
+    Specifically, 
+    \begin{equation}
+        \E\aspect{X}\le2n^3B\E\dist{\bar x}{x_1}. 
+    \end{equation}
+\end{lemma}
+
+\begin{proof}
+    The proof proceeds by first upper bounding the diameter of $X$,
+    then lower bounding the codiameter.
+    %Then,
+    %\begin{align}
+        %\prob{\diam{X} \le 2t}
+        %& \ge
+        %\prob{\max_i \dist{\bar x}{x_i} \le t}
+        %\\ & =
+        %\prob{\dist{\bar x}{x_1} \le t}^n
+        %\\ & \ge
+        %(1-\exp(-\sigma^2t^2))^n
+        %\\ & \ge
+        %1-n\exp(-\sigma^2t^2)
+        %.
+    %\end{align}
+    %Substituting $t=\sqrt{s\log n/\sigma^2}$ gives
+    %\begin{align}
+        %\prob{\diam{X} \le 2\sqrt{\frac{s\log n}{\sigma^2}}} 
+        %& \ge 
+        %1 - n\exp(-s \log n)
+        %\\ &=
+        %1 - n^{-s}
+        %\\ &\ge
+        %1 - \exp(-s)
+        %.
+    %\end{align}
+    %The last inequality holds whenever $s\ge1$ and $n\ge\exp(1)$,
+    %as required by the lemma's conditions.
+    Next we lower bound the codiameter of $X$.
+    We have that
+    \begin{align}
+        \prob{\codiam{X} \le t}
+        &=
+        \prob{\min \{ \dist{x_i}{x_j} : i\in\{1,...,n\}, j\in\{i+1,...,n\} \} \le t}
+        %\prob{\min_{i\ne j} \dist{x_i}{x_j} \le t}
+        \\ &\le 
+        \sum_{i=1}^n\sum_{j=i+1}^n \prob{\dist{x_i}{x_j} \le t}
+        \\ &\le
+        \sum_{i=1}^n n \max_{x\in X} \prob{\dist{x_i}{x} \le t}
+        \\ & =
+        n^2 \max_{x\in X} \prob{\dist{x_1}{x} \le t}
+        \\ & \le 
+        n^2 B t
+    \end{align}
+    Further, since probabilities are always no greater than 1,
+    \begin{equation}
+        \prob{\codiam{X}\le t} \le \max\{1,n^2Bt\}
+        .
+    \end{equation}
+    Since $\codiam{X}$ is nonnegative, we have that 
+    \begin{align}
+        \E \codiam{X}
+        &=
+        \int_0^\infty (1-\prob{\codiam{X} \le t}) dt
+        %\\ & =
+        %\int_0^\infty \prob{\codiam{X} > t} dt
+        \\ & \ge
+        \int_0^\infty (1-\max\{1,n^2 Bt\})dt
+        \\ & = 
+        \int_0^{(n^2B)^{-1}} (1 - n^2 Bt) dt
+        \\ & =
+        %\frac{1}{n^2B} - \frac{\left(\frac{1}{n^2B}\right)^3}{2}
+        %\\ & \ge
+        \frac{1}{2n^2B}
+        \label{eq:Ecodiamproof}
+        .
+    \end{align}
+    Combining Equations \eqref{eq:Ediamproof} and \eqref{eq:Ecodiamproof} gives that $\E\aspect{X} \le 2n^3B\E\dist{\bar x}{x_1}.$
+\end{proof}
 
 \begin{lemma}[\cite{krauthgamer2004navigating}]
     For any metric space $\set X$, we have that
@@ -339,6 +504,7 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
 \section{Analysis}
 
 \begin{table}[H]
+    \small
     %\newcolumntype{Y}{>{\centering\arraybackslash}p{1in}}
     %\newcolumntype{Y}{p{0.1in}}
     %\begin{tabularx}{\textwidth}{lXXY}
