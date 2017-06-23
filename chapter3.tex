@@ -1,6 +1,7 @@
 \documentclass[../main.tex]{subfiles}
  
 \newcommand{\set}[1]{\mathcal {#1}}
+\newcommand{\distribution}[1]{\mathcal {#1}}
 \newcommand{\sized}[1]{\tilde \set {#1}}
 
 \newcommand{\radius}{r}
@@ -19,15 +20,15 @@
 
 \newcommand{\p}{\ensuremath p}
 \newcommand{\q}{\ensuremath q}
-%\newcommand{\level}[1]{\text{\ttfamily level}}
-%\newcommand{\children}[1]{\text{\ttfamily children}}
-%\newcommand{\covdist}[1]{\ensuremath{\textup{\text{\ttfamily covdist}}
-\newcommand{\level}[1]{\ensuremath{\textup{\text{\ttfamily level}({#1})}}}
-\newcommand{\parent}[1]{\ensuremath{\textup{\text{\ttfamily parent}({#1})}}}
-\newcommand{\children}[1]{\ensuremath{\textup{\text{\ttfamily children}({#1})}}}
-\newcommand{\covdist}[1]{\ensuremath{\textup{\text{\ttfamily covdist}({#1})}}}
-\newcommand{\descendants}[1]{\ensuremath{\textup{\text{\ttfamily descendants}({#1})}}}
-\newcommand{\maxdist}[1]{\ensuremath{\textup{\text{\ttfamily maxdist}({#1})}}}
+%\newcommand{\varfont}[1]{\ensuremath{\textup{\text{{#1}}}}}
+\newcommand{\mkfunction}[1]{\ensuremath{\text{{#1}}}}
+\newcommand{\level}[1]      {\mkfunction{level}({#1})}
+\newcommand{\parent}[1]     {\mkfunction{parent}({#1})}
+\newcommand{\children}[1]   {\mkfunction{children}({#1})}
+\newcommand{\covdist}[1]    {\mkfunction{covdist}({#1})}
+\newcommand{\descendants}[1]{\mkfunction{descendants}({#1})}
+\newcommand{\maxdist}[1]    {\mkfunction{maxdist}({#1})}
+\newcommand{\height}[1]     {\mkfunction{height}({#1})}
 
 % FIXME: should these be changed?
 \newcommand{\nn}[1]{\ensuremath{\ensuremath{{{#1}}_{nn}}}}
@@ -36,11 +37,10 @@
 \newcommand{\rmNodes}{\ensuremath{\text{\ttfamily rmNodes}}}
 \newcommand{\findnn}{\ensuremath{\text{\ttfamily findNearestNeighbor}}}
 \newcommand{\ctmerge}{\ensuremath{\text{\ttfamily merge}}}
-\newcommand{\ctinsert}{\ensuremath{\text{\ttfamily insert}}}
+\newcommand{\ctinsert}{\ensuremath{\textnormal{\ttfamily insert}}}
 \newcommand{\ctinsertHelper}{\ensuremath{\text{\ttfamily insert\_}}}
 \newcommand{\rebalance}{\ensuremath{\text{\ttfamily rebalance}}}
 \newcommand{\rebalanceHelper}{\ensuremath{\text{\ttfamily rebalance\_}}}
-\newcommand{\mkfunction}[1]{\ensuremath{\text{\ttfamily {#1}}}}
 \newcommand{\mkvar}[1]{\ensuremath{\text{\emph{{#1}}}}}
 \newcommand{\nullvar}{\ensuremath{\textup{\text{\ttfamily null}}}}
 \newcommand{\datapoint}[1]{\ensuremath{\textup{\text{\ttfamily dp}({#1})}}}
@@ -60,112 +60,48 @@
     \end{enumerate}
 \end{definition}
 
+\begin{table}[H]
+    \small
+    %\newcolumntype{Y}{>{\centering\arraybackslash}p{1in}}
+    %\newcolumntype{Y}{p{0.1in}}
+    %\begin{tabularx}{\textwidth}{lXXY}
+    \centering
+    \begin{tabular}{lccc}
+        \toprule
+        \vspace{-0.25in}
+        &~\hspace{1.2in}~&~\hspace{1.2in}~&~\hspace{1.2in}~\\
+        data structure & space & find nearest neighbor & insertion \\
+        \midrule
+        ball tree \cite{} & $O(n)$ & $O(n)$ & $O(n)$ \\
+        metric skip list \cite{karger2002finding} & $O(n\log n)$ & $\krnum{}^{O(1)}\log n$ & $\krnum^{O(1)}\log n\log\log n$ \\
+        navigating net \cite{} & $O(n)$ \\
+        cover tree \cite{} & $O(n)$ & $O(\krnum^8\log n)$ & $O(\krnum^{12}\log n)$ \\
+        simplified cover tree & $O(n)$ & $O(\doubnum{}\log \aspect{})$ \\
+                              &        & $O(\doubnum{}\log n)$ \\
+        \bottomrule
+    \end{tabular}
+    %\end{tabularx}
+    \caption{
+        Summary of the runtime and space usage of several nearest neighbor data structures.
+        Here $n$ represents the size of the dataset.
+    }
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Review of Metric Spaces in Machine Learning}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \subsection{Examples of Metric Spaces}
 
 \begin{example}
     Any subset of a metric space is also a metric space.
 \end{example}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{The tree definition}
-
-\begin{definition}
-    A \emph{simplified cover tree} is any tree obeying the following three invariants.
-    \begin{enumerate}
-        \item \emph{The leveling invariant}.
-        Every node $\p$ has an associated integer $\level\p$.
-        For all nodes $\q\in\children\p$, $\level\q < \level\p$.
-        \item \emph{The covering invariant}.
-        Every node $\p$ has an associated real number $\covdist\p=2^{\level\p}$.
-        For all nodes $\q\in\children\p$, $\dist \p \q \le \covdist\p$.
-        \item \emph{The separating invariant}.
-        For all nodes $\q_1,\q_2\in\children\p$, $\dist {\q_1} {\q_2} \le \covdist\p/4$.
-    \end{enumerate}
-\end{definition}
-
-\begin{remark}
-    The original version of the simplified cover tree had a slightly different leveling invariant.
-    The version used in this paper is strictly more general;
-    it facilitates the removal of nodes from the cover tree,
-    but makes the procedure for insertion slightly more complicated.
-\end{remark}
-
-Throughout this paper, we will use the functions $\children\p$ and $\descendants\p$ to refer to the set of nodes that are children or descendants of $p$ respectively.
-We also define the function \mkfunction{maxdist} as
-$$
-\maxdist p = \argmax_{q\in\descendants{p}} \dist p q
-$$
-In words, this is the greatest distance from $p$ to any of its descendants.
-This value is upper bounded by $2^{\level{p}+1}$, and its exact value can be cached within the data structure.\footnote{
-    As in the original cover tree, practical performance is improved on most datasets by redefining $\covdist p = 1.3 ^ {\level p}$.
-    All of our experiments use this modified definition.
-}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{algorithm}[H]
-    \caption{Simplified cover tree nearest neighbor query}
-    \label{alg:query}
-
-    \vspace{0.1in}
-{\bfseries function} \findnn(cover tree $p$, query  point $x$, nearest neighbor so far $y$)
-
-\begin{algorithmic}[1]
-    \If {$d(p,x) < d(y,x)$}
-        \State $y \leftarrow p$
-    \EndIf
-    \For {each child $q$ of $p$ sorted by distance to $x$}
-        \If {$d(y,x) > d(y,q) - \maxdist{q}$} %2^{\level q}$}
-            \State $y \leftarrow \findnn(q,x,y)$
-        \EndIf
-    \EndFor
-    \State\Return $y$
-\end{algorithmic}
-\end{algorithm}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{algorithm}[H]
-\caption{Simplified cover tree insertion}
-\label{alg:insert}
-
-    \vspace{0.1in}
-{\bfseries function} \ctinsert(cover tree $p$, data point $x$)
-
-\begin{algorithmic}[1]
-    \If {$\dist p x > \covdist p$}
-        \While {$\dist p x > 2\covdist p$}
-            \State Remove any leaf $q$ from $p$
-            \State $p' \leftarrow $ tree with root $q$ and $p$ as only child
-		  \State $p \leftarrow p'$
-        \EndWhile
-        \State\Return tree with $x$ as root and $p$ as only child
-    \EndIf
-    \State\Return \ctinsertHelper($p$,$x$)
-\end{algorithmic}
-
-{\bfseries function} \ctinsertHelper(cover tree $p$, data point $x$)
-
-\emph{prerequisites:} $\dist p x \le \covdist p$
-
-\begin{algorithmic}[1]
-    \For {$q \in \children{p}$}
-        \If {$\dist q x \le \covdist q$}
-            \State $q' \leftarrow \ctinsertHelper(q,x)$
-            \State $p' \leftarrow p$ with child $q$ replaced with $q'$
-            \State \Return $p'$
-        \EndIf
-    \EndFor
-    \State\Return $p$ with $x$ added as a child
-\end{algorithmic}
-\end{algorithm}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{What is the dimension of a metric space?}
+\subsection{What is the dimension of a metric space?}
 
 In this section we introduce two 
 
@@ -320,171 +256,6 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
     and the doubling constant always 1.
 \end{example}
 
-\begin{definition}
-    Let $\set X$ be a metric space with a probability measure $\mu$, and
-    let $x$ be a random variable sampled according to $\mu$.
-    We say that $\mu$ is \emph{$\sigma$-subgaussian} if there exists an $\bar x\in\set X$ such that
-    \begin{equation}
-        \prob{\dist{x}{\bar x}\le t} \ge 1-\exp(-\sigma^2t^2)
-        .
-    \end{equation}
-    We further say that $\mu$ is \emph{bounded} if 
-    the density of $\dist{x}{\bar x}$ is bounded.
-\end{definition}
-
-%\begin{example}
-    %The definition above of a subgaussian distribution is a generalization of the definition for vector spaces.
-%\end{example}
-%
-%\begin{lemma}
-    %Let $\set X$ be a metric space with subgaussian probability measure $\mu$.
-    %Let $x_1,x_2$ be i.i.d.\ random variables distributed according to $\mu$.
-    %Then,
-    %\begin{equation}
-    %\end{equation}
-%\end{lemma}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{lemma}
-    Let $\set X$ be a metric space.
-    Let $X=\{x_1,...,x_n\}\subset\set X$ be a sample of $n$ i.i.d.\ points satisfying the following property:
-    There exists a $\bar x\in\set X$ such that $\mu=\E\dist{\bar x}{x_i}$ is finite.
-    Then, 
-    \begin{equation}
-        \E\diam{X} \le 2n\mu
-    \end{equation}
-\end{lemma}
-
-\begin{proof}
-    By the triangle inequality, we have that
-    \begin{align}
-        \diam{X}
-        &= 
-        \max_{i,j} \dist{x_i}{x_j}
-        \le
-        \max_{i,j} (\dist{\bar x}{x_i} + \dist{\bar x}{x_j})
-        %\\ &=
-        %\max_i \dist{\bar x}{x_i} + \max_j\dist{\bar x}{x_j}
-        =
-        2\max_i \dist{\bar x}{x_i}
-        .
-    \end{align}
-    And so,
-    \begin{align}
-        \prob{\diam{X} > t}
-        & \le
-        \prob{\max_i 2\dist{\bar x}{x_i} > t}
-        \\ &\le
-        \sum_{i=1}^n\prob{2\dist{\bar x}{x_i} > t}
-        \label{eq:Ediamub}
-        \\ &=
-        n\prob{2\dist{\bar x}{x_1} > t}
-        \label{eq:Ediamiid}
-        .
-    \end{align}
-    Equation \eqref{eq:Ediamub} follows from the union bound, 
-    and \eqref{eq:Ediamiid} follows because the $x_i$s are i.i.d.
-    Since the diameter is always nonnegative, 
-    \begin{align}
-        \E\diam{X} 
-        &= 
-        \int_0^\infty \prob{\diam{X} > t} dt
-        \\ &\le
-        \int_0^\infty n\prob{2\dist{\bar x}{x_1} > t} dt
-        \\ &=
-        n\int_0^\infty \prob{2\dist{\bar x}{x_1} > t} dt
-        \\ &=
-        2n \E\dist{\bar x}{x_1}
-        \label{eq:Ediamproof}
-        .
-    \end{align}
-\end{proof}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{lemma}
-    Let $\set X$ be a metric space.
-    Let $\mu$ be a distribution over $\set X$ with bounded density and finite expectation.
-    Let $X=\{x_1,...,x_n\}\subset\set X$ be a sample of $n$ i.i.d.\ points from $\mu$.
-    Then the expected aspect ratio of $X$ is polynomial in $n$.
-    Specifically, 
-    \begin{equation}
-        \E\aspect{X}\le2n^3B\E\dist{\bar x}{x_1}. 
-    \end{equation}
-\end{lemma}
-
-\begin{proof}
-    The proof proceeds by first upper bounding the diameter of $X$,
-    then lower bounding the codiameter.
-    %Then,
-    %\begin{align}
-        %\prob{\diam{X} \le 2t}
-        %& \ge
-        %\prob{\max_i \dist{\bar x}{x_i} \le t}
-        %\\ & =
-        %\prob{\dist{\bar x}{x_1} \le t}^n
-        %\\ & \ge
-        %(1-\exp(-\sigma^2t^2))^n
-        %\\ & \ge
-        %1-n\exp(-\sigma^2t^2)
-        %.
-    %\end{align}
-    %Substituting $t=\sqrt{s\log n/\sigma^2}$ gives
-    %\begin{align}
-        %\prob{\diam{X} \le 2\sqrt{\frac{s\log n}{\sigma^2}}} 
-        %& \ge 
-        %1 - n\exp(-s \log n)
-        %\\ &=
-        %1 - n^{-s}
-        %\\ &\ge
-        %1 - \exp(-s)
-        %.
-    %\end{align}
-    %The last inequality holds whenever $s\ge1$ and $n\ge\exp(1)$,
-    %as required by the lemma's conditions.
-    Next we lower bound the codiameter of $X$.
-    We have that
-    \begin{align}
-        \prob{\codiam{X} \le t}
-        &=
-        \prob{\min \{ \dist{x_i}{x_j} : i\in\{1,...,n\}, j\in\{i+1,...,n\} \} \le t}
-        %\prob{\min_{i\ne j} \dist{x_i}{x_j} \le t}
-        \\ &\le 
-        \sum_{i=1}^n\sum_{j=i+1}^n \prob{\dist{x_i}{x_j} \le t}
-        \\ &\le
-        \sum_{i=1}^n n \max_{x\in X} \prob{\dist{x_i}{x} \le t}
-        \\ & =
-        n^2 \max_{x\in X} \prob{\dist{x_1}{x} \le t}
-        \\ & \le 
-        n^2 B t
-    \end{align}
-    Further, since probabilities are always no greater than 1,
-    \begin{equation}
-        \prob{\codiam{X}\le t} \le \max\{1,n^2Bt\}
-        .
-    \end{equation}
-    Since $\codiam{X}$ is nonnegative, we have that 
-    \begin{align}
-        \E \codiam{X}
-        &=
-        \int_0^\infty (1-\prob{\codiam{X} \le t}) dt
-        %\\ & =
-        %\int_0^\infty \prob{\codiam{X} > t} dt
-        \\ & \ge
-        \int_0^\infty (1-\max\{1,n^2 Bt\})dt
-        \\ & = 
-        \int_0^{(n^2B)^{-1}} (1 - n^2 Bt) dt
-        \\ & =
-        %\frac{1}{n^2B} - \frac{\left(\frac{1}{n^2B}\right)^3}{2}
-        %\\ & \ge
-        \frac{1}{2n^2B}
-        \label{eq:Ecodiamproof}
-        .
-    \end{align}
-    Combining Equations \eqref{eq:Ediamproof} and \eqref{eq:Ecodiamproof} gives that $\E\aspect{X} \le 2n^3B\E\dist{\bar x}{x_1}.$
-\end{proof}
-
 \begin{lemma}[\cite{krauthgamer2004navigating}]
     For any metric space $\set X$, we have that
     %\begin{equation}
@@ -499,73 +270,353 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
     %Then the diameter of $\set X$ is $\aspect{\set X}$.
 \end{proof}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{The growth rate of the aspect ratio}
+
+The aspect ratio and the expansion number share the unattractive property that adding a single point to a dataset can increase these quantities arbitrarily.
+Under mild assumptions, however, we can show that this is unlikely to happen.
+Specifically, let $\set X$ be a metric space, 
+and let $X=\{x_1,...,x_n\}\subset\set X$ be a sample of $n$ i.i.d.\ points from a distribution $\distribution D$ over $\set X$.
+Our goal is to show that the aspect ratio is polynomial in $n$.
+We will later show that the log of the aspect ratio bounds the depth of the cover tree (see Theorem \ref{}),
+and so the depth of the cover tree will be logarithmic in $n$.
+
+We begin by bounding the diameter of $X$.
+%In general, it does not make sense to take the expectation with respect to $\distribution D$.
+We say the distribution $\distribution D$ has \emph{finite expected distance} if there exists an $\bar x\in\set X$ such that $\mu=\E\dist{\bar x}{x_i}$ is finite.
+Note that this is a mild condition satisfied by most standard distributions on Euclidean space.
+For example, the uniform, Gaussian, exponential, Weibull, and Pareto distributions all have finite expected distance.
+Notice that the Weibull and Pareto distributions have heavy tails.
+One easy to describe distribution which does not satisfy this property is the Cauchy distribution 
+(the distribution of the reciprocal of a Gaussian random variable).
+The following lemma shows that this is a sufficient condition for the diameter to grow polynomial in $n$.
+
+\begin{lemma}
+    \label{lemma:Ediam}
+    %Let $\set X$ be a metric space.
+    %Let $X=\{x_1,...,x_n\}\subset\set X$ be a sample of $n$ i.i.d.\ points satisfying the following property:
+    %There exists a $\bar x\in\set X$ such that $\mu=\E\dist{\bar x}{x_i}$ is finite.
+    %Then, 
+    %\begin{equation}
+        %\E\diam{X} \le 2n\mu
+    %\end{equation}
+    Let $\set X$ and $X$ be defined as above,
+    and assume that $\distribution D$ has finite expected distance.
+    Then, $\E\diam{X} \le 2n\mu$.
+\end{lemma}
+
+\begin{proof}
+    By the triangle inequality, we have that
+    \begin{equation*}
+        \diam{X}
+        = 
+        \max_{i,j} \dist{x_i}{x_j}
+        \le
+        \max_{i,j} (\dist{\bar x}{x_i} + \dist{\bar x}{x_j})
+        %\\ &=
+        %\max_i \dist{\bar x}{x_i} + \max_j\dist{\bar x}{x_j}
+        =
+        2\max_i \dist{\bar x}{x_i}
+        .
+    \end{equation*}
+    We now remove the max using the union bound.
+    This gives
+    \begin{equation*}
+        \prob{\diam{X} > t}
+        \le
+        \prob{\max_i 2\dist{\bar x}{x_i} > t}
+        \le
+        \sum_{i=1}^n\prob{2\dist{\bar x}{x_i} > t}
+        \label{eq:Ediamub}
+        =
+        n\prob{2\dist{\bar x}{x_1} > t}
+        %\label{eq:Ediamiid}
+        .
+    \end{equation*}
+    %Equation \eqref{eq:Ediamub} follows from the union bound, 
+    %and \eqref{eq:Ediamiid} follows because the $x_i$s are i.i.d.
+    The rightmost equality follows because the $x_i$s are i.i.d.
+    Finally, since the distances are always nonnegative, we have that
+    \begin{equation*}
+        \E\diam{X} 
+        = 
+        \int_0^\infty \prob{\diam{X} > t} \dd t
+        \le
+        \int_0^\infty n\prob{2\dist{\bar x}{x_1} > t} \dd t
+        =
+        %n\int_0^\infty \prob{2\dist{\bar x}{x_1} > t} \dd t
+        %\\ &=
+        2n \E\dist{\bar x}{x_1}
+        %\label{eq:Ediamproof}
+        .
+    \end{equation*}
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Next we show that the codiameter cannot shrink too fast.
+We say that the distribution $\distribution D$ has \emph{$B$-bounded density} if
+for all $x\in\set X$, the density of $\dist{x}{x_i}$ is bounded by $B$.
+An immediate consequence is that 
+\begin{equation}
+    \max_{x\in\set X} \prob{\dist{x}{x_i} \le t} \le Bt
+    .
+\end{equation}
+Again, all the standard distributions in Euclidean space satisfy this condition.
+The following lemma shows that this condition is sufficient to lower bound the codiameter.
+
+\begin{lemma}
+    \label{lemma:Ecodiam}
+    Let $\set X$ and $X$ be defined as above,
+    and assume that $\distribution D$ has $B$-bounded density.
+    Then, $\E\codiam{X} \ge (2n^2B)^{-1}$.
+\end{lemma}
+\begin{proof}
+    We have that
+    \begin{align}
+        \prob{\codiam{X} \le t}
+        &=
+        \prob{\min \{ \dist{x_i}{x_j} : i\in\{1,...,n\}, j\in\{i+1,...,n\} \} \le t}
+        %\prob{\min_{i\ne j} \dist{x_i}{x_j} \le t}
+        \\ &\le 
+        \sum_{i=1}^n\sum_{j=i+1}^n \prob{\dist{x_i}{x_j} \le t}
+        \label{eq:lemcodiam1}
+        %\\ &\le
+        %\sum_{i=1}^n n \max_{x\in X} \prob{\dist{x_i}{x} \le t}
+        \\ & \le
+        n^2 \max_{x\in X} \prob{\dist{x_1}{x} \le t}
+        \label{eq:lemcodiam2}
+        \\ & \le 
+        n^2 B t
+        \label{eq:lemcodiam3}
+    \end{align}
+    Equation \eqref{eq:lemcodiam1} follows from the union bound,
+    \eqref{eq:lemcodiam2} from the fact that the $x_i$s are i.i.d.,
+    and \eqref{eq:lemcodiam3} from the definition of $B$-bounded.
+    We further have that since probabilities are always no greater than 1,
+    \begin{equation}
+        \prob{\codiam{X}\le t} \le \min\{1,n^2Bt\}
+        .
+    \end{equation}
+    Finally, since $\codiam{X}$ is nonnegative, we have that 
+    \begin{align}
+        \E \codiam{X}
+        &=
+        \int_0^\infty (1-\prob{\codiam{X} \le t}) \dd t
+        %\\ & =
+        %\int_0^\infty \prob{\codiam{X} > t} dt
+        \\ & \ge
+        \int_0^\infty (1-\min\{1,n^2 Bt\}) \dd t
+        \\ & = 
+        \int_0^{(n^2B)^{-1}} (1 - n^2 Bt) \dd t
+        \\ & =
+        %\frac{1}{n^2B} - \frac{\left(\frac{1}{n^2B}\right)^3}{2}
+        %\\ & \ge
+        \frac{1}{2n^2B}
+        \label{eq:Ecodiamproof}
+        .
+    \end{align}
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+An immediate consequence of Lemmas \ref{lemma:Ediam} and \ref{lemma:Ecodiam} is the following bound on the aspect ratio.
+
+\begin{lemma}
+    \label{lemma:Easpect}
+    Let $\set X$ and $X$ be defined as above.
+    Assume that $\distribution D$ has finite expected distance and $B$-bounded density.
+    Then, $\E\aspect{X} \le2B\mu n^3$. 
+\end{lemma}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The Simplified Cover Tree}
+
+A \emph{simplified cover tree} is a data structure for efficiently representing a finite metric space.
+Each node in the tree corresponds to exactly one point in the space,
+and the tree obeys the following three invariants.
+\begin{enumerate}
+    \item \emph{Leveling invariant}.
+    Every node $\p$ has an associated integer $\level\p$.
+    For all nodes $\q\in\children\p$, $\level\q < \level\p$.
+    (Note that $\level{p}$ can be negative or arbitrarily large.
+    In particular, it is not the depth of $p$ in the tree.)
+    \item \emph{Covering invariant}.
+    Every node $\p$ has an associated real number $\covdist\p=2^{\level\p}$.
+    For all nodes $\q\in\children\p$, $\dist \p \q \le \covdist\p$.%
+    \footnote{
+        As in the original cover tree, practical performance is improved on most datasets by redefining $\covdist p = 1.3 ^ {\level p}$.
+        All of our experiments use this modified definition.
+    }
+    \item \emph{Separating invariant}.
+    For all nodes $\q_1,\q_2\in\children\p$, $\dist {\q_1} {\q_2} \ge \covdist\p/2$.
+\end{enumerate}
+It will be useful to define the function
+\begin{equation}
+\maxdist p = \argmax_{q\in\descendants{p}} \dist p q
+.
+\end{equation}
+In words, $\maxdist\p$ is the greatest distance from $p$ to any of its descendants.
+This value is upper bounded by $2^{\level{p}+1}$, 
+and its exact value can be cached within the data structure.
+
+\begin{remark}
+    The original version of the simplified cover tree \citep{izbicki2015faster} had a slightly different leveling invariant.
+    The original version required that the level of a child be exactly one less than the level of the parent.
+    The version used in this thesis is strictly more general and facilitates the runtime analysis of the tree.
+\end{remark}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Properties of the Simplified Cover Tree}
+
+Before we present algorithms for manipulating the cover tree, 
+we present two lemmas that bound the shape of the cover tree.
+These lemmas are a direct consequence of the cover tree's invariants and motivate the invariants' selection.
+This section can be safely skipped by the reader not interested in the details of the tree's runtime analysis.
+
+\begin{lemma}
+    \label{lemma:children}
+    For every node $p$ in a cover tree, we have that
+    $|\children\p| \le \doubnum^2$.
+\end{lemma}
+
+\begin{proof}
+    To simplify notation, we let $\delta=\covdist{p}$.
+    %The covering invariant ensures that all the children of $p$ are contained in $B(p,\delta)$,
+    The separating invariant ensures that the children of $p$ form a $\delta/2$-packing of $B(p,\delta)$.
+    So by the definition of $M$ and Lemma \ref{lemma:coverpacking}, we have
+    \begin{equation}
+        |\children{p}| 
+        \le M_{\delta/2}(B(p,\delta)) 
+        \le N_{\delta/4}(B(p,\delta)) 
+        %\le \doubnum N_{\delta/2}(B(p,\delta)) 
+        %\le \doubnum^2
+        .
+    \end{equation}
+    We now show that $N_{\delta/4}(B(p,\delta))\le\doubnum$.
+    Let $Y$ be a $\delta/2$-covering of $B(p,\delta)$.
+    For each $y_i\in Y$, let $Y_i$ be a minimum $\delta/4$-covering of $B(y_i,\delta/2)$.
+    The union of the $Y_i$s is a $\delta/4$-covering of $B(p,\delta)$.
+    There are at most $\doubnum$ $Y_i$s, and each $Y_i$ contains at most $\doubnum$ elements.
+    So their union contains at most $\doubnum^2$ elements.
+\end{proof}
+
+\begin{lemma}
+    \label{lemma:height}
+    Let $\height{p}$ denote the number of edges between $p$ and its most distant leaf node.
+    We have that $\height{p} \le \log_2\aspect{X}$.
+\end{lemma}
+
+\begin{proof}
+    Define the recursive family of sets 
+    \begin{equation}
+        Y_i = 
+        \begin{cases}
+            \{p\} & i=0
+            \\
+            \bigcup\limits_{y\in Y_{i-1}} \children{y} & i >0
+        \end{cases}
+    \end{equation}
+    In words, $Y_i$ contains all the data points from the uppermost $i$ levels of the tree,
+    and in particular $Y_{\height p}=X$.
+    Due to the covering invariant, we have that $\codiam{Y_1} \le \covdist{p}/2 \le \diam{X}/2$.
+    By induction, it holds that $\codiam{Y_i} \le \diam{X}/2^i$,
+    and so $\codiam{X} \le \diam{X}/2^{\height p}$.
+    Substituting into the definition of the aspect ratio gives
+    \begin{equation}
+        \aspect{X} 
+        = \frac{\diam{X}}{\codiam{X}} 
+        \ge \frac{\diam{X}}{\diam{X}/2^{\height p}} 
+        = 2^{\height p}
+        .
+    \end{equation}
+    Solving for $\height p$ gives the desired result.
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Algorithms}
+
+\begin{algorithm}[H]
+\caption{Simplified cover tree insertion}
+\label{alg:insert}
+
+    \vspace{0.1in}
+{\bfseries function} \ctinsert(cover tree $p$, data point $x$)
+
+\begin{algorithmic}[1]
+    \If {$\dist p x > \covdist p$}
+        \State Create a new node $q$
+        \State $dp(q) \leftarrow x $
+        \State $\level q \leftarrow \ceil{\log_2 d(p,q)}$
+        \State $\children{q} \leftarrow \{p\}$
+        \State\Return $q$
+    \Else
+        \For {$q \in \children{p}$}
+            \If {$\dist q x \le \covdist q$}
+                \State $q' \leftarrow \ctinsert(q,x)$
+                \State $p' \leftarrow p$ with child $q$ replaced with $q'$
+                \State \Return $p'$
+            \EndIf
+        \EndFor
+        \State // x was not added to any child
+        \State\Return $p$ with $x$ added as a child
+    \EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+    The runtime of $\ctinsert$ is $O(\doubnum^2\log_2\aspect{X})$.
+\end{theorem}
+\begin{proof}
+    If $\dist{p}{x} > \covdist{p}$, then the running time is constant.
+    Otherwise, the algorithm loops over all the children of $p$ and recurses on at most one child.
+    There at most $\doubnum^2$ children (Lemma \ref{lemma:children}),
+    and the height of the tree is at most $\log_2\aspect{X}$ (Lemma \ref{lemma:height}).
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{algorithm}[H]
+    \caption{Merging cover trees}
+    \label{alg:merge}
+    \vspace{0.1in}
+    {\bfseries function} \ctmerge(cover tree $p$, cover tree $q$)
+
+\begin{algorithmic}[1]
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{algorithm}[H]
+    \caption{Simplified cover tree nearest neighbor query}
+    \label{alg:query}
+
+    \vspace{0.1in}
+{\bfseries function} \findnn(cover tree $p$, query  point $x$, nearest neighbor so far $y$)
+
+\begin{algorithmic}[1]
+    \If {$d(p,x) < d(y,x)$}
+        \State $y \leftarrow p$
+    \EndIf
+    \For {each child $q$ of $p$ sorted by distance to $x$}
+        \If {$d(y,x) > d(y,q) - \maxdist{q}$} %2^{\level q}$}
+            \State $y \leftarrow \findnn(q,x,y)$
+        \EndIf
+    \EndFor
+    \State\Return $y$
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Analysis}
-
-\begin{table}[H]
-    \small
-    %\newcolumntype{Y}{>{\centering\arraybackslash}p{1in}}
-    %\newcolumntype{Y}{p{0.1in}}
-    %\begin{tabularx}{\textwidth}{lXXY}
-    \centering
-    \begin{tabular}{lccc}
-        \toprule
-        \vspace{-0.25in}
-        &~\hspace{1.2in}~&~\hspace{1.2in}~&~\hspace{1.2in}~\\
-        data structure & space & find nearest neighbor & insertion \\
-        \midrule
-        ball tree \cite{} & $O(n)$ & $O(n)$ & $O(n)$ \\
-        metric skip list \cite{karger2002finding} & $O(n\log n)$ & $\krnum{}^{O(1)}\log n$ & $\krnum^{O(1)}\log n\log\log n$ \\
-        navigating net \cite{} & $O(n)$ \\
-        cover tree \cite{} & $O(n)$ & $O(\krnum^8\log n)$ & $O(\krnum^{12}\log n)$ \\
-        simplified cover tree & $n$ & $O(\doubnum{}\aspect{}\log n)$ \\
-        \bottomrule
-    \end{tabular}
-    %\end{tabularx}
-    \caption{
-        Summary of the runtime and space usage of several nearest neighbor data structures.
-        Here $n$ represents the size of the dataset.
-    }
-\end{table}
-
-\begin{lemma}
-    %The number of children for any node in the tree is bounded by the doubling number of the space.
-    For every node $p$ in a cover tree, we have that
-    \begin{equation}
-        |\children\p| \le \doubnum \set X
-        .
-    \end{equation}
-\end{lemma}
-
-\begin{proof}
-    Let $\delta=\covdist p/2$.
-    Recall that the separating invariant ensures that for all nodes $q_1,q_2\in\children p$,
-    $\dist{q_1}{q_2}\le2\delta$.
-    So the set \children p is a $2\delta$-packing of $B(p,2\delta)$.
-    By Lemma \ref{lemma:coverpacking}, this packing can be no larger than the smallest $\delta$-covering,
-    which by definition can be no larger than $\doubnum \set X$.
-\end{proof}
-
-\begin{lemma}
-    The depth of a cover tree is upper bounded by the log of the data set's aspect ratio.
-\end{lemma}
-
-\begin{proof}
-    We will bound the level of the root and bottommost lead nodes.
-
-    Let $p$ be the root of the tree.
-    By the covering invariant, we have that the maximum distance from $p$ to a child is $\covdist{p}=2^\level p$; 
-    the maximum distance to a grandchild is $2^\level p + 2^{level p-1}$;
-    and the maximum distance to a descendent in the $n$th generation is $\sum_{i=0}^{n-1} 2^{\level p-i}$.
-    This distance is upper bounded by $2^{\level p+1}$.
-    So we have that $\level{p}\le\diam{\set X}$.
-    %\begin{equation}
-    %$    2\cdot2^\level{p} = 2\cdot\covdist{p}\le\diam{\set X}$, so $\level{p}\le\log_2\diam{\set X}$.
-    %\end{equation}
-
-    Let $q$ be the bottommost leaf in the tree.
-    We have that $2^\level{\parent{q}} = $
-\end{proof}
 
 \end{document}

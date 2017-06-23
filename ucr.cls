@@ -775,13 +775,14 @@ Dissertation Committee Chair
 %                               Counter OLDCTR must already be defined.
 
 % Must redefine @startsection so that we always get indentation.
-\def\@startsection#1#2#3#4#5#6{\if@noskipsec \leavevmode \fi
-   \par \@tempskipa #4\relax
-   \@afterindenttrue
-   \ifdim \@tempskipa <\z@ \@tempskipa -\@tempskipa \relax\fi
-   \if@nobreak \everypar{}\else
-     \addpenalty{\@secpenalty}\addvspace{\@tempskipa}\fi \@ifstar
-     {\@ssect{#3}{#4}{#5}{#6}}{\@dblarg{\@sect{#1}{#2}{#3}{#4}{#5}{#6}}}}
+%FIXME: is this allowed?
+%\def\@startsection#1#2#3#4#5#6{\if@noskipsec \leavevmode \fi
+%  \par \@tempskipa #4\relax
+%  \@afterindenttrue
+%  \ifdim \@tempskipa <\z@ \@tempskipa -\@tempskipa \relax\fi
+%  \if@nobreak \everypar{}\else
+%    \addpenalty{\@secpenalty}\addvspace{\@tempskipa}\fi \@ifstar
+%    {\@ssect{#3}{#4}{#5}{#6}}{\@dblarg{\@sect{#1}{#2}{#3}{#4}{#5}{#6}}}}
 
 \newcounter {part}
 \newcounter {chapter}

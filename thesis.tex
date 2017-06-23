@@ -51,8 +51,9 @@
 %\usepackage{algorithm2e}
 
 %\usepackage[authordate,bibencoding=auto,strict,backend=biber,natbib]{biblatex-chicago}
-%\usepackage[round]{natbib}   % omit 'round' option if you prefer square brackets
-%\bibliographystyle{plainnat}
+\usepackage[round]{natbib}   % omit 'round' option if you prefer square brackets
+\newcommand{\newblock}{}
+\bibliographystyle{plainnat}
 
 \usepackage{tikz}
 \usepackage{pgfplots}
@@ -76,8 +77,10 @@
 \DeclareMathOperator*{\affspan}{aff}
 \DeclareMathOperator*{\subG}{subG}
 \DeclareMathOperator*{\tr}{tr}
+\DeclareMathOperator*{\E}{\mathbb E}
+\newcommand \dd[1]  { \,\textrm d{#1 }}  
 
-\newcommand{\E}{\mathbb E}
+%\newcommand{\E}{\mathbb E}
 \newcommand{\R}{\mathbb R}
 
 \newcommand{\I}{\mathcal I}
@@ -91,6 +94,8 @@
 \newcommand{\ltwobig}[1]{{\left\lVert {#1} \right\rVert}}
 \newcommand{\lone}[1]{{\lVert {#1} \rVert}_1}
 \newcommand{\lzero}[1]{{\lVert {#1} \rVert}_0}
+\newcommand{\floor}[1]{{\lfloor {#1} \rfloor}}
+\newcommand{\ceil}[1]{{\lceil {#1} \rceil}}
 \newcommand{\proj}[1]{\pi_{{#1}}}
 \newcommand{\prob}[1]{\Pr\left[{#1}\right]}
 
