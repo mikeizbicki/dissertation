@@ -9,7 +9,7 @@
 \newcommand{\distf}{d}
 \newcommand{\diam}[1]{\text{diam}({#1})}
 \newcommand{\codiam}[1]{\text{codiam}({#1})}
-\newcommand{\aspect}[1]{\Delta({#1})}
+\newcommand{\aspect}[1]{\Delta}
 
 \newcommand{\minkdim}{\text{dim}_\text{Mink}}
 \newcommand{\krdim}{\text{dim}_\text{kr}}
@@ -101,34 +101,52 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{What is the dimension of a metric space?}
+\subsection{The dimension of metric spaces}
 
-In this section we introduce two 
+This section introduces three measures of the ``dimension'' of a metric space:
+the expansion constant $\krnum$, the doubling constant $\doubnum$, and the aspect ratio $\aspect{}$.
+Previous analysis of the cover tree relied only on the expansion constant,
+but the analysis in this thesis will instead use the doubling constant and aspect ratio.
+In this section, we will formally define these constants and present their basic properties.
+In particular, we will see that the doubling constant and aspect ratio are more robust measures of size than the expansion constant.
 
-\begin{definition}
-%A ball of radius $\radius$ in a metric space $\set X$ is defined to be
-    We let $B_\set X(x,\radius)$ denote the ball centered around $x$ of radius $r$ in metric space $\set X$.
-    That is,
+Throughout this section we will work with the metric space $(\set X,d)$.
+The set $\set X$ may be either finite or infinite.
+We let $B(x,\delta)$ denote the \emph{ball} centered around $x$ of radius $\delta$. 
+That is,
 \begin{equation}
-B_\set X(x,\radius) = \{ y : y\in\set X, \dist{x}{y} \le \radius \}.
+    B(x,\delta) = \{ x' : x'\in\set X, \dist{x}{x'} \le \delta \}.
 \end{equation}
-\end{definition}
-
-\begin{definition}
-    Let $\set X$ be a metric space, and let $\mu : \{\set X\} \to \R^+$ be a measure on $\set X$.
-    Then the \emph{expansion constant} is defined as
-    \begin{equation}
-        c_\set X = \max_{x\in\set X, \radius\in\R^+} \frac{\mu B_{\set X}(x,2\radius)}{\mu B_{\set X}(x,\radius)}
-        ,
-    \end{equation}
-    and the \emph{expansion dimension} is defined as
-    \begin{equation}
-        \krdim\set X = \log_2 c_\set X
-        .
-    \end{equation}
-\end{definition}
+Let $\mu : \{\set X\} \to \R^+$ be a function that gives an abstract notion of the \emph{volume} of its first argument.%
+\footnote{
+    Formally, $\mu$ is a measure and $\{\set X\}$ is a $\sigma$-algebra on $\set X$.
+    Since we are primarily interested in the properties of finite sets,
+    we will not need to formally use measure theory.
+}
+For example, if $\set X=\R^n$, then $\mu$ could be the standard Euclidean volume,
+and $\mu B(x,\delta) = O(\delta^n)$.
+If $\set X$ is a finite set, then $\mu$ could be the counting measure.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{The expansion dimension}
+
+Then the \emph{expansion constant} is defined as
+\begin{equation}
+    \krnum = \max_{x\in\set X, \delta\in\R^+} \frac{\mu B(x,2\delta)}{\mu B(x,\delta)}
+    ,
+\end{equation}
+and the \emph{expansion dimension} is defined as
+\begin{equation}
+    \krdim\set X = \log_2 c_\set X
+    .
+\end{equation}
+The expansion dimension was introduced by \citet{karger2002finding}.
+Intuitively, it is a reasonable notion of dimensionality because it agrees
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{The doubling dimension}
 
 \begin{definition}
     A $\delta$-covering of a metric space $\set X$ is a set $\{x_1,x_2,...,x_n\} \subseteq \set X$ such that for all $x\in\set X$, there exists an $x_i$ such that $\dist{x}{x_i} < \delta$.
@@ -205,25 +223,62 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
 
 \begin{lemma}[\cite{krauthgamer2004navigating},\cite{gupta2003bounded}]
     Every finite metric $(\set X,d)$ satisfies
+    $\doubnum \le \krnum^4$.
+    %\begin{equation}
+        %\doubdim\set X \le 4\cdot\krdim\set X
+        %.
+    %\end{equation}
+\end{lemma}
+\begin{proof}
+    Fix some ball $B(x,\delta)$.
+    We will show that $B(x,\delta)$ can be covered by $\krnum^4$ balls of radius $\delta$.
+    Let $Y$ be a $\delta$-cover of $B(x,2\delta)$.
+    Then,
     \begin{equation}
-        \doubdim\set X \le 4\cdot\krdim\set X
+        B(x,2\delta) 
+        \subseteq 
+        \bigcup\limits_{y\in Y} B(y,\delta) 
+        \subseteq
+        B(x,4\delta)
+        %~~~~~
+        %\text{and}
+        %~~~~~
+    \end{equation}
+    Also, for every $y\in Y$,
+    \begin{equation}
+        |B(x,4\delta)| 
+        \le 
+        |B(y,8\delta)| 
+        \le 
+        \krnum^4 |B(y,\delta/2)|
         .
     \end{equation}
-\end{lemma}
-%\begin{proof}
-    %Let $k=\krdim(\set X)$.
-    %Fix some ball $B(x,2r)$.
-    %We will show that $B(x,2r)$ can be covered by $k^4$ balls of radius $r$.
-%\end{proof}
+    We also have that $|B(y,\delta/2)|=1$.
+\end{proof}
 
-\begin{definition}
-    Let $\set X$ be a finite metric space.
-    The \emph{diameter} of $\set X$, denoted by $\diam{\set X}$, is the maximum distance between any two points.
-    The \emph{separation} of $\set X$, denoted by $\codiam{\set X}$, is the minimum distance between any two points.
-    The \emph{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, is the ratio of the diameter to the dispersion.
-\end{definition}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{The aspect ratio}
+
+The \emph{diameter} of $\set X$, denoted by $\diam{\set X}$, is the maximum distance between any two points.
+The \emph{codiameter} of $\set X$, denoted by $\codiam{\set X}$, is the minimum distance between any two points.
+The \emph{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, is the ratio of the diameter to the dispersion.
 
 \cite{bartal2003metric} discusses the relation between aspect ratios and tree metrics.
+
+\begin{lemma}[\cite{krauthgamer2004navigating}]
+    For any metric space $\set X$, we have that
+    %\begin{equation}
+    $
+        |\set X| \le \aspect{\set X}^{O(\doubdim{\set X})}.
+    $
+    %\end{equation}
+\end{lemma}
+%\begin{proof}
+    %Assume wlog that the separation distance is 1
+    %(we can rescale all the distances to ensure this).
+    %Then the diameter of $\set X$ is $\aspect{\set X}$.
+%\end{proof}
 
 \begin{example}
     This example shows that there is not necessarily a relationship between the aspect ratio of a metric and either its expansion or doubling constants.
@@ -255,20 +310,6 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
     but the expansion constant is always 2
     and the doubling constant always 1.
 \end{example}
-
-\begin{lemma}[\cite{krauthgamer2004navigating}]
-    For any metric space $\set X$, we have that
-    %\begin{equation}
-    $
-        |\set X| \le \aspect{\set X}^{O(\doubdim{\set X})}.
-    $
-    %\end{equation}
-\end{lemma}
-\begin{proof}
-    %Assume wlog that the separation distance is 1
-    %(we can rescale all the distances to ensure this).
-    %Then the diameter of $\set X$ is $\aspect{\set X}$.
-\end{proof}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -438,11 +479,17 @@ A \emph{simplified cover tree} is a data structure for efficiently representing 
 Each node in the tree corresponds to exactly one point in the space,
 and the tree obeys the following three invariants.
 \begin{enumerate}
-    \item \emph{Leveling invariant}.
+    \item \emph{Leveling invariant}.%
+    \footnote{
+        The original version of the simplified cover tree \citep{izbicki2015faster} had a slightly different leveling invariant.
+        The original version required that the level of a child be exactly one less than the level of the parent.
+        The version used in this thesis is strictly more general and facilitates the runtime analysis of the tree.
+    }
     Every node $\p$ has an associated integer $\level\p$.
     For all nodes $\q\in\children\p$, $\level\q < \level\p$.
-    (Note that $\level{p}$ can be negative or arbitrarily large.
-    In particular, it is not the depth of $p$ in the tree.)
+    Furthermore, $\level p$ cannot be decreased without violating the covering invariant.
+    %(Note that $\level{p}$ can be negative or arbitrarily large.
+    %In particular, it is not the depth of $p$ in the tree.)
     \item \emph{Covering invariant}.
     Every node $\p$ has an associated real number $\covdist\p=2^{\level\p}$.
     For all nodes $\q\in\children\p$, $\dist \p \q \le \covdist\p$.%
@@ -462,20 +509,67 @@ In words, $\maxdist\p$ is the greatest distance from $p$ to any of its descendan
 This value is upper bounded by $2^{\level{p}+1}$, 
 and its exact value can be cached within the data structure.
 
-\begin{remark}
-    The original version of the simplified cover tree \citep{izbicki2015faster} had a slightly different leveling invariant.
-    The original version required that the level of a child be exactly one less than the level of the parent.
-    The version used in this thesis is strictly more general and facilitates the runtime analysis of the tree.
-\end{remark}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Properties of the Simplified Cover Tree}
 
 Before we present algorithms for manipulating the cover tree, 
-we present two lemmas that bound the shape of the cover tree.
+we present two lemmas that bound the shape of the tree.
 These lemmas are a direct consequence of the cover tree's invariants and motivate the invariants' selection.
 This section can be safely skipped by the reader not interested in the details of the tree's runtime analysis.
+
+%%%%%%%%%%%%%%%%%%%%
+
+%\begin{lemma}
+    %\label{lamma:diam}
+    %%For every node $p$ in a cover tree, $\covdist{p}\le\diam{X}/2$.
+    %For every node $p$ in a cover tree, $\maxdist p \ge \covdist p/2$.
+%\end{lemma}
+%
+%\begin{proof}
+    %We have that $\maxdist p$ must be greater than or equal to 
+%\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{lemma}
+    \label{lemma:height}
+    Let $p$ be any non-leaf node in a cover tree.
+    Denote by $\height{p}$ the number of edges between $p$ and its most distant leaf.
+    We have that $\height{p} \le \log_2\aspect{X}$.
+\end{lemma}
+
+\begin{proof}
+    We will show that the following chain of inequalities holds:
+    \begin{equation}
+        \aspect{X} 
+        = \frac{\diam{X}}{\codiam{X}} 
+        \overset{(1)}\ge \frac{\diam{X}}{\covdist{p}/2^{\height p-1}} 
+        \overset{(2)}\ge \frac{\diam{X}}{\diam{X}/2^{\height p}} 
+        = 2^{\height p}
+        .
+    \end{equation}
+    Solving for $\height p$ then gives the desired result.
+    For inequality $(1)$, consider a point $q$ that is exactly $i$ edges away from $p$.
+    By the covering invariant, 
+    \begin{equation}
+        \dist{q}{\parent{q}} 
+        \le 
+        \covdist{\parent{q}}
+        \le 
+        \covdist{\parent{\parent{q}}}/2
+        \le
+        \covdist{p}/2^{i-1}
+        .
+    \end{equation}
+    In particular, if $\ell$ is a leaf node $\height p$ edges away from $p$,
+    then $\codiam{X}\le\dist{p}{\ell}\le2^{\height p-1}$.
+    For inequality (2), observe that there must exist a child $q$ of $p$ such $\dist{p}{q} \ge \covdist{p}/2$.
+    Otherwise, $\level p$ could be reduced by one, which would violate the leveling invariant.
+    Therefore, $\diam{X} \ge \dist{p}{q} \ge \covdist{p}/2$.
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%
 
 \begin{lemma}
     \label{lemma:children}
@@ -504,92 +598,151 @@ This section can be safely skipped by the reader not interested in the details o
     So their union contains at most $\doubnum^2$ elements.
 \end{proof}
 
-\begin{lemma}
-    \label{lemma:height}
-    Let $\height{p}$ denote the number of edges between $p$ and its most distant leaf node.
-    We have that $\height{p} \le \log_2\aspect{X}$.
-\end{lemma}
-
-\begin{proof}
-    Define the recursive family of sets 
-    \begin{equation}
-        Y_i = 
-        \begin{cases}
-            \{p\} & i=0
-            \\
-            \bigcup\limits_{y\in Y_{i-1}} \children{y} & i >0
-        \end{cases}
-    \end{equation}
-    In words, $Y_i$ contains all the data points from the uppermost $i$ levels of the tree,
-    and in particular $Y_{\height p}=X$.
-    Due to the covering invariant, we have that $\codiam{Y_1} \le \covdist{p}/2 \le \diam{X}/2$.
-    By induction, it holds that $\codiam{Y_i} \le \diam{X}/2^i$,
-    and so $\codiam{X} \le \diam{X}/2^{\height p}$.
-    Substituting into the definition of the aspect ratio gives
-    \begin{equation}
-        \aspect{X} 
-        = \frac{\diam{X}}{\codiam{X}} 
-        \ge \frac{\diam{X}}{\diam{X}/2^{\height p}} 
-        = 2^{\height p}
-        .
-    \end{equation}
-    Solving for $\height p$ gives the desired result.
-\end{proof}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Algorithms}
 
 \begin{algorithm}[H]
-\caption{Simplified cover tree insertion}
+%\caption{Simplified cover tree insertion}
 \label{alg:insert}
 
     \vspace{0.1in}
 {\bfseries function} \ctinsert(cover tree $p$, data point $x$)
 
+returns a new cover tree $p'$ that contains $x$ and all the points in $p$
+
 \begin{algorithmic}[1]
     \If {$\dist p x > \covdist p$}
-        \State Create a new node $q$
-        \State $dp(q) \leftarrow x $
-        \State $\level q \leftarrow \ceil{\log_2 d(p,q)}$
-        \State $\children{q} \leftarrow \{p\}$
-        \State\Return $q$
+        \State create a new node $p'$ from data point $x$
+        \State set $\level{p'}$ to  $\ceil{\log_2 d(p,p')}$
+        \State set $\children{p'}$ to $\{p\}$
+        \State\Return $p'$
     \Else
-        \For {$q \in \children{p}$}
-            \If {$\dist q x \le \covdist q$}
-                \State $q' \leftarrow \ctinsert(q,x)$
-                \State $p' \leftarrow p$ with child $q$ replaced with $q'$
-                \State \Return $p'$
-            \EndIf
-        \EndFor
-        \State // x was not added to any child
-        \State\Return $p$ with $x$ added as a child
+        \State let $q = \argmin_{q\in\children{p}} \dist{q}{x}$.
+        \If {$\dist q x > \covdist p/2$}
+            \State let $p' = p$ with $x$ added as a child
+            \State\Return $p'$ 
+        \Else
+            \State let $q' = \ctinsert(q,x)$
+            \State let $p' = p$ with child $q$ replaced by $q'$
+            %\State set $\level{p'}$ to $\ceil{\log_2\argmax_{q\in\children{p'}} d(p',q)}$
+            \State \Return $p'$
+        \EndIf
+        %\For {$q \in \children{p}$ sorted in ascending order by $\dist{q}{x}$}
+            %\If {$\dist q x \le \covdist p/2$}
+                %\State let $q' = \ctinsert(q,x)$
+                %\State let $p' = p$ with child $q$ replaced by $q'$
+                %\State set $\level{p'}$ to $\ceil{\log_2\argmax_{q\in\children{p'}} d(p',q)}$
+                %\State \Return $p'$
+            %\EndIf
+        %\EndFor
+        %\State let $p' = p$ with $x$ added as a child
+        %\State\Return $p'$ 
     \EndIf
 \end{algorithmic}
 \end{algorithm}
 
 \begin{theorem}
-    The runtime of $\ctinsert$ is $O(\doubnum^2\log_2\aspect{X})$.
+If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
+\end{theorem}
+
+\begin{proof}
+    There are three cases, and we consider each in turn.
+    When the first if statement is satisfied, 
+    the covering invariant prevents $x$ from being added as a child of $p$.
+    So we create a new root node $p'$ above $p$.
+    The level of $p'$ is set in line 3 as low as possible to satisfy both the leveling and covering invariants.
+    (The level of $p'$ may in general be arbitrarily higher than the level of $p$.)
+    The separating invariant is satisfied because $p'$ has only one child.
+    Note that every time this if statement triggers,
+    the $\mkfunction{covdist}$ of the root node increases by a factor of two.
+    Thus when we insert a sequence of points with bounded diameter, 
+    eventually the $\mkfunction{covdist}$ will be large enough that this if statement will no longer trigger and points will be forced to be inserted as a children.
+
+    When the first if statement is not satisfied, 
+    $x$ must be inserted underneath $p$.
+    The if statement on line 8 checks if $x$ can be added directly as a child to $p$.
+    Adding new children does not affect either the leveling or covering invariants,
+    and the condition ensures that the separating invariant remains satisfied.
+
+    If $x$ cannot be added as a child, 
+    then it is added to the subtree rooted at $q$ in the else clause beginning on line 11.
+    Recall that the leveling invariant allows the children of $p$ to have arbitrarily small level.
+    So there are two cases we must consider.
+    (Case 1:) When $\level{q}=\level{p}-1$, 
+    the recursive call to $\ctinsert$ on line 9 will return a cover tree rooted at $q$.
+    (The if statement on line 1 will not be triggered in the recursion).
+    So the leveling, covering, and separating invariants of $p$ all remain satisfied.
+    (Case 2:) When $\level{q}<\level{p}-1$, 
+    the recursive call to $\ctinsert$ will return a cover tree with a root node at $x$ instead of $q$.
+    (The if statement on line 1 will be triggered in the recursion).
+    %The leveling invariant of $p$ may be affected if $q$ was the child of maximum distance to $p$.
+    %In particular, $\level{p}$ may need to decrease in order to satisfy the leveling invariant,
+    %and line 11 accounts for this possibility.
+    The covering invariant of $p$ remains satisfied due to the if statement on line 1.
+    %The separating invariant is subtle and depends on the order that children are considered in the for loop.
+    %In particular, let $r\le q$ be a 
+\end{proof}
+
+\begin{theorem}
+    \label{theorem:ctinsert1}
+    The runtime of $\ctinsert$ is $O(\doubnum^2\log\aspect{X})$.
 \end{theorem}
 \begin{proof}
     If $\dist{p}{x} > \covdist{p}$, then the running time is constant.
     Otherwise, the algorithm loops over all the children of $p$ and recurses on at most one child.
-    There at most $\doubnum^2$ children (Lemma \ref{lemma:children}),
+    There are at most $\doubnum^2$ children (Lemma \ref{lemma:children}),
     and the height of the tree is at most $\log_2\aspect{X}$ (Lemma \ref{lemma:height}).
+\end{proof}
+
+\begin{theorem}
+    \label{theorem:ctinsert2}
+    When the data is drawn i.i.d.\ from a well behaved distribution,
+    then the expected runtime of $\ctinsert$ is $O(\doubnum^2\log n)$.
+\end{theorem}
+\begin{proof}
+    Apply Lemma \ref{lemma:Easpect} to Theorem \ref{theorem:ctinsert1}.
 \end{proof}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{algorithm}[H]
-    \caption{Merging cover trees}
+    %\caption{Merging cover trees}
     \label{alg:merge}
     \vspace{0.1in}
-    {\bfseries function} \ctmerge(cover tree $p$, cover tree $q$)
+    {\bfseries function} \ctmerge(cover tree $p$, set of cover trees $R$)
 
 \begin{algorithmic}[1]
+    \For {$r \in R$}
+        \If {$\max_{q\in\children{p}} \dist{r}{q} > \covdist{p}/2$}
+            \State add $r$ as a child of $p$
+            \State remove $r$ from $R$
+        \EndIf
+    \EndFor
+    \For {$q \in \children{p}$}
+        \State let $R_q = \{ r : r\in R, \dist{r}{q} \le \covdist{p}/2\}$
+        \State let $q' = \ctmerge(q,R_q)$
+        \State replace $q$ with $q'$ as a child of $p$
+    \EndFor
 \end{algorithmic}
 \end{algorithm}
 
+    %\State let $\ell = \max_{r\in R} \level r$ 
+    %\If {$\level p > \ell$}
+        %\State let $R_{near} = \{ r : r\in R, \min_{q\in\children{p}}\dist{q}{r} \le \covdist p/2\}$.
+        %\State let $R_{far} = R-R_{near}$
+    %\Else
+        %\State let $R=\{\}$
+        %\For {$r\in R$}
+            %\If {$\level{r}=\ell$}
+                %\State create node $r'$ with same data point as $r$ but level $-\infty$
+                %\State $R' \leftarrow R' \cup \{r'\} \cup \children{r}$
+            %\Else
+                %\State $R' \leftarrow R' \cup \{r\}$
+            %\EndIf
+        %\EndFor
+        %\State $\ctmerge(p,R')$
+    %\EndIf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
