@@ -89,6 +89,44 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\section{Methods for faster nearest neighbors}
+
+Every metric space embeds into an ultrametric space with distortion $O(1/\sqrt \epsilon)$ \citep{abraham2007embedding}.
+\cite{charikar1998approximating} creates tree metrics from finite metric spaces;
+uses this result to create approximation algorithms for several NP-hard problems.
+
+\cite{bartal2003metric} discusses embeddings into Hilbert spaces.
+
+The most recent work is the Fast Library for Approximate Nearest Neighbor (FLANN) \cite{muja2014scalable}.
+FLANN uses the randomized kd-forest and the priority search $k$-means tree.
+
+In Euclidean space, \cite{andoni2014beyond} proposes a new data structure that provably does better than LHS lower bounds.
+Good references inside.
+
+\cite{malkov2014approximate} proposes a data structure for approximate nearest neighbor search using the Daulanay graph (dual graph of the Veronoi diagram).
+They provide no approximation guarantees.
+Seems to have a lot of references on similar approaches though.
+
+\cite{abraham2015approximate} show that approximate nearest neighbor search can be done efficiently when the underlying metric can be represented as a planar graph.
+This is interesting because these graphs need not have bounded doubling dimension or be embeddable in L2 space.
+I should read this paper closer for the exact results.
+
+\cite{andoni2008hardness} provides hardness results for $L_\infty$.
+\cite{andoni2016lower} provides hardness results in a much more general setting for $L_p$ metrics.
+It also has a LOT of good references for LSH results positive and negative.
+
+\cite{gionis1999similarity} introduces the idea of LHS.
+LHS in metric spaces \cite{tellez2010locality,novak2010locality} provide no theoretical guarantees and non-metric spaces \cite{mu2010non}.
+
+Survey of LHS \cite{wang2014hashing} \cite{wang2016learning}
+
+\cite{zezula2006similarity} is a book on metric space similarity search.
+
+\cite{ram2009linear} and \cite{curtin2015plug} improve the runtime bounds of cover trees.
+\cite{curtin2013tree} provides a generic framework for solving distance problems.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \section{Review of Metric Spaces in Machine Learning}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,24 +186,21 @@ Intuitively, it is a reasonable notion of dimensionality because it agrees
 
 \subsubsection{The doubling dimension}
 
-\begin{definition}
-    A $\delta$-covering of a metric space $\set X$ is a set $\{x_1,x_2,...,x_n\} \subseteq \set X$ such that for all $x\in\set X$, there exists an $x_i$ such that $\dist{x}{x_i} < \delta$.
-    The $\delta$-covering number $N_\delta(\set X)$ is the cardinality of the smallest $\delta$-covering.
-    The log of the covering number $\log N_\delta(\set X)$ is called the metric entropy of $\set X$.
-\end{definition}
-
-\begin{definition}
-A $\delta$-packing of a metric space $\set X$ is a set $\{x_1,x_2,...,x_M\} \subseteq \set X$ such that $\dist{x_i}{x_j} > \delta$ for all distinct $i,j\in[M]$.
-The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the largest $\delta$-packing.
-\end{definition}
+A \emph{$\delta$-covering} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_n\} \subseteq \set X$ such that for all $x\in\set X$, there exists an $x_i$ such that $\dist{x}{x_i} < \delta$.
+The \emph{$\delta$-covering number} $N_\delta(\set X)$ is the cardinality of the smallest $\delta$-covering.
+%The log of the covering number $\log N_\delta(\set X)$ is called the \emph{metric entropy} of $\set X$.
+A \emph{$\delta$-packing} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_M\} \subseteq \set X$ such that $\dist{x_i}{x_j} > \delta$ for all distinct $i,j\in[M]$.
+The \emph{$\delta$-packing number} $M_\delta (\set X)$ is the cardinality of the largest $\delta$-packing.
+The following standard lemma shows that packing and covering numbers are equivalent up to a factor of 2.
 
 \begin{lemma}
     \label{lemma:coverpacking}
     For any metric space $\set X$ and any $\delta>0$,
-    \begin{equation}
-        M_{2\delta}(\set X) \le N_\delta(\set X) \le M_{\delta}(\set X)
-        .
-    \end{equation}
+    $M_{2\delta}(\set X) \le N_\delta(\set X) \le M_{\delta}(\set X)$.
+    %\begin{equation}
+        %M_{2\delta}(\set X) \le N_\delta(\set X) \le M_{\delta}(\set X)
+        %.
+    %\end{equation}
 \end{lemma}
 
 \begin{proof}
@@ -260,28 +295,31 @@ The $\delta$-packing number $M_\delta (\set X)$ is the cardinality of the larges
 
 \subsubsection{The aspect ratio}
 
-The \emph{diameter} of $\set X$, denoted by $\diam{\set X}$, is the maximum distance between any two points.
-The \emph{codiameter} of $\set X$, denoted by $\codiam{\set X}$, is the minimum distance between any two points.
-The \emph{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, is the ratio of the diameter to the dispersion.
+We will use the aspect ratio to bound the depth of the cover tree.
+Unlike the covering and expansion constants,
+the aspect ratio should not be thought of as a measure of dimension.
+Instead, it should be thought of as a measure of how evenly spread the points in a metric space are.
+The \emph{diameter} of $\set X$ is the maximum distance between any two points.
+In notation,
+\begin{equation}
+    \diam {\set X} = \max_{x_1,x_2\in\set X} \dist{x_1}{x_2}
+    .
+\end{equation}
+The \emph{codiameter} of $\set X$ is the minimum distance between any two points.
+In notation,
+\begin{equation}
+    \codiam {\set X} = \min_{x_1 \ne x_2\in\set X} \dist{x_1}{x_2}
+    .
+\end{equation}
+The \emph{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, 
+is the ratio of the diameter to the dispersion.
+Sets with small aspect ratio are called ``fat,''
+and sets with large aspect ratio are called ``skinny.''
 
-\cite{bartal2003metric} discusses the relation between aspect ratios and tree metrics.
-
-\begin{lemma}[\cite{krauthgamer2004navigating}]
-    For any metric space $\set X$, we have that
-    %\begin{equation}
-    $
-        |\set X| \le \aspect{\set X}^{O(\doubdim{\set X})}.
-    $
-    %\end{equation}
-\end{lemma}
-%\begin{proof}
-    %Assume wlog that the separation distance is 1
-    %(we can rescale all the distances to ensure this).
-    %Then the diameter of $\set X$ is $\aspect{\set X}$.
-%\end{proof}
+There is little inherent relationship between the aspect ratio and the inherent dimension of a space.
+We emphasize this point with three examples.
 
 \begin{example}
-    This example shows that there is not necessarily a relationship between the aspect ratio of a metric and either its expansion or doubling constants.
     Let $\set Y=\{y_1,...,y_n\}$ be the discrete metric space of size $n$;
     that is,
     \begin{equation}
@@ -292,8 +330,11 @@ The \emph{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, is the ratio 
         \end{cases}
         .
     \end{equation}
-    Then the aspect ratio of $\set Y$ is 1 (i.e. as small as possible),
+    Then the aspect ratio of $\set Y$ is 1 (i.e.\ as small as possible),
     and both the expansion and doubling constants of $\set Y$ are $n-1$ (i.e. arbitrarily large).
+\end{example}
+
+\begin{example}
     Now construct the set $\set Y'=\{y'_1, y'_2, y'_3\}$.
     Let $r>2$, and define the distance function to be
     \begin{equation}
@@ -306,10 +347,30 @@ The \emph{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, is the ratio 
         \end{cases}
         .
     \end{equation}
-    Then the aspect ratio is $r$ (i.e. arbitrarily large),
+    Then the aspect ratio is $r$ (i.e.\ arbitrarily large),
     but the expansion constant is always 2
     and the doubling constant always 1.
 \end{example}
+
+\begin{example}
+    Let $Y=\{\frac 1 2, \frac 1 4, ..., \frac 1 {2^n}\}$,
+    and $\dist{y_1}{y_2}=|y_1-y_2|$.
+    Then the aspect ratio is $2^{n-1}$ (i.e.\ arbitrarily large),
+    the expansion constant is $n-1$ (i.e.\ arbitrarily large),
+    and the doubling constant is 1.
+\end{example}
+
+\begin{lemma}[\cite{krauthgamer2004navigating}]
+    For any metric space $\set X$, we have that
+    $
+        |\set X| \le \aspect{\set X}^{O(\doubdim{\set X})}.
+    $
+\end{lemma}
+%\begin{proof}
+    %Assume wlog that the separation distance is 1
+    %(we can rescale all the distances to ensure this).
+    %Then the diameter of $\set X$ is $\aspect{\set X}$.
+%\end{proof}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -581,7 +642,7 @@ This section can be safely skipped by the reader not interested in the details o
     To simplify notation, we let $\delta=\covdist{p}$.
     %The covering invariant ensures that all the children of $p$ are contained in $B(p,\delta)$,
     The separating invariant ensures that the children of $p$ form a $\delta/2$-packing of $B(p,\delta)$.
-    So by the definition of $M$ and Lemma \ref{lemma:coverpacking}, we have
+    So by the definition of $M_{\delta/2}$ and Lemma \ref{lemma:coverpacking}, we have
     \begin{equation}
         |\children{p}| 
         \le M_{\delta/2}(B(p,\delta)) 
@@ -745,20 +806,67 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
     %\EndIf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 \begin{algorithm}[H]
-    \caption{Simplified cover tree nearest neighbor query}
+    %\caption{Simplified cover tree nearest neighbor query}
     \label{alg:query}
 
     \vspace{0.1in}
-{\bfseries function} \findnn(cover tree $p$, query  point $x$, nearest neighbor so far $y$)
+    {\bfseries function} \findnn(set of cover trees $P$, query  point $x$, nearest neighbor so far $y$)
+
+\begin{algorithmic}[1]
+    \If {$P = \{\}$}
+        \State\Return $y$
+    \Else
+        \For {$p\in P$}
+            \If {$d(p,x) < d(y,x)$}
+                \State $y \leftarrow p$
+            \EndIf
+        \EndFor
+        \State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{y} > \dist{x}{q} - \maxdist{q} \}$
+        \State\Return $\findnn(P',x,y)$
+    \EndIf
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{algorithm}[H]
+    %\caption{Simplified cover tree nearest neighbor query}
+    \label{alg:query}
+
+    \vspace{0.1in}
+    {\bfseries function} \findnn(cover tree $p$, query  point $x$, nearest neighbor so far $y$)
 
 \begin{algorithmic}[1]
     \If {$d(p,x) < d(y,x)$}
         \State $y \leftarrow p$
     \EndIf
-    \For {each child $q$ of $p$ sorted by distance to $x$}
-        \If {$d(y,x) > d(y,q) - \maxdist{q}$} %2^{\level q}$}
+    %\For {each child $q$ of $p$ sorted by distance to $x$}
+    \For {$q\in\children p$ sorted in ascending order by distance to $x$}
+        \If {$d(x,y) > d(x,q) - \maxdist{q}$} 
+            \State $y \leftarrow \findnn(q,x,y)$
+        \EndIf
+    \EndFor
+    \State\Return $y$
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{algorithm}[H]
+    %\caption{Simplified cover tree nearest neighbor query}
+    \label{alg:query}
+
+    \vspace{0.1in}
+    {\bfseries function} \findnn(cover tree $p$, query  point $x$, nearest neighbor so far $y$)
+
+\begin{algorithmic}[1]
+    \If {$d(p,x) < d(y,x)$}
+        \State $y \leftarrow p$
+    \EndIf
+    %\For {each child $q$ of $p$ sorted by distance to $x$}
+    \For {$q\in\children p$ sorted in ascending order by distance to $x$}
+        \If {$d(x,y) > d(x,q) - \maxdist{q}$} 
             \State $y \leftarrow \findnn(q,x,y)$
         \EndIf
     \EndFor
