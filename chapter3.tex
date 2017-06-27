@@ -7,16 +7,16 @@
 \newcommand{\radius}{r}
 \newcommand{\dist}[2]{\distf({#1},{#2})}
 \newcommand{\distf}{d}
-\newcommand{\diam}[1]{\text{diam}({#1})}
-\newcommand{\codiam}[1]{\text{codiam}({#1})}
+\newcommand{\diam}[1]{\textnormal{diam}({#1})}
+\newcommand{\codiam}[1]{\textnormal{codiam}({#1})}
 \newcommand{\aspect}[1]{\Delta}
 
-\newcommand{\minkdim}{\text{dim}_\text{Mink}}
-\newcommand{\krdim}{\text{dim}_\text{kr}}
-\newcommand{\doubdim}{\text{dim}_\text{doub}}
+\newcommand{\minkdim}{\text{dim}_\textnormal{Mink}}
+\newcommand{\krdim}{\text{dim}_\textnormal{kr}}
+\newcommand{\doubdim}{\text{dim}_\textnormal{doub}}
 
-\newcommand{\krnum}{c_\text{kr}}
-\newcommand{\doubnum}{c_\text{doub}}
+\newcommand{\krnum}{c_\textnormal{exp}}
+\newcommand{\doubnum}{c_\textnormal{doub}}
 
 \newcommand{\p}{\ensuremath p}
 \newcommand{\q}{\ensuremath q}
@@ -33,17 +33,17 @@
 % FIXME: should these be changed?
 \newcommand{\nn}[1]{\ensuremath{\ensuremath{{{#1}}_{nn}}}}
 \newcommand{\exprad}[1]{\ensuremath{\ensuremath{2}}}
-\newcommand{\pack}{\ensuremath{\text{\ttfamily pack}}}
-\newcommand{\rmNodes}{\ensuremath{\text{\ttfamily rmNodes}}}
-\newcommand{\findnn}{\ensuremath{\text{\ttfamily findNearestNeighbor}}}
-\newcommand{\ctmerge}{\ensuremath{\text{\ttfamily merge}}}
+\newcommand{\pack}{\ensuremath{\textnormal{\ttfamily pack}}}
+\newcommand{\rmNodes}{\ensuremath{\textnormal{\ttfamily rmNodes}}}
+\newcommand{\findnn}{\ensuremath{\textnormal{\ttfamily findNearestNeighbor}}}
+\newcommand{\ctmerge}{\ensuremath{\textnormal{\ttfamily merge}}}
 \newcommand{\ctinsert}{\ensuremath{\textnormal{\ttfamily insert}}}
-\newcommand{\ctinsertHelper}{\ensuremath{\text{\ttfamily insert\_}}}
-\newcommand{\rebalance}{\ensuremath{\text{\ttfamily rebalance}}}
-\newcommand{\rebalanceHelper}{\ensuremath{\text{\ttfamily rebalance\_}}}
-\newcommand{\mkvar}[1]{\ensuremath{\text{\emph{{#1}}}}}
-\newcommand{\nullvar}{\ensuremath{\textup{\text{\ttfamily null}}}}
-\newcommand{\datapoint}[1]{\ensuremath{\textup{\text{\ttfamily dp}({#1})}}}
+\newcommand{\ctinsertHelper}{\ensuremath{\textnormal{\ttfamily insert\_}}}
+\newcommand{\rebalance}{\ensuremath{\textnormal{\ttfamily rebalance}}}
+\newcommand{\rebalanceHelper}{\ensuremath{\textnormal{\ttfamily rebalance\_}}}
+\newcommand{\mkvar}[1]{\ensuremath{\textnormal{\emph{{#1}}}}}
+\newcommand{\nullvar}{\ensuremath{\textup{\textnormal{\ttfamily null}}}}
+\newcommand{\datapoint}[1]{\ensuremath{\textup{\textnormal{\ttfamily dp}({#1})}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -96,6 +96,10 @@ Every metric space embeds into an ultrametric space with distortion $O(1/\sqrt \
 uses this result to create approximation algorithms for several NP-hard problems.
 
 \cite{bartal2003metric} discusses embeddings into Hilbert spaces.
+\cite{krauthgamer2004measured} shows that any finite metric with $n$ data points can be embedded into Hilbert space with $O(\sqrt{\log\doubnum\log n})$ distortion.
+\cite{neiman2016low} embeds finite metrics into $L_\infty$.
+\cite{abraham2014volume} shows finite embeddings that preserve both distance and volume.
+\cite{bartal2015impossibility} shows that $L_p, p>2$ spaces cannot be embedded.
 
 The most recent work is the Fast Library for Approximate Nearest Neighbor (FLANN) \cite{muja2014scalable}.
 FLANN uses the randomized kd-forest and the priority search $k$-means tree.
@@ -111,9 +115,11 @@ Seems to have a lot of references on similar approaches though.
 This is interesting because these graphs need not have bounded doubling dimension or be embeddable in L2 space.
 I should read this paper closer for the exact results.
 
+\cite{borodin1999lower,barkol2000tighter,panigrahy2008geometric} provides lower bounds and a review of time-space tradeoffs.
 \cite{andoni2008hardness} provides hardness results for $L_\infty$.
 \cite{andoni2016lower} provides hardness results in a much more general setting for $L_p$ metrics.
 It also has a LOT of good references for LSH results positive and negative.
+\cite{p2011unifying} provides a unifying framework for determining lower bounds.
 
 \cite{gionis1999similarity} introduces the idea of LHS.
 LHS in metric spaces \cite{tellez2010locality,novak2010locality} provide no theoretical guarantees and non-metric spaces \cite{mu2010non}.
@@ -124,6 +130,8 @@ Survey of LHS \cite{wang2014hashing} \cite{wang2016learning}
 
 \cite{ram2009linear} and \cite{curtin2015plug} improve the runtime bounds of cover trees.
 \cite{curtin2013tree} provides a generic framework for solving distance problems.
+\cite{clarkson2006nearest} reviews metric space properties and data structures.
+\cite{czumaj2010sublinear} is a survey of sublinear time algorithms in metric spaces.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -811,7 +819,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
     \label{alg:query}
 
     \vspace{0.1in}
-    {\bfseries function} \findnn(set of cover trees $P$, query  point $x$, nearest neighbor so far $y$)
+    {\bfseries function} \findnn(set of cover trees $P$, query  point $x$, nearest neighbor so far $y$, allowable tolerance $\epsilon$)
 
 \begin{algorithmic}[1]
     \If {$P = \{\}$}
@@ -822,11 +830,138 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
                 \State $y \leftarrow p$
             \EndIf
         \EndFor
-        \State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{y} > \dist{x}{q} - \maxdist{q} \}$
-        \State\Return $\findnn(P',x,y)$
+        \State $P' \leftarrow \{\}$
+        \For {$p\in P$}
+            \For {$q \in \children p$}
+                \If {$\dist{x}{q} \le \dist{x}{y}/\epsilon + \maxdist{q}$}
+                    \State $P' \leftarrow P'\cup\{q\}$
+                \EndIf
+            \EndFor
+        \EndFor
+        %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{y} > \dist{x}{q}/\epsilon - \maxdist{q} \}$
+        %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{q} \le \epsilon\cdot\dist{x}{y}+\maxdist{q}\}$
+        \State\Return $\findnn(P',x,y,\epsilon)$
     \EndIf
 \end{algorithmic}
 \end{algorithm}
+
+\begin{definition}
+    Let $\set X$ be a metric space, $X\subset\set X$, and $x$ be in $\set X$ but not $X$.
+    Then the nearest neighbor $y^*\in X$ is defined as $y^*=\argmin_{y\in X} \dist{x}{y}$.
+    An $\epsilon$-nearest neighbor (for $\epsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \epsilon \cdot\dist{x}{y^*}$.
+\end{definition}
+
+\begin{theorem}
+    The return value of $\findnn(\{p\},x,p,\epsilon)$ is an $\epsilon$-approximate nearest neighbor of $x$.
+\end{theorem}
+\begin{proof}
+    The algorithm maintains the invariant that either $y$ is an $\epsilon$-ann,
+    or $P$ contains a tree that contains an $\epsilon$-ann.
+    Since the algorithm only terminates when $P$ is empty,
+    the invariant ensures that the returned value is an $\epsilon$-ann.
+
+    If $y$ is already an $\epsilon$-ann,
+    then the algorithm must return an $\epsilon$-ann because it will only ever update $y$ to be closer to $x$.
+    Assume $y$ is not an $\epsilon$-ann.
+    Then if the root of some subtree in $P$ is an $\epsilon$-ann,
+    the for loop on lines 4-6 will update $y$ to be an $\epsilon$-ann.
+    Otherwise, there must exist an $\epsilon$-ann in some child $q$ of some subtree $p\in P$.
+    Let $\hat y$ denote the $\epsilon$-ann.
+    We have that
+    \begin{equation}
+        \epsilon \cdot \dist{x}{y^*}
+        \le \dist{x}{\hat y} 
+        \le \dist{x}{y} 
+        .
+    \end{equation}
+    Then by the triangle inequality, we have
+    \begin{equation}
+        \label{eq:findnn_condition}
+        \dist{x}{q} 
+        \le \dist{x}{\hat y} + \dist{\hat y}{q}
+        \le \dist{x}{y}/\epsilon + \maxdist{q}
+        .
+    \end{equation}
+    The if statement in line 10 ensures that all nodes satisfying condition \eqref{eq:findnn_condition} will be added to $P_i$,
+    maintaining the invariant.
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{algorithm}[H]
+    %\caption{Simplified cover tree nearest neighbor query}
+    \label{alg:query}
+
+    \vspace{0.1in}
+    {\bfseries function} \findnn(cover tree $p$, query  point $x$, tolerance $\epsilon$)
+
+\begin{algorithmic}[1]
+    %\State let $i=0$, $P_i = \{p\}$, $y=p$
+    \State $y \leftarrow p$
+    \State $i\leftarrow0$
+    \State $P_0 \leftarrow \{p\}$
+    \While {$P_i \ne \{\}$}
+        \For {$p\in P_{i}$}
+            \If {$\dist{p}{x} < \dist{y}{x}$}
+                \State $y \leftarrow p$
+            \EndIf
+        \EndFor
+        \State $P_{i+1}\leftarrow \{\}$
+        \For {$p\in P_{i}$}
+            %\If {$\dist{p}{x} < \dist{y}{x}$}
+                %\State $y \leftarrow p$
+            %\EndIf
+            \For {$q\in\children{p}$}
+                \If {$\dist{x}{q} \le \dist{x}{y}/\epsilon+\maxdist{q}$}
+                    \State $P_i \leftarrow P_i\cup\{q\}$
+                \EndIf
+            \EndFor
+        \EndFor
+        \State $i\leftarrow i+1$
+    \EndWhile 
+    \State \Return y
+\end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+    The runtime of $\findnn$ with $\epsilon \ge 2$ is $O(\doubnum^2\log\aspect{})$.
+\end{theorem}
+\begin{proof}
+    Since the algorithm contains three nested loops, 
+    the total runtime is bounded by the product of the maximum iterations of each loop.
+    The innermost for loop (line 9) executes once per child,
+    which by Lemma \ref{lemma:children} is $O(\doubnum^2)$.
+    The outermost while loop (line 4) executes at most once per level of the tree.
+    To see this, notice that $P_i$ contains only nodes that are $i$ edges away from $p$,
+    and so $P_{\height p+1}$ is guaranteed to be the empty set.
+    By Lemma \ref{lemma:height}, the height of $p$ is $O(\log\aspect{})$.
+    The middle for loop (line 6) executes once for each node in $P_i$.
+    To bound the size of $P_i$, first notice that by the global separating invariant,
+    the distance between each $q_1$ and $q_2$ in $P_i$ must be at least $2^i$. 
+    By our choice of $\epsilon$, we have that all of the $q$ in $P_i$ satisfy
+    \begin{equation}
+        \dist{x}{q} 
+        \le \dist{x}{y}/\epsilon + \maxdist{q}
+        \le \dist{x}{q}/2 + 2^i
+        \le 2^{i+1}
+        .
+    \end{equation}
+    Let $\delta=2^i$.
+    Then $P_i$ is a $\delta$-packing of $B(x,2\delta)$.
+    \begin{equation}
+        |P_i|
+        \le M_\delta(B(x,2\delta))
+        \le N_\delta/2(B(x,2\delta))
+        \le \doubnum^2
+        .
+    \end{equation}
+\end{proof}
+
+\begin{theorem}
+    The runtime of $\findnn$ with $\epsilon=1$ 
+    (i.e. $\findnn$ must return the exact nearest neighbor),
+    is $O(\doubnum^2 ...)$.
+\end{theorem}
 
 %%%%%%%%%%%%%%%%%%%%
 
@@ -851,30 +986,12 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
 \end{algorithmic}
 \end{algorithm}
 
-%%%%%%%%%%%%%%%%%%%%
+\begin{theorem}
+    $\findnn(p,x,\epsilon)$ returns an $\epsilon$-approximate nearest neighbor of $x$.
+\end{theorem}
 
-\begin{algorithm}[H]
-    %\caption{Simplified cover tree nearest neighbor query}
-    \label{alg:query}
-
-    \vspace{0.1in}
-    {\bfseries function} \findnn(cover tree $p$, query  point $x$, nearest neighbor so far $y$)
-
-\begin{algorithmic}[1]
-    \If {$d(p,x) < d(y,x)$}
-        \State $y \leftarrow p$
-    \EndIf
-    %\For {each child $q$ of $p$ sorted by distance to $x$}
-    \For {$q\in\children p$ sorted in ascending order by distance to $x$}
-        \If {$d(x,y) > d(x,q) - \maxdist{q}$} 
-            \State $y \leftarrow \findnn(q,x,y)$
-        \EndIf
-    \EndFor
-    \State\Return $y$
-\end{algorithmic}
-\end{algorithm}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{theorem}
+\end{theorem}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
