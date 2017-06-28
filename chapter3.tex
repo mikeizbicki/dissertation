@@ -12,11 +12,13 @@
 \newcommand{\aspect}[1]{\Delta}
 
 \newcommand{\minkdim}{\text{dim}_\textnormal{Mink}}
-\newcommand{\krdim}{\text{dim}_\textnormal{kr}}
+\newcommand{\krdim}{\text{dim}_\textnormal{exp}}
 \newcommand{\doubdim}{\text{dim}_\textnormal{doub}}
+\newcommand{\dualdim}{\text{dim}_{\textnormal{doub}^*}}
 
 \newcommand{\krnum}{c_\textnormal{exp}}
 \newcommand{\doubnum}{c_\textnormal{doub}}
+\newcommand{\dualnum}{c_{\textnormal{doub}^*}}
 
 \newcommand{\p}{\ensuremath p}
 \newcommand{\q}{\ensuremath q}
@@ -36,6 +38,7 @@
 \newcommand{\pack}{\ensuremath{\textnormal{\ttfamily pack}}}
 \newcommand{\rmNodes}{\ensuremath{\textnormal{\ttfamily rmNodes}}}
 \newcommand{\findnn}{\ensuremath{\textnormal{\ttfamily findNearestNeighbor}}}
+\newcommand{\dualnn}{\ensuremath{\textnormal{\ttfamily dualTreeNN}}}
 \newcommand{\ctmerge}{\ensuremath{\textnormal{\ttfamily merge}}}
 \newcommand{\ctinsert}{\ensuremath{\textnormal{\ttfamily insert}}}
 \newcommand{\ctinsertHelper}{\ensuremath{\textnormal{\ttfamily insert\_}}}
@@ -177,23 +180,58 @@ If $\set X$ is a finite set, then $\mu$ could be the counting measure.
 
 \subsubsection{The expansion dimension}
 
-Then the \emph{expansion constant} is defined as
+The expansion dimension is the most popular notion of dimensionality for bounding the performance of nearest neighbor data structures in metric spaces.
+It was introduced by
+\citet{karger2002finding},
+and has been subsequently used in
+\citet{krauthgamer2004navigating},
+\citet{beygelzimer2006cover},
+\citet{ram2009linear},
+and \citet{curtin2015plug}.
+The \emph{expansion dimension} of a metric space $\set X$ is defined as
 \begin{equation}
-    \krnum = \max_{x\in\set X, \delta\in\R^+} \frac{\mu B(x,2\delta)}{\mu B(x,\delta)}
+    \krdim = \log_2 \krnum
     ,
 \end{equation}
-and the \emph{expansion dimension} is defined as
+where $\krnum$ is called the \emph{expansion constant} and defined as
 \begin{equation}
-    \krdim\set X = \log_2 c_\set X
+    \krnum = \max_{x\in\set X, \delta\in\R^+} \frac{\mu B(x,2\delta)}{\mu B(x,\delta)}
     .
 \end{equation}
-The expansion dimension was introduced by \citet{karger2002finding}.
-Intuitively, it is a reasonable notion of dimensionality because it agrees
+In words, the expansion dimension measures how the volume of a ball changes as you increase the radius.
+The intuition behind why this is a good notion of a metric's dimension is that it agrees with the standard dimension on Euclidean space.
+This is shown formally in the following lemma.
+\begin{lemma}
+    Let $\set X=\R^d$ with the standard $L2$ distance function.
+    Then $\krdim\set X=\Theta(d)$.
+\end{lemma}
+Unfortunately, the expansion dimension is known to have many defects which make runtime bounds less useful.
+In particular:
+The algorithmic consequence of these facts is that runtime bounds based on the expansion dimension are often trivial.
+
+\begin{example}
+    A subset of a metric space may have arbitrarily large expansion dimension compared to the host space.
+\end{example}
+
+\begin{example}
+    Adding a single point to a space may change the expansion dimension by an arbitrary amount.
+\end{example}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsubsection{The doubling dimension}
 
+The doubling dimension is a more robust notion of dimension than the expansion dimension.
+It is well studied in analysis where it is used to measure the dimensionality of fractals.
+Compared with the expansion dimension, however, 
+it has seen relatively little use in the design of data structures.
+The only examples known to the author are \citet{clarkson1997nearest} and \citet{krauthgamer2004navigating}.
+Despite this lack of data structures, the doubling dimension is widely studied in computer science.
+Chapter 32 of \cite{toth2017handbook} provides a survey of how the doubling dimension is used in approximation algorithms for NP-hard problems,
+and Chapter 27 of \cite{shalev2014understanding} shows how the doubling dimension is used to bound the generalization error of machine learning algorithms.
+
+The doubling dimension is closely related to the ideas of covering and packing numbers,
+so we introduce these ideas first.
 A \emph{$\delta$-covering} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_n\} \subseteq \set X$ such that for all $x\in\set X$, there exists an $x_i$ such that $\dist{x}{x_i} < \delta$.
 The \emph{$\delta$-covering number} $N_\delta(\set X)$ is the cardinality of the smallest $\delta$-covering.
 %The log of the covering number $\log N_\delta(\set X)$ is called the \emph{metric entropy} of $\set X$.
@@ -249,22 +287,65 @@ The following standard lemma shows that packing and covering numbers are equival
     %Then $\minkdim \set X = 0$.
 %\end{example}
 
-\begin{definition}
-    The \emph{doubling number} of a metric space is
-    \begin{equation}
-        \doubnum(\set X) = \max_{x\in\set X, \radius\in\R^+} N_\radius(B_{\set X}(x,2\radius))
-        .
-    \end{equation}
-    The \emph{doubling dimension} of a metric space $\set X$ is the log of the doubling number.
-    Specifically,
-    \begin{equation}
-        \doubdim \set X = \log \doubnum\set X = \max_{x\in\set X, \radius\in\R^+} \log N_\radius(B_{\set X}(x,2\radius))
-        .
-    \end{equation}
-\end{definition}
-\cite{gupta2003bounded}
+The \emph{doubling dimension} of a metric space $\set X$ is defined to be
+\begin{equation}
+    \doubdim = \log_2 \doubnum
+    ,
+\end{equation}
+where $\doubnum$ is called the \emph{doubling constant} and is defined to be
+\begin{equation}
+    \doubnum = \max_{x\in\set X, \radius\in\R^+} N_\radius(B_{\set X}(x,2\radius))
+    .
+\end{equation}
+Whereas the expansion dimension measures how the volume of a ball changes as the radius changes,
+the doubling dimension measures how the packing number of a ball changes.
+The duality between covering and packing motivates a novel definition of the 
+This minor change fixes many of the problems with the doubling dimension.
+As with the expansion dimension, the doubling dimension is good notion of a metric's dimension because it agrees with the standard dimension on Euclidean space:
+\begin{lemma}
+    Let $\set X=\R^d$ with the standard $L2$ distance function.
+    Then $\doubdim\set X=\Theta(d)$.
+\end{lemma}
 
-\begin{lemma}[\cite{krauthgamer2004navigating},\cite{gupta2003bounded}]
+\noindent
+The doubling dimension, however, is more robust as shown in the following lemma.
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{lemma}
+    Let $\set X$ be a metric space, and $X\subset\set X$.
+    Then,
+    \begin{equation}
+        \label{eq:doubnuminclusion}
+        %\doubdim\set X \ge \doubdim X,
+        \doubnum\set X \ge \doubnum X,
+    \end{equation}
+    and
+    \begin{equation}
+        \label{eq:doubnumplusone}
+        \doubnum (X\cup\{x\}) \le \doubnum X + 1.
+    \end{equation}
+\end{lemma}
+
+\begin{proof}
+    To prove \eqref{eq:doubnuminclusion},
+    let $x$ be a point in $\set X$ and $\delta\in\mathbb R^+$.
+    Then any valid $\delta$-packing of $B_{\set X_1}(x,2\delta)$ is also a valid $\delta$-packing of $B_{\set X_2}(x,2\delta)$.
+
+    To prove \eqref{eq:doubnumplusone},
+    let $p$ be a maximal $\delta$-packing of $\set X$.
+    Assume for contradiction that there exists a $\delta$-packing $p'$ of $\set X\cup\{x\}$ such that $|p'| > |p| + 1$.
+    If $x\not\in p'$, then $p'$ is a $\delta$-packing of $\set X$.
+    But $|p'| > |p|$, which violates the assumption that $p$ is maximal.
+    If $x\in p$, then the set $p'-\{x\}$ is a packing of $\set X$.
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\noindent
+\citet{gupta2003bounded} and \cite{krauthgamer2004navigating} provide the following lemma relating the size of the expansion and doubling dimensions.
+
+\begin{lemma}
     Every finite metric $(\set X,d)$ satisfies
     $\doubnum \le \krnum^4$.
     %\begin{equation}
@@ -986,12 +1067,139 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
 \end{algorithmic}
 \end{algorithm}
 
-\begin{theorem}
-    $\findnn(p,x,\epsilon)$ returns an $\epsilon$-approximate nearest neighbor of $x$.
-\end{theorem}
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{algorithm}[H]
+    %\caption{Simplified cover tree nearest neighbor query}
+    \label{alg:dualnn}
+
+    \vspace{0.1in}
+    {\bfseries function} \dualnn(set of cover trees $P$, set of cover trees $R$, tolerance $\epsilon$)
+
+    finds all the nearest neighbors of $P$ in $R$
+
+\begin{algorithmic}[1]
+    \If {$\level P \ge \level R$}
+        %\State $P' \leftarrow \{\}$
+        \For {$p\in P$}
+            \State $\dualnn(\children{p},R,\epsilon)$
+            %\If {$\level p = \level P$}
+                %\State $P' \leftarrow P' \cup \children{p}$
+                %\For {$r\in R$}
+                    %\If {$nn[p] \le$}
+                        %\State
+                    %\EndIf
+                %\EndFor
+            %\Else
+                %\State $P' \leftarrow P' \cup \{p\}$
+            %\EndIf
+        \EndFor
+        %\State $\dualnn(P',R,\epsilon)$
+    \Else
+        \State $R' \leftarrow \{\}$
+        \For {$r\in R$}
+            %\If {$\level r = \level R$}
+                %\State $R' \leftarrow R' \cup \children{r}$
+                \For {$p\in P$}
+                    \If {$\dist{r}{p} \le \dist{nn[p]}{p}$}
+                        \State $nn[p] \leftarrow r$
+                    \EndIf
+                    \If {$\maxdist{p} \le \dist{r}{p}/\epsilon+\maxdist{r}$}
+                        \State $R' \leftarrow R' \cup \{r\}$
+                    \EndIf
+                \EndFor
+            %\Else
+                %\State $R' \leftarrow R' \cup \{r\}$
+            %\EndIf
+        \EndFor
+        \State $\dualnn(P,R',\epsilon)$
+    \EndIf
+\end{algorithmic}
+\end{algorithm}
 
 \begin{theorem}
+    Let $p^*$ and $r^*$ be the root of two cover trees.
+    After running $\dualnn(\{p^*\},\{r^*\},\epsilon)$,
+    $nn[q]$ contains an $\epsilon$-approximate nearest neighbor of $q$ in $r$ for all $q$ in $p$.
 \end{theorem}
+
+\begin{proof}
+    We will show that for every node $p$ in $p^*$,
+    $\dualnn$ will be called with $p\in P$ and some $\epsilon$-ann in $R$.
+    When this happens, the if statement on line 8 will ensure that $nn[p]$ gets updated to a $\epsilon$-ann.
+\end{proof}
+
+\begin{theorem}
+    Let $p$ and $r$ be the root of two cover trees.
+    The runtime of $\dualnn(\{p\},\{r\},\epsilon)$ for all $\epsilon\ge2$ is $O(\doubnum^4\log\aspect{})$.
+\end{theorem}
+\begin{proof}
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{algorithm}[H]
+    %\caption{Simplified cover tree nearest neighbor query}
+    \label{alg:dualnn}
+
+    \vspace{0.1in}
+    {\bfseries function} \dualnn(vector of set of cover trees $V$, return value $r$)
+
+\begin{algorithmic}[1]
+    %\State let $P=\argmax_{P\in\set P} \level{P}$
+    \State let $m$ be the size of $V$
+    \State $i^* \leftarrow \argmax_{i\in[m]} \level{V[i]}$
+    \State $P \leftarrow V[i^*]$
+    \State $P' \leftarrow \{\}$
+    \State $r' \leftarrow r$
+    \For {$p\in P$}
+        \If {$\level p = \level P$}
+            %\State $P' \leftarrow P' \cup \children{p}$
+            \For {$q \in \children p$}
+                \State $r' \leftarrow \mkfunction{updateReturnValue}(r)$
+                \If {\textbf{not} $\mkfunction{prune}(q)$}
+                    \State $P' \leftarrow P' \cup \{q\}$
+                \EndIf
+            \EndFor
+        \Else
+            \State $P' \leftarrow P' \cup \{p\}$
+        \EndIf
+    \EndFor
+    %\State $\set P' \leftarrow \set P - \{P\} \cup\{P'\}$
+    \State $V[i^*] \leftarrow P'$
+    \State $\dualnn(\set P')$
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\begin{algorithm}[H]
+    %\caption{Merging cover trees}
+    \label{alg:merge}
+    \vspace{0.1in}
+    {\bfseries function} \ctmerge(set of cover trees $P$, set of cover trees $R$)
+
+\begin{algorithmic}[1]
+    \State $R' \leftarrow R$
+    \For {$p\in P$}
+        \State $R_p \leftarrow \{\}$
+    \EndFor
+    \For {$r\in R'$}
+        \State $p \leftarrow \argmin_{p\in P} \dist{p}{r}$
+        \State $R_p \leftarrow R_p \cup \{r\}$
+    \EndFor
+    \For {$p \in P$}
+        \State $p' \leftarrow p$
+        \For {$r \in R_p$}
+            \State $a \leftarrow \argmax_{q \in\children{p'}} \dist{q}{r}$
+            \If {$\covdist{p}/2 \le a$}
+                \State $p' \leftarrow p'$ with $r$ added as a child
+            \EndIf
+        \EndFor
+    \EndFor
+\end{algorithmic}
+\end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
