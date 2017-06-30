@@ -31,6 +31,7 @@
 \newcommand{\descendants}[1]{\mkfunction{descendants}({#1})}
 \newcommand{\maxdist}[1]    {\mkfunction{maxdist}({#1})}
 \newcommand{\height}[1]     {\mkfunction{height}({#1})}
+\newcommand{\data}[1]         {\mkfunction{dp}({#1})}
 
 % FIXME: should these be changed?
 \newcommand{\mkprocedure}[1]{\ifmmode \textnormal{\ttfamily {#1}}}
@@ -50,7 +51,7 @@
 \newcommand{\rebalanceHelper}{\ensuremath{\textnormal{\ttfamily rebalance\_}}}
 \newcommand{\mkvar}[1]{\ensuremath{\textnormal{\emph{{#1}}}}}
 \newcommand{\nullvar}{\ensuremath{\textup{\textnormal{\ttfamily null}}}}
-\newcommand{\datapoint}[1]{\ensuremath{\textup{\textnormal{\ttfamily dp}({#1})}}}
+%\newcommand{\datapoint}[1]{\ensuremath{\textup{\textnormal{\ttfamily dp}({#1})}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -803,29 +804,125 @@ This section can be safely skipped by the reader not interested in the details o
 
 \subsection{Algorithms}
 
+\subsubsection{Inserting a single point}
+
+The $\ctinsert$ function takes as input a cover tree $p$ and data point $x$,
+and returns a new cover tree containing all the data points in $p$ and $x$.
+$\ctinsert$ is a simple wrapper around the more complex helper function $\ctinsertloop$.
+$\ctinsert$ first checks to see whether $x$ is too far away from $p$ to be inserted as a child.
+If so, it creates a new tree rooted at $x$,
+sets $p$ as its child,
+and sets the level to satisfy the covering invariant.
+Otherwise, it calls $\ctinsertloop$ to insert $x$ into $p$.
+\begin{pseudocode}{\ctinsert(cover tree $p$, data point $x$)}
+    \If {$\dist{p}{x} > \covdist{p}$}
+        \State \Return node(data=$x$,level=$\ceil{\log_2 \dist{p}{x}}$,children=$\{p\}$)
+    \Else
+        %\State \Return node(data=data($p$),level=$\level p$,children=$\ctinsertloop(\children{p},x)$)
+        \State \Return the single tree in the set returned by $\ctinsertloop(\{p\},x)$
+        \label{ctinsert:line:ctinsertloop}
+        %\State let $P = \ctinsertloop(\children{p}, x)$
+        %\State let $p'$ be the node $p$ with its children set to $P$
+        %\State \Return $p'$
+    \EndIf
+\end{pseudocode}
+\noindent
+$\ctinsertloop$ is a recursive helper function. 
+Given a set of cover trees $P$, 
+$\ctinsertloop$ returns a new set $P'$ equal to $P$ except that one tree in $P'$ has been modified to contain $x$.
+For example, when $\ctinsertloop(\{p\},x)$ is called in line \ref{ctinsert:line:ctinsertloop} above,
+we are guaranteed to return a set containing a single tree rooted at $\data{p}$.
+%This property ensures that the node created on line 4 of $\ctinsert$ will obey the separating invariant.
+There are two cases.
+In the first case, $x$ can be inserted directly as a child of some $p\in P$.
+This is shown in the first half of the pseudocode below.
+\begin{pseudocode}{\ctinsertloop(set of cover trees $P$, data point $x$)}
+    \State let $Q = \{ q : q \in \children{p}, p\in P\}$
+    \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
+    \If {$\dist{\hat q}{x} \ge \covdist{\hat q}$}
+        \State let $\hat p = \argmin_{p\in P} \dist{p}{x}$
+        \State let $\hat p' = \hat p$ with $x$ added as a child
+        \State \Return $\big(P\setminus\{\hat p\}\big) \cup \{\hat p'\}$
+    \algstore{insert}
+\end{pseudocode}
+\noindent
+In the second case, $x$ cannot be inserted as a child because this would violate the separating invariant.
+So we select the closest child of $p$, and insert $x$ into that child.
+There is a fair amount of booking for this case.
+\begin{pseudocode*}
+    \algrestore{insert}
+    \Else
+        \State let $Q_x = \{q : q\in Q, \dist{q}{x} \le \covdist{q}\}$
+        \State let $Q' = \ctinsertloop(Q_x, x)$
+        \State let $q$   be the unique element of $Q  \setminus(Q\cap Q_x)$
+        \State let $q_x$ be the unique element of $Q_x\setminus(Q\cap Q_x)$
+        \State let $p_q$ be the element of $P$ with $q$ as its child
+        \State let $p_{q_x}$ be the node $p_q$ with child $q$ replaced by $q_x$
+        \State \Return $\big(P\setminus\{p_q\}\big) \cup \{p_{q_x}\}$
+    \EndIf
+\end{pseudocode*}
+
+\ignore{
+%\begin{algorithm}[H]
+%\caption{Single point insertion}
+%\label{alg:insert}
+
+%\vspace{0.1in}
+\noindent
+{\bfseries function} \ctinsert(cover tree $p$, data point $x$)
+\begin{algorithmic}[1]
+    \State let $Q = \{ q : q \in \children{p}, p\in P\}$
+    \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
+    \algstore{insert}
+\end{algorithmic}
+
+    \noindent
+    %\hspace{-0.3in}
+\begin{algorithmic}[1]
+    \algrestore{insert}
+    \If {$\dist{p}{x} > \covdist{p}$}
+        \State \Return node(data=$x$,level=$\ceil{\log_2 \dist{p}{x}}$,children=$\{p\}$)
+    \Else
+        \If {$\dist{\hat q}{x} \ge \covdist{\hat q}$}
+            \State let $\hat p = \argmin_{p\in P} \dist{p}{x}$
+            \State let $\hat p' = \hat p$ with $x$ added as a child
+            \State \Return $\big(P\setminus\{\hat p\}\big) \cup \{\hat p'\}$
+        \Else
+            \State let $Q_x = \{q : q\in Q, \dist{q}{x} \le \covdist{q}\}$
+            \State let $Q' = \ctinsertloop(Q_x, x)$
+            \State let $q$   be the unique element of $Q  \setminus(Q\cap Q_x)$
+            \State let $q_x$ be the unique element of $Q_x\setminus(Q\cap Q_x)$
+            \State let $p_q$ be the element of $P$ with $q$ as its child
+            \State let $p_{q_x}$ be the node $p_q$ with child $q$ replaced by $q_x$
+            \State \Return $\big(P\setminus\{p_q\}\big) \cup \{p_{q_x}\}$
+        \EndIf
+    \EndIf
+\end{algorithmic}
+%\end{algorithm}
+
+
 \begin{algorithm}[H]
-%\caption{Simplified cover tree insertion}
+\caption{Single point insertion}
 \label{alg:insert}
     \vspace{0.1in}
 {\bfseries function} \ctinsert(cover tree $p$, data point $x$)
 
 \begin{algorithmic}[1]
     \If {$\dist{p}{x} > \covdist{p}$}
-        \State create a node node $x$ ...
-        \State \Return $x$
+        \State \Return node(data=$x$,level=$\ceil{\log_2 \dist{p}{x}}$,children=$\{p\}$)
     \Else
         \State \Return $\ctinsertloop(\children{p}, x)$
     \EndIf
 \end{algorithmic}
 
-    \vspace{0.1in}
+    %\vspace{0.1in}
 {\bfseries function} \ctinsertloop(set of cover trees $P$, data point $x$)
 
 \begin{algorithmic}[1]
     \State let $Q = \{ q : q \in \children{p}, p\in P\}$
     \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
-    \State let $\hat p = \argmin_{p\in P} \dist{p}{x}$
     \If {$\dist{\hat q}{x} \ge \covdist{\hat q}$}
+        \State let $\hat p = \argmin_{p\in P} \dist{p}{x}$
         \State let $\hat p' = \hat p$ with $x$ added as a child
         \State \Return $\big(P\setminus\{\hat p\}\big) \cup \{\hat p'\}$
     \Else
@@ -1438,6 +1535,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
     \EndFor
 \end{algorithmic}
 \end{algorithm}
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

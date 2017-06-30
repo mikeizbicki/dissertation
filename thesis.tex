@@ -41,7 +41,10 @@
 \usepackage{subfiles}
 \usepackage{lipsum}
 \usepackage{algorithm}
-\usepackage[noend]{algpseudocode}
+%\usepackage[noend,algcompatible]{algpseudocode}
+%\usepackage[noend]{algpseudocode}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
 \usepackage{tabularx}
 \usepackage{booktabs}
 
@@ -68,6 +71,56 @@
 
 \let\emph\relax % there's no \RedeclareTextFontCommand
 \DeclareTextFontCommand{\emph}{\bfseries}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage[breakable, theorems, skins]{tcolorbox}
+\newenvironment{codebox}{
+    \vspace{-0.1in}
+    \begin{tcolorbox}[   %% Adjust the following parameters at will.
+            enhanced,
+            breakable,
+            colback=blue!5,
+            left=0pt,
+            right=0pt,
+            top=0pt,
+            bottom=0pt,
+            colback=blue!5,
+            colframe=blue!5,
+            %borderline north={2pt}{-2pt}{blue},
+            %borderline north={2pt}{-2pt}{blue}
+            width=\dimexpr\textwidth\relax, 
+            enlarge left by=0mm,
+            boxsep=5pt,
+            arc=0pt,outer arc=0pt,
+            ]
+    }
+    {
+    \end{tcolorbox}
+    }
+%\usepackage{mdframed}
+%\newmdenv[linecolor=blue,backgroundcolor=blue!5,roundcorner=5in]{codebox}
+
+\newenvironment{pseudocode}[1]{
+    \begin{codebox}
+    \noindent
+    {\bfseries function} {#1}
+
+    \begin{algorithmic}[1]
+    }
+    {
+    \end{algorithmic}
+    \end{codebox}
+    }
+
+\newenvironment{pseudocode*}{
+    \begin{codebox}
+    \begin{algorithmic}[1]
+    }
+    {
+    \end{algorithmic}
+    \end{codebox}
+    }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
