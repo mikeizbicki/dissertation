@@ -23,7 +23,7 @@
 \newcommand{\p}{\ensuremath p}
 \newcommand{\q}{\ensuremath q}
 %\newcommand{\varfont}[1]{\ensuremath{\textup{\text{{#1}}}}}
-\newcommand{\mkfunction}[1]{\ensuremath{\text{{#1}}}}
+\newcommand{\mkfunction}[1]{\ifmmode{\text{{#1}}}}
 \newcommand{\level}[1]      {\mkfunction{level}({#1})}
 \newcommand{\parent}[1]     {\mkfunction{parent}({#1})}
 \newcommand{\children}[1]   {\mkfunction{children}({#1})}
@@ -33,6 +33,10 @@
 \newcommand{\height}[1]     {\mkfunction{height}({#1})}
 
 % FIXME: should these be changed?
+\newcommand{\mkprocedure}[1]{\ifmmode \textnormal{\ttfamily {#1}}}
+\newcommand{\mergeinsert}{\mkprocedure{merge\_insert}}
+\newcommand{\ctmergeloop}{\mkprocedure{merge\_loop}}
+
 \newcommand{\nn}[1]{\ensuremath{\ensuremath{{{#1}}_{nn}}}}
 \newcommand{\exprad}[1]{\ensuremath{\ensuremath{2}}}
 \newcommand{\pack}{\ensuremath{\textnormal{\ttfamily pack}}}
@@ -41,7 +45,7 @@
 \newcommand{\dualnn}{\ensuremath{\textnormal{\ttfamily dualTreeNN}}}
 \newcommand{\ctmerge}{\ensuremath{\textnormal{\ttfamily merge}}}
 \newcommand{\ctinsert}{\ensuremath{\textnormal{\ttfamily insert}}}
-\newcommand{\ctinsertHelper}{\ensuremath{\textnormal{\ttfamily insert\_}}}
+\newcommand{\ctinsertloop}{\ensuremath{\textnormal{\ttfamily insert\_loop}}}
 \newcommand{\rebalance}{\ensuremath{\textnormal{\ttfamily rebalance}}}
 \newcommand{\rebalanceHelper}{\ensuremath{\textnormal{\ttfamily rebalance\_}}}
 \newcommand{\mkvar}[1]{\ensuremath{\textnormal{\emph{{#1}}}}}
@@ -136,6 +140,15 @@ Survey of LHS \cite{wang2014hashing} \cite{wang2016learning}
 \cite{clarkson2006nearest} reviews metric space properties and data structures.
 \cite{czumaj2010sublinear} is a survey of sublinear time algorithms in metric spaces.
 
+The method of compression was introduced by \citet{hart1968condensed}.
+This problem is known to be NP-hard \citep{zukhba2010np}.
+Hart gave a heuristic that ran in time $O(n^3)$,
+and\cite{angiulli2005fast} improved this to $O(n^2)$.
+\cite{gottlieb2014near} gave the first sample compression scheme with a bound,
+and they show a lower bound that nearly matches their result.
+
+Nearest neighbor asymptotics first given by \citet{cover1967nearest}.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Review of Metric Spaces in Machine Learning}
@@ -202,7 +215,7 @@ In words, the expansion dimension measures how the volume of a ball changes as y
 The intuition behind why this is a good notion of a metric's dimension is that it agrees with the standard dimension on Euclidean space.
 This is shown formally in the following lemma.
 \begin{lemma}
-    Let $\set X=\R^d$ with the standard $L2$ distance function.
+    Let $\set X=\R^d$ with the standard $L_2$ distance function.
     Then $\krdim\set X=\Theta(d)$.
 \end{lemma}
 Unfortunately, the expansion dimension is known to have many defects which make runtime bounds less useful.
@@ -221,14 +234,33 @@ The algorithmic consequence of these facts is that runtime bounds based on the e
 
 \subsubsection{The doubling dimension}
 
-The doubling dimension is a more robust notion of dimension than the expansion dimension.
-It is well studied in analysis where it is used to measure the dimensionality of fractals.
-Compared with the expansion dimension, however, 
-it has seen relatively little use in the design of data structures.
-The only examples known to the author are \citet{clarkson1997nearest} and \citet{krauthgamer2004navigating}.
-Despite this lack of data structures, the doubling dimension is widely studied in computer science.
-Chapter 32 of \cite{toth2017handbook} provides a survey of how the doubling dimension is used in approximation algorithms for NP-hard problems,
-and Chapter 27 of \cite{shalev2014understanding} shows how the doubling dimension is used to bound the generalization error of machine learning algorithms.
+The term doubling dimension was first used by \citet{gupta2003bounded} in their study of low dimensional embeddings for nearest neighbor queries,
+but the main idea was introduced by \citet{assoud1979etude} to study fractals.%
+\footnote{
+    There are many terms in the literature with essentially the same meaning as the doubling dimension.
+    For example, the terms Assoud dimension and Minkowski dimensions are both used in fractal geometry;
+    and the terms covering number, packing number, $\epsilon$-nets, and metric entropy are all used in computer science. 
+}
+The doubling dimension is more robust than the expansion dimension,
+so runtime bounds in terms of the doubling dimension are more useful. 
+Unfortunately, they are harder to prove.
+Theorem \ref{} at the end of this section shows the novel result that there is no efficient data structure for exact nearest neighbor queries even in metrics with low doubling dimension.
+
+In the context of machine learning, the doubling dimension has found use both statistically and algorithmically.
+Statistically, the doubling dimension is a standard tool for proving regret bounds.
+For example, \citet{luxburg2004distance} uses the doubling dimension to provide the first large margin bounds for classifiers in metric spaces,
+and Chapter 27 of \cite{shalev2014understanding} shows how to bound the Rademacher complexity of a classifier using the doubling dimension.
+A particularly relevant work in this line is \citet{kontorovich2015bayes},
+which uses the doubling dimension to derive the first Bayes-consistent 1-nearest neighbor algorithm.
+Algorithmically, the doubling dimension is used to develop approximation algorithms.
+Chapter 32 of \cite{toth2017handbook} provides a survey of how the doubling dimension is used to approximate a variety of NP-hard problems.
+In the context of machine learning, \citet{gottlieb2014near} shows the first approximation algorithm for sample compression,
+and
+\citet{gottlieb2014efficient} and \citet{gottlieb2017efficient} both create efficiently realizable approximation algorithms for classification in metric spaces.
+Little recent work on nearest neighbor data structures has used doubling dimension.
+The only examples known to the author are \citet{clarkson1997nearest}\footnote{Clarkson refers to the doubling dimension by an essentially equivalent concept he calls the $\gamma$-dominator bound.} and \citet{krauthgamer2004navigating}.
+Theorem \ref{} at the end of this section may explain why.
+
 
 The doubling dimension is closely related to the ideas of covering and packing numbers,
 so we introduce these ideas first.
@@ -237,18 +269,18 @@ The \emph{$\delta$-covering number} $N_\delta(\set X)$ is the cardinality of the
 %The log of the covering number $\log N_\delta(\set X)$ is called the \emph{metric entropy} of $\set X$.
 A \emph{$\delta$-packing} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_M\} \subseteq \set X$ such that $\dist{x_i}{x_j} > \delta$ for all distinct $i,j\in[M]$.
 The \emph{$\delta$-packing number} $M_\delta (\set X)$ is the cardinality of the largest $\delta$-packing.
-The following standard lemma shows that packing and covering numbers are equivalent up to a factor of 2.
+The covering number and packing number of a set are closely related.
+We will make heavy use of the following lemma in the analysis of the cover tree.
 
 \begin{lemma}
     \label{lemma:coverpacking}
     For any metric space $\set X$ and any $\delta>0$,
-    $M_{2\delta}(\set X) \le N_\delta(\set X) \le M_{\delta}(\set X)$.
-    %\begin{equation}
-        %M_{2\delta}(\set X) \le N_\delta(\set X) \le M_{\delta}(\set X)
-        %.
-    %\end{equation}
+    %$M_{2\delta}(\set X) \le N_\delta(\set X) \le M_{\delta}(\set X)$.
+    \begin{equation}
+        M_{2\delta}(\set X) \le N_\delta(\set X) \le M_{\delta}(\set X)
+        .
+    \end{equation}
 \end{lemma}
-
 \begin{proof}
     To prove the first inequality, let $P$ be a $2\delta$-packing and $C$ be a $\delta$-cover of $\set X$.
     For every point $p\in P$, there must exist a $c\in C$ such that $\dist{p}{c}\le\delta$.
@@ -299,16 +331,19 @@ where $\doubnum$ is called the \emph{doubling constant} and is defined to be
 \end{equation}
 Whereas the expansion dimension measures how the volume of a ball changes as the radius changes,
 the doubling dimension measures how the packing number of a ball changes.
-The duality between covering and packing motivates a novel definition of the 
 This minor change fixes many of the problems with the doubling dimension.
-As with the expansion dimension, the doubling dimension is good notion of a metric's dimension because it agrees with the standard dimension on Euclidean space:
+%As with the expansion dimension, the doubling dimension is good notion of a metric's dimension because it agrees with the standard dimension on Euclidean space:
+The following lemma shows that the doubling dimension (like the expansion dimension) agrees with the dimension in Euclidean space.
 \begin{lemma}
-    Let $\set X=\R^d$ with the standard $L2$ distance function.
+    \label{lemma:doubleEuclidean}
+    Let $\set X=\R^d$ with the standard $L_2$ distance function.
     Then $\doubdim\set X=\Theta(d)$.
 \end{lemma}
-
 \noindent
-The doubling dimension, however, is more robust as shown in the following lemma.
+The proof of Lemma \ref{lemma:doubleEuclidean} follows by an explicit calculation of the volume of a ball in $\mathbb{R}^d$.
+The proof is not especially interesting, and so is omitted.
+The major advantage of the doubling dimension over the expansion dimension is its robustness,
+as shown in the following two lemmas.
 
 %%%%%%%%%%%%%%%%%%%%
 
@@ -318,26 +353,42 @@ The doubling dimension, however, is more robust as shown in the following lemma.
     \begin{equation}
         \label{eq:doubnuminclusion}
         %\doubdim\set X \ge \doubdim X,
-        \doubnum\set X \ge \doubnum X,
+        \doubnum X \le \doubnum \set X.
     \end{equation}
-    and
+\end{lemma}
+
+\begin{proof}
+    %To prove \eqref{eq:doubnuminclusion},
+    %let $x$ be a point in $\set X$ and $\delta\in\mathbb R^+$.
+    %Then any valid $\delta$-packing of $B_{\set X_1}(x,2\delta)$ is also a valid $\delta$-packing of $B_{\set X_2}(x,2\delta)$.
+%
+\end{proof}
+
+\begin{lemma}
+    Let $\set X$ be a metric space, $X\subset\set X$, and $x\in\set X$.
+    Then,
     \begin{equation}
         \label{eq:doubnumplusone}
         \doubnum (X\cup\{x\}) \le \doubnum X + 1.
     \end{equation}
 \end{lemma}
-
 \begin{proof}
-    To prove \eqref{eq:doubnuminclusion},
-    let $x$ be a point in $\set X$ and $\delta\in\mathbb R^+$.
-    Then any valid $\delta$-packing of $B_{\set X_1}(x,2\delta)$ is also a valid $\delta$-packing of $B_{\set X_2}(x,2\delta)$.
-
-    To prove \eqref{eq:doubnumplusone},
-    let $p$ be a maximal $\delta$-packing of $\set X$.
-    Assume for contradiction that there exists a $\delta$-packing $p'$ of $\set X\cup\{x\}$ such that $|p'| > |p| + 1$.
-    If $x\not\in p'$, then $p'$ is a $\delta$-packing of $\set X$.
-    But $|p'| > |p|$, which violates the assumption that $p$ is maximal.
-    If $x\in p$, then the set $p'-\{x\}$ is a packing of $\set X$.
+    Let $y\in X$ and $\delta>0$.
+    Let $C$ be a minimal $\delta$-covering of $B_X(y,\delta)$.
+    Then the set $C\cup\{x\}$ must be a $\delta$-covering for $B_{X\cup\{x\}}(y,\delta)$.
+    %So we have that $N_\delta(B_X(y,\delta)) \le N_\delta(B_{X\cup\{x\}}(y,\delta))+1$ for any $y\in X$ and $\delta>0$.
+    So we have that 
+    \begin{equation}
+        N_\delta(B_X(y,\delta)) \le N_\delta(B_{X\cup\{x\}}(y,\delta))+1
+        .
+    \end{equation}
+    Taking the maximum of both sides with respect to $y$ and $\delta$ gives \eqref{eq:doubnumplusone}.
+    %for any $y\in X$ and $\delta>0$.
+    %let $p$ be a maximal $\delta$-packing of $\set X$.
+    %Assume for contradiction that there exists a $\delta$-packing $p'$ of $\set X\cup\{x\}$ such that $|p'| > |p| + 1$.
+    %If $x\not\in p'$, then $p'$ is a $\delta$-packing of $\set X$.
+    %But $|p'| > |p|$, which violates the assumption that $p$ is maximal.
+    %If $x\in p$, then the set $p'-\{x\}$ is a packing of $\set X$.
 \end{proof}
 
 %%%%%%%%%%%%%%%%%%%%
@@ -755,6 +806,43 @@ This section can be safely skipped by the reader not interested in the details o
 \begin{algorithm}[H]
 %\caption{Simplified cover tree insertion}
 \label{alg:insert}
+    \vspace{0.1in}
+{\bfseries function} \ctinsert(cover tree $p$, data point $x$)
+
+\begin{algorithmic}[1]
+    \If {$\dist{p}{x} > \covdist{p}$}
+        \State create a node node $x$ ...
+        \State \Return $x$
+    \Else
+        \State \Return $\ctinsertloop(\children{p}, x)$
+    \EndIf
+\end{algorithmic}
+
+    \vspace{0.1in}
+{\bfseries function} \ctinsertloop(set of cover trees $P$, data point $x$)
+
+\begin{algorithmic}[1]
+    \State let $Q = \{ q : q \in \children{p}, p\in P\}$
+    \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
+    \State let $\hat p = \argmin_{p\in P} \dist{p}{x}$
+    \If {$\dist{\hat q}{x} \ge \covdist{\hat q}$}
+        \State let $\hat p' = \hat p$ with $x$ added as a child
+        \State \Return $\big(P\setminus\{\hat p\}\big) \cup \{\hat p'\}$
+    \Else
+        \State let $Q_x = \{q : q\in Q, \dist{q}{x} \le \covdist{q}\}$
+        \State let $Q' = \ctinsertloop(Q_x, x)$
+        \State let $q$   be the unique element of $Q  \setminus(Q\cap Q_x)$
+        \State let $q_x$ be the unique element of $Q_x\setminus(Q\cap Q_x)$
+        \State let $p_q$ be the element of $P$ with $q$ as its child
+        \State let $p_{q_x}$ be the node $p_q$ with child $q$ replaced by $q_x$
+        \State \Return $\big(P\setminus\{p_q\}\big) \cup \{p_{q_x}\}$
+    \EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+%\caption{Simplified cover tree insertion}
+\label{alg:insert}
 
     \vspace{0.1in}
 {\bfseries function} \ctinsert(cover tree $p$, data point $x$)
@@ -876,23 +964,173 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
     \EndFor
 \end{algorithmic}
 \end{algorithm}
+%\State let $\ell = \max_{r\in R} \level r$ 
+%\If {$\level p > \ell$}
+    %\State let $R_{near} = \{ r : r\in R, \min_{q\in\children{p}}\dist{q}{r} \le \covdist p/2\}$.
+    %\State let $R_{far} = R-R_{near}$
+%\Else
+    %\State let $R=\{\}$
+    %\For {$r\in R$}
+        %\If {$\level{r}=\ell$}
+            %\State create node $r'$ with same data point as $r$ but level $-\infty$
+            %\State $R' \leftarrow R' \cup \{r'\} \cup \children{r}$
+        %\Else
+            %\State $R' \leftarrow R' \cup \{r\}$
+        %\EndIf
+    %\EndFor
+    %\State $\ctmerge(p,R')$
+%\EndIf
 
-    %\State let $\ell = \max_{r\in R} \level r$ 
-    %\If {$\level p > \ell$}
-        %\State let $R_{near} = \{ r : r\in R, \min_{q\in\children{p}}\dist{q}{r} \le \covdist p/2\}$.
-        %\State let $R_{far} = R-R_{near}$
-    %\Else
-        %\State let $R=\{\}$
-        %\For {$r\in R$}
-            %\If {$\level{r}=\ell$}
-                %\State create node $r'$ with same data point as $r$ but level $-\infty$
-                %\State $R' \leftarrow R' \cup \{r'\} \cup \children{r}$
-            %\Else
-                %\State $R' \leftarrow R' \cup \{r\}$
-            %\EndIf
-        %\EndFor
-        %\State $\ctmerge(p,R')$
-    %\EndIf
+%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\begin{algorithm}[H]
+    %\caption{Merging cover trees}
+    \label{alg:merge}
+
+\vspace{0.1in}
+{\bfseries function} $\ctmerge$(cover tree $p$, cover tree $r$)
+\begin{algorithmic}[1]
+    \State $(P,R) \leftarrow \ctmergeloop(\children{p},r)$
+    \State $p' \leftarrow$
+    \While {$R \ne \{\}$}
+        \State
+    \EndWhile
+    \State \Return $p'$
+\end{algorithmic}
+
+
+\vspace{0.1in}
+{\bfseries function} $\ctmergeloop$(set of cover trees $P$, cover tree $r$)
+
+%requires $\level{p} = \level{r}$
+
+\begin{algorithmic}[1]
+    \State $P' \leftarrow P$, $R' \leftarrow \{\}$
+    \State let $\hat p_r = \argmax_{p \in P} \dist{p}{r}$
+    \If {$\dist{\hat p_r}{r} \ge 2\cdot\covdist{p_r} + \maxdist{r}$}
+        \State $R' \leftarrow \{r\}$
+    \Else
+        \For {$s \in \children r$}
+            %\State let $Q = \{q : q \in \children p, p \in P \}$
+            %\State let $\hat q_s = \argmax_{q\in Q} \dist{q}{s}$
+            %\State let $\hat p_s = \argmax_{p\in P} \dist{p}{s}$
+
+            %\State let $Q_s = \{q : q \in Q, \dist{q}{s} \le 2\cdot\covdist{q} + \maxdist{s} \}$
+            \State let $Q_s = \{q : q \in \children{p}, p\in P', \dist{q}{s} \le 2\cdot\covdist{q} + \maxdist{s} \}$
+            \State let $(Q_s', S') = \ctmergeloop(Q_s,s)$
+            \State \fixme{update $P'$ based on $Q_s'$}
+            \While {$S' \ne \{\}$}
+                \State select any $s' \in S'$
+                %\State let $\hat q_{s'} = \argmax_{q\in Q} \dist{q}{s'}$
+                \State let $\hat p_{s'} = \argmax_{p\in P} \dist{p}{s'}$
+                \If {$\dist{\hat p_{s'}}{s'} \le \covdist{\hat p_{s'}}$}
+                    %\State \fixme{add $s'$ as a child of $\hat p_{s'}$}
+                    \State let $\hat p'_{s'}$ be $\hat p_{s'}$ with $s'$ added as a child
+                    \State $P' \leftarrow \big( P' \setminus \{\hat p_s\} \big) \cup \{\hat p'_{s'}\}$
+                \Else
+                    \State create node $r'$ such that:
+                    \State ~~~~~$dp(r') = dp(s')$
+                    \State ~~~~~$\level{r'}=\level{s'}+1$
+                    \State ~~~~~$\children{r'} = \{ s : s\in S', \dist{s}{r'} \le \covdist{r'} \}$
+                    \State $S' \leftarrow S'\setminus\children{r'}$
+                    \State $R' \leftarrow R'\cup\{r'\}$
+                \EndIf
+            \EndWhile
+        \EndFor
+    \EndIf
+    \State \Return $(P',R')$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{lemma}
+    Let $P$ be a set of cover trees of level $i$ with minimum distance $2^i$, 
+    and $r$ be a cover tree of level $i$.
+    Then the sets $P'$ and $R'$ returned by $\ctmergeloop(P,r)$ satisfy:
+    \begin{enumerate}
+        \item every element $p' \in P'$ and $r'\in R'$ are valid cover trees with level $i$,
+        \item for all $j<i$, $\cup_{p' \in P'} \descendants {p'}$
+        \item 
+    \end{enumerate}
+\end{lemma}
+
+\begin{lemma}
+    The functions $\ctmerge$ and $\ctmergeloop$ obey the invariant that when $\ctmergeloop$ is called, $|P| \le \doubnum^3$.
+\end{lemma}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\begin{algorithm}[H]
+    %\caption{Merging cover trees}
+    \label{alg:merge}
+    \vspace{0.1in}
+    {\bfseries function} \ctmerge(set of cover trees $P$, cover tree $r$)
+
+    requires $\level{p} = \level{r}$
+
+\begin{algorithmic}[1]
+    \State $S \leftarrow \children{r}$
+    \State $S_\textit{far} \leftarrow \{\}$
+    \State $P' \leftarrow P$
+    \For {$s\in S$}
+        \State $Q \leftarrow \{ q : q \in \children{p}, p \in P' \}$
+        \State let $\hat p = \argmin_{p\in P} \dist{p}{s}$
+        \State let $\hat q = \argmin_{q\in Q} \dist{q}{s}$
+        \If {$\dist{\hat p}{s} \ge 2\cdot\covdist{\hat p} + \maxdist{s}$}
+            \State $S_\textit{far} \leftarrow S_\textit{far} \cup \{s\}$
+        \ElsIf {$\dist{\hat p}{s} \ge \covdist{\hat p}$}
+            \State let $Q_s = \{q : q\in Q, \dist{q}{s} \le 2\cdot\covdist{q}+\maxdist{s}\}$
+            \State $(P',T_\textit{far}') \leftarrow \mergeinsert(P',\{\},Q_s,s)$
+            \While {$T_\textit{far}' \ne \{\}$}
+                \State let $t$ be any node in $T_\textit{far}'$
+                \State construct node $s'$ with $\level{s'} = \level{t}+1$
+                \State ~~~~~set data point to $t$
+                \State ~~~~~set children equal $\{ t : t \in T'_\textit{far}, \dist{t}{s'} \le \covdist{s'}$
+                \State $S'_\textit{far} \leftarrow S'_\textit{far} \cup s'$
+            \EndWhile
+            %\State $T'\leftarrow \{\}$
+            %\For {$t \in \children{s}$}
+                %%\State let $\hat q_t = \argmin_{q\in Q} \dist{q}{t}$
+                %\State let $Q_t = \{q : q\in Q, \dist{q}{t} \le 2\cdot\covdist{q}+\maxdist{t}\}$
+                %\State $(Q_t',R_\textit{far}') \leftarrow \ctmerge(P'Q_t,t)$
+            %\EndFor
+        \ElsIf {$\dist{\hat q}{s} \ge \covdist{\hat p}/2$}
+            \State let $\hat q'$ be the node $\hat q$ with $s$ added as a child
+            \State let $p_{\hat q}$ be the element of $P'$ with $\hat q$ as a child
+            \State let $p_{\hat q}'$ be the node $p_{\hat q}$ with child $\hat q$ replaced with $\hat q'$
+            \State $P' \leftarrow \big(P' \setminus \{p_{\hat q}\}\big) \cup \{ p_{\hat q}'\}$
+        \Else
+            \State let $Q_s = \{ q : q \in Q, \dist{q}{s} \le 2\cdot\covdist{q} \}$
+            \State $(P',S_\textit{far}') \leftarrow \mergeinsert(P',S_\textit{far}',Q_s,s)$
+            %\State $(Q_s', s') \leftarrow \ctmerge(Q_s,s)$
+            %\State let $q _s$  be the single element of $Q _s \setminus (Q_s \cap Q_s')$
+            %\State let $q'_s$ be the single element of $Q'_s \setminus (Q_s \cap Q_s')$
+            %\State let $p _{q_s}$ be the element of $P'$ with $q_s$ as a child
+            %\State let $p'_{q_s}$ be the node $p_{q_s}$ with child $q_s$ replaced with $q'_s$
+            %\State $P' \leftarrow \big(P' \setminus \{p_{q_s}\}\big) \cup \{p'_{q_s}\}$
+            %\State $S_\textit{far} \leftarrow S_\textit{far} \cup s'$
+        \EndIf
+    \EndFor
+    \State \Return $(P',S')$
+\end{algorithmic}
+
+    \vspace{0.1in}
+    {\bfseries function} $\mkprocedure{merge\_insert}$(set of cover trees $P$, set of cover trees $Q$, cover tree $r$)
+\begin{algorithmic}[1]
+    \State $(Q_s', s') \leftarrow \ctmerge(Q_s,s)$
+    \State let $q _s$  be the single element of $Q _s \setminus (Q_s \cap Q_s')$
+    \State let $q'_s$ be the single element of $Q'_s \setminus (Q_s \cap Q_s')$
+    \State let $p _{q_s}$ be the element of $P'$ with $q_s$ as a child
+    \State let $p'_{q_s}$ be the node $p_{q_s}$ with child $q_s$ replaced with $q'_s$
+    \State let $P' = \big(P \setminus \{p_{q_s}\}\big) \cup \{p'_{q_s}\}$
+    %\State $P' \leftarrow \big(P' \setminus \{p_{q_s}\}\big) \cup \{p'_{q_s}\}$
+    %\State let $S_\textit{far} \leftarrow S_\textit{far} \cup s'$
+    \State \Return $(P',s')$
+\end{algorithmic}
+\end{algorithm}
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{algorithm}[H]
