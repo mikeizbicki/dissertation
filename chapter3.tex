@@ -37,12 +37,13 @@
 \newcommand{\mkprocedure}[1]{\ifmmode \textnormal{\ttfamily {#1}}}
 \newcommand{\mergeinsert}{\mkprocedure{merge\_insert}}
 \newcommand{\ctmergeloop}{\mkprocedure{merge\_loop}}
+\newcommand{\findnnloop}{\mkprocedure{findnn\_loop}}
+\newcommand{\findnn}{\mkprocedure{findnn}}
 
 \newcommand{\nn}[1]{\ensuremath{\ensuremath{{{#1}}_{nn}}}}
 \newcommand{\exprad}[1]{\ensuremath{\ensuremath{2}}}
 \newcommand{\pack}{\ensuremath{\textnormal{\ttfamily pack}}}
 \newcommand{\rmNodes}{\ensuremath{\textnormal{\ttfamily rmNodes}}}
-\newcommand{\findnn}{\ensuremath{\textnormal{\ttfamily findNearestNeighbor}}}
 \newcommand{\dualnn}{\ensuremath{\textnormal{\ttfamily dualTreeNN}}}
 \newcommand{\ctmerge}{\ensuremath{\textnormal{\ttfamily merge}}}
 \newcommand{\ctinsert}{\ensuremath{\textnormal{\ttfamily insert}}}
@@ -836,21 +837,18 @@ we are guaranteed to return a set containing a single tree rooted at $\data{p}$.
 There are two cases.
 In the first case, $x$ can be inserted directly as a child of some $p\in P$.
 This is shown in the first half of the pseudocode below.
-\begin{pseudocode}{\ctinsertloop(set of cover trees $P$, data point $x$)}
+\begin{pseudocodeT}{\ctinsertloop(set of cover trees $P$, data point $x$)}
     \State let $Q = \{ q : q \in \children{p}, p\in P\}$
     \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
     \If {$\dist{\hat q}{x} \ge \covdist{\hat q}$}
         \State let $\hat p = \argmin_{p\in P} \dist{p}{x}$
         \State let $\hat p' = \hat p$ with $x$ added as a child
         \State \Return $\big(P\setminus\{\hat p\}\big) \cup \{\hat p'\}$
-    \algstore{insert}
-\end{pseudocode}
+\end{pseudocodeT}
 \noindent
 In the second case, $x$ cannot be inserted as a child because this would violate the separating invariant.
 So we select the closest child of $p$, and insert $x$ into that child.
-There is a fair amount of booking for this case.
-\begin{pseudocode*}
-    \algrestore{insert}
+\begin{pseudocodeB}
     \Else
         \State let $Q_x = \{q : q\in Q, \dist{q}{x} \le \covdist{q}\}$
         \State let $Q' = \ctinsertloop(Q_x, x)$
@@ -860,7 +858,124 @@ There is a fair amount of booking for this case.
         \State let $p_{q_x}$ be the node $p_q$ with child $q$ replaced by $q_x$
         \State \Return $\big(P\setminus\{p_q\}\big) \cup \{p_{q_x}\}$
     \EndIf
-\end{pseudocode*}
+\end{pseudocodeB}
+
+\begin{theorem}
+    The runtime of $\ctinsert$ in the distance oracle model is $O(\doubnum^4 \log\aspect{})$.
+\end{theorem}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\subsubsection{Finding the nearest neighbor of a single point}
+
+\begin{pseudocode}{$\findnn$(set of cover trees $P$, query  point $x$, nearest neighbor so far $y$, tolerance $\epsilon$)}
+\If {$P = \{\}$}
+    \State\Return $y$
+\Else
+    \For {$p\in P$}
+        \If {$d(p,x) < d(y,x)$}
+            \State $y \leftarrow p$
+        \EndIf
+    \EndFor
+    \State $P' \leftarrow \{\}$
+    \For {$p\in P$}
+        \For {$q \in \children p$}
+            \If {$\dist{x}{q} \le \dist{x}{y}/\epsilon + \maxdist{q}$}
+                \State $P' \leftarrow P'\cup\{q\}$
+            \EndIf
+        \EndFor
+    \EndFor
+    %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{y} > \dist{x}{q}/\epsilon - \maxdist{q} \}$
+    %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{q} \le \epsilon\cdot\dist{x}{y}+\maxdist{q}\}$
+    \State\Return $\findnn(P',x,y,\epsilon)$
+\EndIf
+\end{pseudocode}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Dual tree nearest neighbor search}
+
+\begin{pseudocode}{$\dualnn$(set of cover trees $P$, set of cover trees $R$, tolerance $\epsilon$)}
+    \If {$\level P \ge \level R$}
+        %\State $P' \leftarrow \{\}$
+        \For {$p\in P$}
+            \State $\dualnn(\children{p},R,\epsilon)$
+            %\If {$\level p = \level P$}
+                %\State $P' \leftarrow P' \cup \children{p}$
+                %\For {$r\in R$}
+                    %\If {$nn[p] \le$}
+                        %\State
+                    %\EndIf
+                %\EndFor
+            %\Else
+                %\State $P' \leftarrow P' \cup \{p\}$
+            %\EndIf
+        \EndFor
+        %\State $\dualnn(P',R,\epsilon)$
+    \Else
+        \State $R' \leftarrow \{\}$
+        \For {$r\in R$}
+            %\If {$\level r = \level R$}
+                %\State $R' \leftarrow R' \cup \children{r}$
+                \For {$p\in P$}
+                    \If {$\dist{r}{p} \le \dist{nn[p]}{p}$}
+                        \State $nn[p] \leftarrow r$
+                    \EndIf
+                    \If {$\maxdist{p} \le \dist{r}{p}/\epsilon+\maxdist{r}$}
+                        \State $R' \leftarrow R' \cup \{r\}$
+                    \EndIf
+                \EndFor
+            %\Else
+                %\State $R' \leftarrow R' \cup \{r\}$
+            %\EndIf
+        \EndFor
+        \State $\dualnn(P,R',\epsilon)$
+    \EndIf
+\end{pseudocode}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Merging cover trees}
+
+\begin{pseudocode}{$\ctmergeloop$(set of cover trees $P$, cover tree $r$)}
+    \State $P' \leftarrow P$, $R' \leftarrow \{\}$
+    \State let $\hat p_r = \argmax_{p \in P} \dist{p}{r}$
+    \If {$\dist{\hat p_r}{r} \ge 2\cdot\covdist{p_r} + \maxdist{r}$}
+        \State $R' \leftarrow \{r\}$
+    \Else
+        \For {$s \in \children r$}
+            %\State let $Q = \{q : q \in \children p, p \in P \}$
+            %\State let $\hat q_s = \argmax_{q\in Q} \dist{q}{s}$
+            %\State let $\hat p_s = \argmax_{p\in P} \dist{p}{s}$
+
+            %\State let $Q_s = \{q : q \in Q, \dist{q}{s} \le 2\cdot\covdist{q} + \maxdist{s} \}$
+            \State let $Q_s = \{q : q \in \children{p}, p\in P', \dist{q}{s} \le 2\cdot\covdist{q} + \maxdist{s} \}$
+            \State let $(Q_s', S') = \ctmergeloop(Q_s,s)$
+            \State \fixme{update $P'$ based on $Q_s'$}
+            \While {$S' \ne \{\}$}
+                \State select any $s' \in S'$
+                %\State let $\hat q_{s'} = \argmax_{q\in Q} \dist{q}{s'}$
+                \State let $\hat p_{s'} = \argmax_{p\in P} \dist{p}{s'}$
+                \If {$\dist{\hat p_{s'}}{s'} \le \covdist{\hat p_{s'}}$}
+                    %\State \fixme{add $s'$ as a child of $\hat p_{s'}$}
+                    \State let $\hat p'_{s'}$ be $\hat p_{s'}$ with $s'$ added as a child
+                    \State $P' \leftarrow \big( P' \setminus \{\hat p_s\} \big) \cup \{\hat p'_{s'}\}$
+                \Else
+                    \State create node $r'$ such that:
+                    \State ~~~~~$dp(r') = dp(s')$
+                    \State ~~~~~$\level{r'}=\level{s'}+1$
+                    \State ~~~~~$\children{r'} = \{ s : s\in S', \dist{s}{r'} \le \covdist{r'} \}$
+                    \State $S' \leftarrow S'\setminus\children{r'}$
+                    \State $R' \leftarrow R'\cup\{r'\}$
+                \EndIf
+            \EndWhile
+        \EndFor
+    \EndIf
+    \State \Return $(P',R')$
+\end{pseudocode}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \ignore{
 %\begin{algorithm}[H]

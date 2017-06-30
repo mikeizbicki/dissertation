@@ -75,33 +75,56 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \usepackage[breakable, theorems, skins]{tcolorbox}
-\newenvironment{codebox}{
-    \vspace{-0.1in}
-    \begin{tcolorbox}[   %% Adjust the following parameters at will.
+%\newenvironment{codebox}{
+    %\vspace{-0.1in}
+    %\begin{tcolorbox}[   %% Adjust the following parameters at will.
+            %enhanced,
+            %breakable,
+            %left=4pt,
+            %right=4pt,
+            %top=4pt,
+            %bottom=4pt,
+            %colback=blue!5,
+            %colframe=blue,
+            %width=\dimexpr\textwidth\relax, 
+            %enlarge left by=0mm,
+            %boxsep=5pt,
+            %arc=8pt,
+            %outer arc=8pt,
+            %toprule=1pt,
+            %leftrule=1pt,
+            %rightrule=1pt,
+            %bottomrule=0pt,
+            %]
+    %}
+    %{
+    %\end{tcolorbox}
+    %}
+
+\newtcolorbox{codebox}[1][]
+    {
             enhanced,
             breakable,
-            colback=blue!5,
-            left=0pt,
-            right=0pt,
-            top=0pt,
-            bottom=0pt,
-            colback=blue!5,
-            colframe=blue!5,
-            %borderline north={2pt}{-2pt}{blue},
-            %borderline north={2pt}{-2pt}{blue}
+            left=8pt,
+            right=8pt,
+            top=8pt,
+            bottom=8pt,
+            colback=blue!3,
+            colframe=blue!70,
             width=\dimexpr\textwidth\relax, 
             enlarge left by=0mm,
             boxsep=5pt,
-            arc=0pt,outer arc=0pt,
-            ]
+            arc=10pt,
+            outer arc=10pt,
+            toprule=1pt,
+            leftrule=1pt,
+            rightrule=1pt,
+            bottomrule=1pt,
+            #1
     }
-    {
-    \end{tcolorbox}
-    }
-%\usepackage{mdframed}
-%\newmdenv[linecolor=blue,backgroundcolor=blue!5,roundcorner=5in]{codebox}
 
 \newenvironment{pseudocode}[1]{
+    \vspace{-0.1in}
     \begin{codebox}
     \noindent
     {\bfseries function} {#1}
@@ -113,9 +136,37 @@
     \end{codebox}
     }
 
-\newenvironment{pseudocode*}{
-    \begin{codebox}
+\newenvironment{pseudocodeT}[1]{
+    \vspace{-0.1in}
+    \begin{codebox}[sharp corners=south,bottomrule=0pt]
+    \noindent
+    {\bfseries function} {#1}
+
     \begin{algorithmic}[1]
+    }
+    {
+    \algstore{pseudocode}
+    \end{algorithmic}
+    \end{codebox}
+    }
+
+\newenvironment{pseudocodeM}{
+    \vspace{-0.1in}
+    \begin{codebox}[sharp corners=all,bottomrule=0pt,toprule=0pt]
+    \begin{algorithmic}[1]
+    \algrestore{pseudocode}
+    }
+    {
+    \algstore{pseudocode}
+    \end{algorithmic}
+    \end{codebox}
+    }
+
+\newenvironment{pseudocodeB}{
+    \vspace{-0.10in}
+    \begin{codebox}[sharp corners=north,toprule=0pt]
+    \begin{algorithmic}[1]
+    \algrestore{pseudocode}
     }
     {
     \end{algorithmic}
