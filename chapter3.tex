@@ -33,6 +33,12 @@
 \newcommand{\height}[1]     {\mkfunction{height}({#1})}
 \newcommand{\data}[1]       {\mkfunction{data}({#1})}
 \newcommand{\datapoint}[1]  {\mkfunction{dp}({#1})}
+\newcommand{\nn}[1]         {\mkfunction{nn}[{#1}]}
+\makeatletter
+\def\nn{\@ifstar\@nn\@@nn}
+\def\@nn#1{\mkfunction{nn}^*[{#1}]}
+\def\@@nn#1{\mkfunction{nn}[{#1}]}
+\makeatother
 
 % FIXME: should these be changed?
 \newcommand{\mkprocedure}[1]{\textnormal{\ttfamily {#1}}}
@@ -41,7 +47,7 @@
 \newcommand{\findnnloop}{\mkprocedure{findnn\_loop}}
 \newcommand{\findnn}{\mkprocedure{findnn}}
 
-\newcommand{\nn}[1]{\ensuremath{\ensuremath{{{#1}}_{nn}}}}
+%\newcommand{\nn}[1]{\ensuremath{\ensuremath{{{#1}}_{nn}}}}
 \newcommand{\exprad}[1]{\ensuremath{\ensuremath{2}}}
 \newcommand{\pack}{\ensuremath{\textnormal{\ttfamily pack}}}
 \newcommand{\rmNodes}{\ensuremath{\textnormal{\ttfamily rmNodes}}}
@@ -101,7 +107,7 @@
 
 \section{Methods for faster nearest neighbors}
 
-Every metric space embeds into an ultrametric space with distortion $O(1/\sqrt \epsilon)$ \citep{abraham2007embedding}.
+Every metric space embeds into an ultrametric space with distortion $O(1/\sqrt \varepsilon)$ \citep{abraham2007embedding}.
 \cite{charikar1998approximating} creates tree metrics from finite metric spaces;
 uses this result to create approximation algorithms for several NP-hard problems.
 
@@ -246,7 +252,7 @@ but the main idea was introduced by \citet{assoud1979etude} to study fractals.%
 \footnote{
     There are many terms in the literature with essentially the same meaning as the doubling dimension.
     For example, the terms Assoud dimension and Minkowski dimensions are both used in fractal geometry;
-    and the terms covering number, packing number, $\epsilon$-nets, and metric entropy are all used in computer science. 
+    and the terms covering number, packing number, $\varepsilon$-nets, and metric entropy are all used in computer science. 
 }
 The doubling dimension is more robust than the expansion dimension,
 so runtime bounds in terms of the doubling dimension are more useful. 
@@ -815,94 +821,118 @@ This section can be safely skipped by the reader not interested in the details o
 \begin{definition}
     Let $\set X$ be a metric space, $X\subset\set X$, and $x$ be in $\set X$ but not $X$.
     Then the nearest neighbor $y^*\in X$ is defined as $y^*=\argmin_{y\in X} \dist{x}{y}$.
-    An $\epsilon$-nearest neighbor (for $\epsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \epsilon \cdot\dist{x}{y^*}$.
+    An $\varepsilon$-nearest neighbor (for $\varepsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \varepsilon \cdot\dist{x}{y^*}$.
 \end{definition}
 \newcommand{\eann}{\varepsilon\text{-ann}}
 
 \subsubsection{Finding the nearest neighbor of a single point}
 
 The $\findnn$ function (Algorithm \ref{alg:findnn}) finds an $\eann$ in a set of cover trees.
-%Typically, the input set will contain only a single cover tree, 
-%but the algorithm is written more generally due to its recursive nature.
 The function would typically be called with only a single cover tree in the input set $P$;
 but in subsequent recursive calls, $P$ may contain many subtrees. 
 On each call,
 $\findnn$ iterates over $Q$ (the children of nodes in $P$),
-and constructs a set $Q_x \subseteq Q$.
+and constructs a set $Q_x \subseteq Q$ of subtrees that need to be searched.
 %If $Q_x$ is empty, then $\hat p$ is guaranteed to be an $\eann$.
-The important property of $Q_x$ is that it always contains an $\eann$ of $x$
-(see next paragraph).
-If $|Q_x|$ is one it contains an $\eann$, which the algorithm returns.
-Otherwise recursively calling $\findnn(Q_x,x)$ will return an $\eann$.
-We typically have that $|Q_x| <\!\!< |Q|$, 
-and so most nodes in the tree get pruned on each iteration,
-and only a small portion of the tree is searched.
+%The important property of $Q_x$ is that it always contains an $\eann$ of $x$
+%(see next paragraph).
+%If $Q_x$ contains only one element, it must be an $\eann$ and the algorithm returns it.
+%Otherwise recursively calling $\findnn(Q_x,x)$ will return an $\eann$.
+We typically have that $|Q_x| <\!\!< |Q|$,
+so only a small portion of the tree is searched.
+We now prove the algorithm's correctness and runtime.
 
-To demonstrate that $Q_x$ must contain an $\eann$,
-first consider the case that $\hat p$ is an $\eann$.
-Then $Q_x$ must contain a $\eann$ because it will contain $\hat p$.
-The difficult case is when $\hat p$ is not an $\eann$.
-Let $\hat y$ denote some $\eann$ and $y^*$ denote the true nearest neighbor of $x$ in $\data{P}$.
-Then we have that
-\begin{equation}
-    \label{eq:findknn_condition1}
-    \epsilon \cdot \dist{x}{y^*}
-    \le \dist{x}{\hat y} 
-    \le \dist{x}{\hat p} 
-    .
-\end{equation}
-Let $q$ be the ancestor of $\hat y$ contained in $Q$.
-Then $q$ must obey
-\begin{equation}
-    \label{eq:findnn_condition}
-    \dist{x}{q} 
-    \le \dist{x}{\hat y} + \dist{\hat y}{q}
-    \le \dist{x}{\hat p}/\epsilon + \maxdist{q}
-    .
-\end{equation}
-The first inequality is just the triangle inequality,
-and the second follows from \eqref{eq:findknn_condition1} and the definition of $\mkfunction{maxdist}$.
-
-\begin{algorithm}
-\caption{$\findnn$(set of cover trees $P$, query  point $x$, tolerance $\epsilon$)}
+\begin{algorithm}[t]
+\caption{$\findnn$(set of cover trees $P$, query  point $x$, tolerance $\varepsilon$)}
 \label{alg:findnn}
 \vspace{0.1in}
 \begin{algorithmic}[1]
     \State let $Q = \{ q : q\in\children{p}, p\in P \}$
     \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
-    \State let $Q_x = \{ q : q\in Q, \dist{x}{q} \le \dist{x}{\hat q}/\epsilon+\maxdist{q}\}$
+    \State let $Q_x = \{ q : q\in Q, \dist{x}{q} \le \dist{x}{\hat q}/\varepsilon+\maxdist{q}\}$
     \If {$Q_x = \{\}$}
-        \State \Return $\hat p$
+        \State \Return $\hat q$
+        \label{line:findnn:returnq}
     \Else
-        \State\Return $\findnn(Q_x,x,\epsilon)$
+        \State\Return $\findnn(Q_x\cup\{\hat q\},x,\varepsilon)$
+        \label{line:findnn:recurse}
     \EndIf
 \end{algorithmic}
 \end{algorithm}
 
+\newpage
 \begin{theorem}
+    \label{theorem:findnn:correct}
+    $\findnn(\{p\},x,\varepsilon)$ returns an $\eann$ of $x$ in $p$.
+\end{theorem}
+\begin{proof}
+    Let $y^*$ denote the true nearest neighbor of $x$ in $\data{P}$.
+    We will show that on each recursion,
+    either $y^* \in Q_x$ or $\hat q$ is an $\eann$.
+    Since the algorithm only terminates when $Q_x$ is empty,
+    %(and Theorem \ref{theorem:findnn:runtime} below shows that $\findnn$ must terminate),
+    the returned $\hat q$ must be an $\eann$.
+
+    In the first recursive call where $y^* \not\in\data{Q_x}$,
+    we must have that $y^* \in \data{Q}$.
+    Let $q^*$ be the node in $Q$ such that $y^* \in\data{\q^*}$.
+    Then by the definition of $Q_x$, we have that
+    \begin{equation}
+        \dist{x}{q^*}
+        > \dist{x}{\hat q}/\varepsilon + \maxdist{q^*} 
+        .
+    \end{equation}
+    Using the triangle inequality on the left and the definition of $\mkfunction{maxdist}$ on the right gives
+    \begin{equation}
+        \dist{x}{y^*} + \dist{y^*}{q^*} 
+        \ge \dist{x}{q^*} 
+        >   \dist{x}{\hat q}/\varepsilon + \maxdist{q^*}
+        \ge \dist{x}{\hat q}/\varepsilon + \dist{q^*}{y^*}
+        .
+    \end{equation}
+    Subtracting $\dist{q^*}{y^*}$ from the leftmost and rightmost sides gives
+    \begin{equation}
+        \dist{x}{y^*} \ge \dist{x}{\hat q}/\epsilon
+        ,
+    \end{equation}
+    and so $\hat q$ is an $\eann$.
+    In the recursive call on line \ref{line:findnn:recurse},
+    we call $\findnn$ with $P=Q_x\cup\{\hat q\}$ to ensure that on all future iterations,
+    the distance between $\hat q$ and $x$ is non-increasing.
+\end{proof}
+
+\begin{theorem}
+    \label{theorem:findnn:runtime}
     Let $\varepsilon\ge2$.
-    Then $\findnn(\{p\},x)$ has running time $O(\doubnum^4\log\aspect{})$.
+    Then $\findnn(\{p\},x)$ has run time $O(\doubnum^4\log\aspect{})$.
+    If the data is generated i.i.d.\ from a well behaved distribution,
+    then the run time is $O(\doubnum^4\log n)$.
 \end{theorem}
 
 \begin{proof}
-    The final runtime is the product of the number of recursive calls and the amount of time spent in each call.
+    The total runtime is bounded by the product of the number of recursive calls and the time spent in each call.
     The number of recursions is bounded by the height of the tree because $\findnn$ descends one level of the tree with each recursive call. 
     This height is bounded by $O(\log\aspect{})$ in Lemma \ref{lemma:height}.
 
-    The cost of each recursive call is $O(|Q|)$.
-    The size of $Q$ is bounded by the size of $P$ times the maximum number of children per node.
-    To bound the size of $P$, we will bound the size of $Q_x$ (since $P$ is always $Q_x$ of the previous iteration).
-    By construction, all $q\in Q_x$ satisfy
+    The cost of each recursive call is $O(|Q|)$,
+    since we perform one distance computation for each node in $Q$.
+    The size of $Q$ is the size of $P$ times the of children per node.
+    To bound the size of $P$, we will bound the size of $Q_x$ 
+    (since $P$ is always $Q_x$ of the previous iteration).
+    Let $i$ be the level of the nodes in $Q_x$.
+    Then by construction, all $q\in Q_x$ satisfy
     \begin{equation}
         \label{eq:findnn:runtime:proof}
         \dist{x}{q} 
-        \le \dist{x}{\hat q}/\epsilon + \maxdist{q}
+        \le \dist{x}{\hat q}/\varepsilon + \maxdist{q}
         \le \dist{x}{q}/2 + 2^i
         %\le 2^{i+1}
         .
     \end{equation}
-    In the last inequality we used the fact that $\dist{x}{\hat q} \le \dist{q}{q}$, $\maxdist{q}\le2^i$, and $\varepsilon\ge 2$.
-    Rearranging \eqref{eq:findnn:runtime:proof} gives $\dist{x}{q} \le 2^{i+1}$.
+    In the last inequality we used the fact that $\dist{x}{\hat q} \le \dist{x}{q}$, 
+    $\varepsilon\ge 2$,
+    and $\maxdist{q}\le2^i$.
+    Subtracting $\dist{x}{q}/2$ from the left and rightmost sides of \eqref{eq:findnn:runtime:proof} gives $\dist{x}{q} \le 2^{i+1}$.
     Now let $\delta=2^i$.
     Then by the global separating invariant, 
     $Q_x$ is a $\delta$-packing of $B(x,2\delta)$.
@@ -927,54 +957,56 @@ Notice that for each $p\in P$, the value of $\dist{p}{x}$ was calculated in the 
 This value can be cached to prevent the need for future calls to calculate it.
 \end{remark}
 
-%\begin{pseudocode}{$\findnn$(set of cover trees $P$, query  point $x$, nearest neighbor so far $y$, tolerance $\epsilon$)}
-%\If {$P = \{\}$}
-    %\State\Return $y$
-%\Else
-    %\For {$p\in P$}
-        %\If {$d(p,x) < d(y,x)$}
-            %\State $y \leftarrow p$
-        %\EndIf
-    %\EndFor
-    %%\State $P' \leftarrow \{\}$
-    %%\For {$p\in P$}
-        %%\For {$q \in \children p$}
-            %%\If {$\dist{x}{q} \le \dist{x}{y}/\epsilon + \maxdist{q}$}
-                %%\State $P' \leftarrow P'\cup\{q\}$
-            %%\EndIf
-        %%\EndFor
-    %%\EndFor
-    %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{q} \le \dist{x}{y}/\epsilon+\maxdist{q}\}$
-    %\State\Return $\findnn(P',x,y,\epsilon)$
-%\EndIf
-%\end{pseudocode}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsubsection{Inserting a single point}
 
-The algorithm for inserting points is broken into two functions.
-$\ctinsertloop$ (Algorithm \ref{alg:ctinsertloop}) follows the same procedure as $\findnn$ to traverse the tree and find a suitable location.
-$\ctinsert$ (Algorithm \ref{alg:ctinsert}) is a wrapper function that ensures the prerequisites of $\ctinsertloop$ are met.
+The algorithm for inserting points is split into two functions.
+The most important is $\ctinsertloop$ (Algorithm \ref{alg:ctinsertloop}).
+Like $\findnn$, $\ctinsertloop$ recursively traverses a set of input trees to find a suitable location for insertion.
+On each iteration,
+a set $Q_x$ is created that contains all the subtrees that may need to be searched.
+The global separating invariant requires that we traverse several subtrees simultaneously to ensure that the distance between $x$ is not too close to other nodes on the same level in a different subtree.
+(A simple depth first search, for example, would not ensure this property.)
+Interestingly, the maximum size of $Q_x$ is smaller in $\ctinsertloop$ than in $\findnn$,
+so the runtime dependence on $\doubnum$ is somewhat better
+(to the 3rd power instead of the 4th).
+$\ctinsertloop$ requires that the inserted data point be ``close enough'' to one of the sub trees to be inserted as a child. 
+This prerequisite will not be satisfied by all data, 
+so $\ctinsert$ (Algorithm \ref{alg:ctinsert}) is the main interface for insertion.
+It handles the case when the inserted data point is relatively far away,
+then calls $\ctinsertloop$ if the data point is close and a recursive descent is required.
+We now prove the correctness and runtime of insertion.
 
-$\ctinsertloop$ takes as input a set of cover trees $P$ and inserts a data point $x$ into one of them.
-The function assumes that $x$ can be safely inserted underneath some node in $P$ without violating the covering invariant. 
-That is, if $\hat p=\argmin_{p\in P}\dist{p}{x}$, 
-then $\ctinsertloop$ assumes $\dist{\hat p}{x} \le \covdist{\hat p}$.
-There are two cases.
-First, the if statement on line \ref{line:ctinsertloop:if} checks whether $x$ can be inserted underneath $\hat p$ without violating the separating invariant.
-If so, then $x$ is added as a child of $\hat p$.
-Otherwise, we form a set $Q_x$ that $x$ may be inserted under,
-and recursively call $\ctinsertloop$.
-The fact that $x$ could not be inserted as a child of $\hat p$ directly ensures that the $\ctinsertloop$'s precondition will be met.
-Notice that we cannot do a simple depth first traversal of the tree to find a suitable node to insert $x$ under.
-The distance from $x$ to all other nodes in its level must be large to ensure the global separating invariant is met,
-and this requires tracking all the nodes in $Q_x$ at each level.
+\begin{algorithm}[t]
+    \caption{$\ctinsert$(cover tree $p$, data point $x$)}
+    \label{alg:ctinsert}
+    \vspace{0.1in}
+    \begin{algorithmic}[1]
+        \State $\hat q = \argmin_{q\in Q} \dist{q}{x}$
+    \If {$\dist{p}{x} > \covdist{p}$}
+        \State create a cover tree rooted at $x$ with level $=\ceil{\log_2 \dist{p}{x}}$ and children $=\{p\}$
+        \label{line:ctinsert:newtree}
+    \ElsIf {$\dist{\hat q}{x} \ge \covdist{p}/2$}
+        \label{line:ctinsert:childcondition}
+        \State insert $x$ as a child into $p$
+        \label{line:ctinsert:child}
+    \Else
+        \State $\ctinsertloop(\children{p},x)$
+        \label{line:ctinsert:ctinsertloop}
+    \EndIf
+\end{algorithmic}
+\end{algorithm}
 
-\begin{algorithm}
+\begin{algorithm}[t]
     \caption{$\ctinsertloop$(set of cover trees $P$, data point $x$)}
     \label{alg:ctinsertloop}
     \vspace{0.1in}
+
+    Precondition 1: $\dist{x}{\hat p} \le \covdist{\hat p}$
+
+    Precondition 2: $P$ contains all nodes at level $i$ with distance to $x$ less than $2^i$
+
 \begin{algorithmic}[1]
     \State let $Q = \{ q : q \in \children{p}, p\in P\}$
     \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
@@ -983,44 +1015,39 @@ and this requires tracking all the nodes in $Q_x$ at each level.
         \label{line:ctinsertloop:if}
         \State let $\hat p = \argmin_{p\in P} \dist{p}{x}$
         \State insert $x$ as a child into $\hat p$
-        %\State let $\hat p' = \hat p$ with $x$ added as a child
-        %\State \Return $\big(P\setminus\{\hat p\}\big) \cup \{\hat p'\}$
     \Else
+        \label{line:cdinsertloop:else}
         \State let $Q_x = \{q : q\in Q, \dist{q}{x} \le \covdist{q}\}$
         \State $\ctinsertloop(Q_x, x)$
     \EndIf
 \end{algorithmic}
 \end{algorithm}
 
-$\ctinsert$ is a simple wrapper around $\ctinsertloop$ that ensures all $x$ can be inserted into the tree $p$.
-If $x$ is too far away to be a child, 
-then a new tree is created with $x$ as the root and $p$ as a child.
-The level of $x$ is calculated to exactly satisfy the covering invariant.
-Otherwise, if $x$ can be inserted as a child of $p$ without breaking the separating invariant,
-it is.
-Otherwise, $x$ must satisfy the preconditions of $\ctinsertloop$,
-so $\ctinsert$ calls this helper function.
+\begin{theorem}
+    If $p$ is a valid cover tree, then $\ctinsert(p,x)$ inserts $x$ into $p$.
+\end{theorem}
+\begin{proof}
+    If $x$ is too far from $p$ to be a child, 
+    then line \ref{line:ctinsert:newtree} creates a new node at $x$ with $p$ as its only child.
+    The level of this new node is calculated to exactly satisfy the covering invariant.
+    If $x$ can be inserted as a child of $p$ without breaking the separating invariant,
+    line \ref{line:ctinsert:child} does so.
+    Otherwise, $x$ must be inserted as a descendent of some $p\in P$.
+    The fact that $x$ did not satisfy the condition on line \ref{line:ctinsert:childcondition}
+    means that $\children{p}$ and $x$ must satisfy the preconditions of $\ctinsertloop$.
+    So $\ctinsert$ calls this helper function.
 
-\begin{algorithm}
-    \caption{$\ctinsert$(cover tree $p$, data point $x$)}
-    \label{alg:ctinsert}
-    \vspace{0.1in}
-    \begin{algorithmic}[1]
-    \If {$\dist{p}{x} > \covdist{p}$}
-        \State create a cover tree rooted at $x$ with level $=\ceil{\log_2 \dist{p}{x}}$ and children $=\{p\}$
-    \ElsIf {$\dist{\hat q}{x} \ge \covdist{p}/2$}
-        \State insert $x$ as a child into $p$
-    \Else
-        %\State \Return node(data=data($p$),level=$\level p$,children=$\ctinsertloop(\children{p},x)$)
-        %\State \Return the single tree in the set returned by $\ctinsertloop(\{p\},x)$
-        \State $\ctinsertloop(\{p\},x)$
-        \label{ctinsert:line:ctinsertloop}
-        %\State let $P = \ctinsertloop(\children{p}, x)$
-        %\State let $p'$ be the node $p$ with its children set to $P$
-        %\State \Return $p'$
-    \EndIf
-\end{algorithmic}
-\end{algorithm}
+    $\ctinsertloop$ takes as input a set of cover trees $P$ and inserts a data point $x$ into one of them.
+    Let $i+1$ be the level of the nodes in $Q$.
+    The if statement on line \ref{line:ctinsertloop:if} checks whether adding $x$ to level $i+1$ would violate the global separating invariant.
+    Precondition 2 ensures that all such nodes in level $i+1$ are children of some node in $p$.
+    If the separating invariant cannot be satisfied, 
+    then $x$ must be inserted at a lower level.
+    In the else clause on line \ref{line:cdinsertloop:else}, 
+    we form a set $Q_x$ of nodes that $x$ may be inserted under,
+    and recursively call $\ctinsertloop$.
+    The definition of $Q_x$ ensures that $\ctinsertloop$'s preconditions will be met.
+\end{proof}
 
 \begin{theorem}
     The runtime of $\ctinsert(p,x)$ is $O(\doubnum^3 \log\aspect{})$.
@@ -1031,12 +1058,15 @@ so $\ctinsert$ calls this helper function.
     So the overall runtime is the runtime of $\ctinsertloop$.
     The bound on the runtime of $\ctinsertloop$ follows the same pattern as the bound on $\findnn$.
 
-    In the call to $\ctinsertloop$, the runtime is the product of the number of iterations times the cost of each iteration.
-    The number of iterations is $O(\log\aspect{})$ by Lemma \ref{lemma:height}.
-    In each iteration, we must calculate the distance between $x$ and each $q\in Q$.
-    So the cost of each iteration is $O(|Q|)$.
-    The size of $Q$ is bounded by the size of $P$ times the maximum number of children per node.
-    To bound the size of $P$, we will bound the size of $Q_x$ (since $P$ is always $Q_x$ of the previous iteration).
+    The total runtime of $\ctinsertloop$ is bounded by the product of the number of recursive calls and the time spent in each call.
+    The number of recursions is bounded by the height of the tree because $\ctinsertloop$ descends one level of the tree with each recursive call. 
+    This height is bounded by $O(\log\aspect{})$ in Lemma \ref{lemma:height}.
+
+    The cost of each recursive call is $O(|Q|)$,
+    since we perform one distance computation for each node in $Q$.
+    The size of $Q$ is the size of $P$ times the of children per node.
+    To bound the size of $P$, we will bound the size of $Q_x$ 
+    (since $P$ is always $Q_x$ of the previous iteration).
     Let $\delta=2^{i-1}$.
     Then $Q_x$ is a $\delta$-packing of $B(x,\delta)$ by construction.
     So,
@@ -1045,118 +1075,107 @@ so $\ctinsert$ calls this helper function.
     \end{equation}
     Each node in $P$ has at most $\doubnum^2$ children by Lemma \ref{lemma:children},
     so $|Q| \le \doubnum^3$.
-
 \end{proof}
-
-\ignore{
-The $\ctinsert$ function takes as input a cover tree $p$ and data point $x$,
-and returns a new cover tree containing all the data points in $p$ and $x$.
-The idea is to perform a breadth first traversal of the tree,
-but at each level we descend only a small subset of the nodes.
-In order to maintain the global separating invariant, 
-several subtrees must be traversed simultaneously.
-This complicates the pseudocode.
-
-%$\ctinsert$ is a simple wrapper around the more complex helper function $\ctinsertloop$,
-%which handles the recursive search.
-$\ctinsert$ has three cases.
-In the first case, it checks to see whether $x$ is too far away from $p$ to be inserted as a child.
-If so, it creates a new tree rooted at $x$,
-sets $p$ as its child,
-and sets the level to satisfy the covering invariant.
-In the second case, it checks whether $x$ can be inserted as a child into $p$ while maintaining the separating invariant.
-The final case calls $\ctinsertloop$ to perform the recursive traversal.
-\begin{pseudocode}{\ctinsert(cover tree $p$, data point $x$)}
-    \If {$\dist{p}{x} > \covdist{p}$}
-        \State \Return node(data=$x$,level=$\ceil{\log_2 \dist{p}{x}}$,children=$\{p\}$)
-    \ElsIf {$\dist{\hat q}{x} \ge \covdist{p}/2$}
-        \State \Return $p$ with $x$ added as a child
-    \Else
-        %\State \Return node(data=data($p$),level=$\level p$,children=$\ctinsertloop(\children{p},x)$)
-        \State \Return the single tree in the set returned by $\ctinsertloop(\{p\},x)$
-        \label{ctinsert:line:ctinsertloop}
-        %\State let $P = \ctinsertloop(\children{p}, x)$
-        %\State let $p'$ be the node $p$ with its children set to $P$
-        %\State \Return $p'$
-    \EndIf
-\end{pseudocode}
-\noindent
-$\ctinsertloop$ performs a recursive traversal of the input set $P$.
-Semantically, $P$ is the set of subtrees that we must simultaneously traverse.
-$\ctinsertloop$ returns a new set $P'$ equal to $P$ except that one subtree in $P'$ has been modified to contain $x$.
-For example, when $\ctinsertloop(\{p\},x)$ is called in line \ref{ctinsert:line:ctinsertloop} above,
-we are guaranteed to return a set containing a single tree rooted at $\datapoint{p}$.
-%This property ensures that the node created on line 4 of $\ctinsert$ will obey the separating invariant.
-\begin{pseudocodeT}{\ctinsertloop(set of cover trees $P$, data point $x$)}
-    \State let $Q = \{ q : q \in \children{p}, p\in P\}$
-    \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
-\end{pseudocodeT}
-\noindent
-There are two cases.
-In the first case, $x$ can be inserted directly as a child of some $\hat p\in P$ without violating the separating invariant.
-\begin{pseudocodeM}
-    \If {$\dist{\hat q}{x} \ge \covdist{\hat q}$}
-        \State let $\hat p = \argmin_{p\in P} \dist{p}{x}$
-        \State let $\hat p' = \hat p$ with $x$ added as a child
-        \State \Return $\big(P\setminus\{\hat p\}\big) \cup \{\hat p'\}$
-\end{pseudocodeM}
-\noindent
-In the second case, $x$ cannot be inserted as a child because this would violate the global separating invariant.
-So we create a subset of $Q$ that might contain $x$, and insert $x$ into that subset.
-\begin{pseudocodeB}
-    \Else
-        \State let $Q_x = \{q : q\in Q, \dist{q}{x} \le \covdist{q}\}$
-        \State let $Q' = \ctinsertloop(Q_x, x)$
-        \State let $q$   be the unique element of $Q  \setminus(Q\cap Q_x)$
-        \State let $q_x$ be the unique element of $Q_x\setminus(Q\cap Q_x)$
-        \State let $p_q$ be the element of $P$ with $q$ as its child
-        \State let $p_{q_x}$ be the node $p_q$ with child $q$ replaced by $q_x$
-        \State \Return $\big(P\setminus\{p_q\}\big) \cup \{p_{q_x}\}$
-    \EndIf
-\end{pseudocodeB}
-}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsubsection{Dual tree nearest neighbor search}
 
-\begin{pseudocode}{$\dualnn$(set of cover trees $P$, set of cover trees $R$, tolerance $\epsilon$)}
-    \If {$\level P \ge \level R$}
-        %\State $P' \leftarrow \{\}$
-        \For {$p\in P$}
-            \State $\dualnn(\children{p},R,\epsilon)$
-            %\If {$\level p = \level P$}
-                %\State $P' \leftarrow P' \cup \children{p}$
-                %\For {$r\in R$}
-                    %\If {$nn[p] \le$}
-                        %\State
-                    %\EndIf
-                %\EndFor
-            %\Else
-                %\State $P' \leftarrow P' \cup \{p\}$
-            %\EndIf
-        \EndFor
-        %\State $\dualnn(P',R,\epsilon)$
-    \Else
-        \State $R' \leftarrow \{\}$
-        \For {$r\in R$}
-            %\If {$\level r = \level R$}
-                %\State $R' \leftarrow R' \cup \children{r}$
-                \For {$p\in P$}
-                    \If {$\dist{r}{p} \le \dist{nn[p]}{p}$}
-                        \State $nn[p] \leftarrow r$
-                    \EndIf
-                    \If {$\maxdist{p} \le \dist{r}{p}/\epsilon+\maxdist{r}$}
-                        \State $R' \leftarrow R' \cup \{r\}$
-                    \EndIf
-                \EndFor
-            %\Else
-                %\State $R' \leftarrow R' \cup \{r\}$
-            %\EndIf
-        \EndFor
-        \State $\dualnn(P,R',\epsilon)$
-    \EndIf
-\end{pseudocode}
+In many situations, we have two sets of data $X$ and $Y$,
+and we want to find for each $y\in Y$ the nearest neighbor in $X$.
+For simplicity of notation, we assume that both datasets have size $n$,
+although the procedures generalize to unequally sized datasets.
+A simple way to calculate the nearest neighbors is by repeatedly calling the $\findnn$ function.
+This takes time $O(\doubnum^4 n\log \aspect{})$.
+In some situations, however, a better algorithm exists.
+In particular, if we have a cover tree on both data sets $X$ and $Y$,
+we can perform a ``dual tree'' traversal of the datasets.
+
+\begin{algorithm}[t]
+\caption{$\dualnn$(set of cover trees $P$, set of cover trees $R$, tolerance $\varepsilon$)}
+\vspace{0.1in}
+finds an $\eann$ (contained in $P$) for each node $r\in R$, and stores it in $\nn r$
+\begin{algorithmic}[1]
+    \State let $Q = \{ q: q \in \children p, p\in P \}$
+    \For {$r \in R$}
+        \State let $\hat q = \argmin_{q\in Q} \dist{q}{r}$
+        \State let $Q_r = \{ q : q \in Q, \dist{r}{q} \le \dist{r}{\hat q}/\epsilon + \maxdist{q} +\maxdist{r} \}$
+        \If {$\dist{r}{\hat q} \le \dist{r}{\nn r}$}
+            \State $\nn r \leftarrow \hat q$
+        \EndIf
+        %\If {$\children r \ne \{\}$}
+            \State $\dualnn(Q_r,\children r, \varepsilon)$
+        %\EndIf
+    \EndFor
+    %\If {$|P| = |R| = 1$}
+        %\State let $p$ be the element of $P$ and $r$ the element of $R$
+        %\State $\nn r \leftarrow p$
+    %\EndIf
+    %\If {$\level P < \level R$}
+        %\For {$r\in R$}
+            %\State $\dualnn(P,\children{r},\varepsilon)$
+        %\EndFor
+    %\Else
+        %\For {$p\in P$}
+            %\State $P' \leftarrow \{\}$
+            %\For {$r\in R$}
+                %\If {$\dist{r}{p} \le \dist{\nn{r}}{r}$}
+                    %\State $\nn{r} \leftarrow p$
+                %\EndIf
+                %\If {$\maxdist{r} \le \dist{r}{p}/\varepsilon+\maxdist{p}$}
+                    %%\State $P' \leftarrow P' \cup \{p\}$
+                    %\State $P' \leftarrow P' \cup \children p$
+                %\EndIf
+            %\EndFor
+            %\State $\dualnn(P',\children{r},\varepsilon)$
+        %\EndFor
+    %\EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+    Let $p$ be a cover tree of data set $X$ and $r$ be a cover tree of data set $Y$.
+    Then for each $y\in Y$, $\dualnn(\{p\},\{r\},\varepsilon)$ finds an $\eann$ in $X$. 
+\end{theorem}
+\begin{proof}
+    For each node $r\in R$, let $\nn* r$ denote the true nearest neighbor of $r$ in $X$.
+    We will show that on each recursion,
+    for all $s\in\descendants r$,
+    either $\nn* s \in Q_r$ or $\nn s$ is an $\eann$.
+    %Since the algorithm only terminates when $Q_x$ is empty,
+    %(and Theorem \ref{theorem:findnn:runtime} below shows that $\findnn$ must terminate),
+    %the returned $\hat q$ must be an $\eann$.
+
+    In the first recursive call where $\nn*s \not\in\data{Q_r}$,
+    we must have that $\nn*s \in \data{Q}$.
+    Let $q_s^*$ be the node in $Q$ such that $\nn*s \in\data{\q_s^*}$.
+    Then by the definition of $Q_r$, we have that
+    \begin{equation}
+        \label{eq:dualknn:correctness:1}
+        \dist{r}{q_s^*}
+        > \dist{r}{\hat q}/\varepsilon + \maxdist{q_s^*} + \maxdist{r}
+        .
+    \end{equation}
+    Using the triangle inequality on the left and the definition of $\mkfunction{maxdist}$ on the right gives
+    \begin{equation}
+        \dist{r}{s} + \dist{s}{\nn*s} + \dist{\nn*s}{q_s^*} 
+        %\ge \dist{r}{q^*} 
+        %>   \dist{r}{\hat q}/\varepsilon + \maxdist{q^*}
+        \ge
+        \stackrel{\eqref{eq:dualknn:correctness:1}}{~~~~...~~~~}
+        \ge \dist{r}{\hat q}/\varepsilon + \dist{q_s^*}{\nn*s} + \dist{r}{s}
+        .
+    \end{equation}
+    Subtracting $\dist{q^*}{y^*}$ from the leftmost and rightmost sides gives
+    \begin{equation}
+        \dist{s}{\nn*s} \ge \dist{r}{\hat q}/\epsilon
+        ,
+    \end{equation}
+    and so $\hat q$ is an $\eann$.
+    In the recursive call on line \ref{line:findnn:recurse},
+    we call $\findnn$ with $P=Q_x\cup\{\hat q\}$ to ensure that on all future iterations,
+    the distance between $\hat q$ and $x$ is non-increasing.
+\end{proof}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1574,7 +1593,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
     \label{alg:query}
 
     \vspace{0.1in}
-    {\bfseries function} \findnn(set of cover trees $P$, query  point $x$, nearest neighbor so far $y$, allowable tolerance $\epsilon$)
+    {\bfseries function} \findnn(set of cover trees $P$, query  point $x$, nearest neighbor so far $y$, allowable tolerance $\varepsilon$)
 
 \begin{algorithmic}[1]
     \If {$P = \{\}$}
@@ -1588,14 +1607,14 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
         \State $P' \leftarrow \{\}$
         \For {$p\in P$}
             \For {$q \in \children p$}
-                \If {$\dist{x}{q} \le \dist{x}{y}/\epsilon + \maxdist{q}$}
+                \If {$\dist{x}{q} \le \dist{x}{y}/\varepsilon + \maxdist{q}$}
                     \State $P' \leftarrow P'\cup\{q\}$
                 \EndIf
             \EndFor
         \EndFor
-        %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{y} > \dist{x}{q}/\epsilon - \maxdist{q} \}$
-        %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{q} \le \epsilon\cdot\dist{x}{y}+\maxdist{q}\}$
-        \State\Return $\findnn(P',x,y,\epsilon)$
+        %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{y} > \dist{x}{q}/\varepsilon - \maxdist{q} \}$
+        %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{q} \le \varepsilon\cdot\dist{x}{y}+\maxdist{q}\}$
+        \State\Return $\findnn(P',x,y,\varepsilon)$
     \EndIf
 \end{algorithmic}
 \end{algorithm}
@@ -1603,28 +1622,28 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
 \begin{definition}
     Let $\set X$ be a metric space, $X\subset\set X$, and $x$ be in $\set X$ but not $X$.
     Then the nearest neighbor $y^*\in X$ is defined as $y^*=\argmin_{y\in X} \dist{x}{y}$.
-    An $\epsilon$-nearest neighbor (for $\epsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \epsilon \cdot\dist{x}{y^*}$.
+    An $\varepsilon$-nearest neighbor (for $\varepsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \varepsilon \cdot\dist{x}{y^*}$.
 \end{definition}
 
 \begin{theorem}
-    The return value of $\findnn(\{p\},x,p,\epsilon)$ is an $\epsilon$-approximate nearest neighbor of $x$.
+    The return value of $\findnn(\{p\},x,p,\varepsilon)$ is an $\varepsilon$-approximate nearest neighbor of $x$.
 \end{theorem}
 \begin{proof}
-    The algorithm maintains the invariant that either $y$ is an $\epsilon$-ann,
-    or $P$ contains a tree that contains an $\epsilon$-ann.
+    The algorithm maintains the invariant that either $y$ is an $\varepsilon$-ann,
+    or $P$ contains a tree that contains an $\varepsilon$-ann.
     Since the algorithm only terminates when $P$ is empty,
-    the invariant ensures that the returned value is an $\epsilon$-ann.
+    the invariant ensures that the returned value is an $\varepsilon$-ann.
 
-    If $y$ is already an $\epsilon$-ann,
-    then the algorithm must return an $\epsilon$-ann because it will only ever update $y$ to be closer to $x$.
-    Assume $y$ is not an $\epsilon$-ann.
-    Then if the root of some subtree in $P$ is an $\epsilon$-ann,
-    the for loop on lines 4-6 will update $y$ to be an $\epsilon$-ann.
-    Otherwise, there must exist an $\epsilon$-ann in some child $q$ of some subtree $p\in P$.
-    Let $\hat y$ denote the $\epsilon$-ann.
+    If $y$ is already an $\varepsilon$-ann,
+    then the algorithm must return an $\varepsilon$-ann because it will only ever update $y$ to be closer to $x$.
+    Assume $y$ is not an $\varepsilon$-ann.
+    Then if the root of some subtree in $P$ is an $\varepsilon$-ann,
+    the for loop on lines 4-6 will update $y$ to be an $\varepsilon$-ann.
+    Otherwise, there must exist an $\varepsilon$-ann in some child $q$ of some subtree $p\in P$.
+    Let $\hat y$ denote the $\varepsilon$-ann.
     We have that
     \begin{equation}
-        \epsilon \cdot \dist{x}{y^*}
+        \varepsilon \cdot \dist{x}{y^*}
         \le \dist{x}{\hat y} 
         \le \dist{x}{y} 
         .
@@ -1634,7 +1653,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
         \label{eq:findnn_condition}
         \dist{x}{q} 
         \le \dist{x}{\hat y} + \dist{\hat y}{q}
-        \le \dist{x}{y}/\epsilon + \maxdist{q}
+        \le \dist{x}{y}/\varepsilon + \maxdist{q}
         .
     \end{equation}
     The if statement in line 10 ensures that all nodes satisfying condition \eqref{eq:findnn_condition} will be added to $P_i$,
@@ -1648,7 +1667,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
     \label{alg:query}
 
     \vspace{0.1in}
-    {\bfseries function} \findnn(cover tree $p$, query  point $x$, tolerance $\epsilon$)
+    {\bfseries function} \findnn(cover tree $p$, query  point $x$, tolerance $\varepsilon$)
 
 \begin{algorithmic}[1]
     %\State let $i=0$, $P_i = \{p\}$, $y=p$
@@ -1667,7 +1686,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
                 %\State $y \leftarrow p$
             %\EndIf
             \For {$q\in\children{p}$}
-                \If {$\dist{x}{q} \le \dist{x}{y}/\epsilon+\maxdist{q}$}
+                \If {$\dist{x}{q} \le \dist{x}{y}/\varepsilon+\maxdist{q}$}
                     \State $P_i \leftarrow P_i\cup\{q\}$
                 \EndIf
             \EndFor
@@ -1679,7 +1698,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
 \end{algorithm}
 
 \begin{theorem}
-    The runtime of $\findnn$ with $\epsilon \ge 2$ is $O(\doubnum^2\log\aspect{})$.
+    The runtime of $\findnn$ with $\varepsilon \ge 2$ is $O(\doubnum^2\log\aspect{})$.
 \end{theorem}
 \begin{proof}
     Since the algorithm contains three nested loops, 
@@ -1693,10 +1712,10 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
     The middle for loop (line 6) executes once for each node in $P_i$.
     To bound the size of $P_i$, first notice that by the global separating invariant,
     the distance between each $q_1$ and $q_2$ in $P_i$ must be at least $2^i$. 
-    By our choice of $\epsilon$, we have that all of the $q$ in $P_i$ satisfy
+    By our choice of $\varepsilon$, we have that all of the $q$ in $P_i$ satisfy
     \begin{equation}
         \dist{x}{q} 
-        \le \dist{x}{y}/\epsilon + \maxdist{q}
+        \le \dist{x}{y}/\varepsilon + \maxdist{q}
         \le \dist{x}{q}/2 + 2^i
         \le 2^{i+1}
         .
@@ -1713,7 +1732,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
 \end{proof}
 
 \begin{theorem}
-    The runtime of $\findnn$ with $\epsilon=1$ 
+    The runtime of $\findnn$ with $\varepsilon=1$ 
     (i.e. $\findnn$ must return the exact nearest neighbor),
     is $O(\doubnum^2 ...)$.
 \end{theorem}
@@ -1748,7 +1767,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
     \label{alg:dualnn}
 
     \vspace{0.1in}
-    {\bfseries function} \dualnn(set of cover trees $P$, set of cover trees $R$, tolerance $\epsilon$)
+    {\bfseries function} \dualnn(set of cover trees $P$, set of cover trees $R$, tolerance $\varepsilon$)
 
     finds all the nearest neighbors of $P$ in $R$
 
@@ -1756,7 +1775,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
     \If {$\level P \ge \level R$}
         %\State $P' \leftarrow \{\}$
         \For {$p\in P$}
-            \State $\dualnn(\children{p},R,\epsilon)$
+            \State $\dualnn(\children{p},R,\varepsilon)$
             %\If {$\level p = \level P$}
                 %\State $P' \leftarrow P' \cup \children{p}$
                 %\For {$r\in R$}
@@ -1768,7 +1787,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
                 %\State $P' \leftarrow P' \cup \{p\}$
             %\EndIf
         \EndFor
-        %\State $\dualnn(P',R,\epsilon)$
+        %\State $\dualnn(P',R,\varepsilon)$
     \Else
         \State $R' \leftarrow \{\}$
         \For {$r\in R$}
@@ -1778,7 +1797,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
                     \If {$\dist{r}{p} \le \dist{nn[p]}{p}$}
                         \State $nn[p] \leftarrow r$
                     \EndIf
-                    \If {$\maxdist{p} \le \dist{r}{p}/\epsilon+\maxdist{r}$}
+                    \If {$\maxdist{p} \le \dist{r}{p}/\varepsilon+\maxdist{r}$}
                         \State $R' \leftarrow R' \cup \{r\}$
                     \EndIf
                 \EndFor
@@ -1786,26 +1805,26 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
                 %\State $R' \leftarrow R' \cup \{r\}$
             %\EndIf
         \EndFor
-        \State $\dualnn(P,R',\epsilon)$
+        \State $\dualnn(P,R',\varepsilon)$
     \EndIf
 \end{algorithmic}
 \end{algorithm}
 
 \begin{theorem}
     Let $p^*$ and $r^*$ be the root of two cover trees.
-    After running $\dualnn(\{p^*\},\{r^*\},\epsilon)$,
-    $nn[q]$ contains an $\epsilon$-approximate nearest neighbor of $q$ in $r$ for all $q$ in $p$.
+    After running $\dualnn(\{p^*\},\{r^*\},\varepsilon)$,
+    $nn[q]$ contains an $\varepsilon$-approximate nearest neighbor of $q$ in $r$ for all $q$ in $p$.
 \end{theorem}
 
 \begin{proof}
     We will show that for every node $p$ in $p^*$,
-    $\dualnn$ will be called with $p\in P$ and some $\epsilon$-ann in $R$.
-    When this happens, the if statement on line 8 will ensure that $nn[p]$ gets updated to a $\epsilon$-ann.
+    $\dualnn$ will be called with $p\in P$ and some $\varepsilon$-ann in $R$.
+    When this happens, the if statement on line 8 will ensure that $nn[p]$ gets updated to a $\varepsilon$-ann.
 \end{proof}
 
 \begin{theorem}
     Let $p$ and $r$ be the root of two cover trees.
-    The runtime of $\dualnn(\{p\},\{r\},\epsilon)$ for all $\epsilon\ge2$ is $O(\doubnum^4\log\aspect{})$.
+    The runtime of $\dualnn(\{p\},\{r\},\varepsilon)$ for all $\varepsilon\ge2$ is $O(\doubnum^4\log\aspect{})$.
 \end{theorem}
 \begin{proof}
 \end{proof}
