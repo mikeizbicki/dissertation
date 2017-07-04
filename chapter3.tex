@@ -15,15 +15,17 @@
 \newcommand{\krdim}{\text{dim}_\textnormal{exp}}
 \newcommand{\doubdim}{\text{dim}_\textnormal{doub}}
 \newcommand{\dualdim}{\text{dim}_{\textnormal{doub}^*}}
+\newcommand{\holedim}{\text{dim}_{\textnormal{hole}}}
 
 \newcommand{\krnum}{c_\textnormal{exp}}
 \newcommand{\doubnum}{c_\textnormal{doub}}
 \newcommand{\dualnum}{c_{\textnormal{doub}^*}}
+\newcommand{\holenum}{c_\textnormal{hole}}
 
 \newcommand{\p}{\ensuremath p}
 \newcommand{\q}{\ensuremath q}
 %\newcommand{\varfont}[1]{\ensuremath{\textup{\text{{#1}}}}}
-\newcommand{\mkfunction}[1]{\ifmmode{\text{{#1}}}}
+\newcommand{\mkfunction}[1]{\ifmmode{\textnormal{{#1}}}}
 \newcommand{\level}[1]      {\mkfunction{level}({#1})}
 \newcommand{\parent}[1]     {\mkfunction{parent}({#1})}
 \newcommand{\children}[1]   {\mkfunction{children}({#1})}
@@ -46,6 +48,7 @@
 \newcommand{\ctmergeloop}{\mkprocedure{merge\_loop}}
 \newcommand{\findnnloop}{\mkprocedure{findnn\_loop}}
 \newcommand{\findnn}{\mkprocedure{findnn}}
+\newcommand{\findnnorig}{\mkprocedure{findnn\_orig}}
 
 %\newcommand{\nn}[1]{\ensuremath{\ensuremath{{{#1}}_{nn}}}}
 \newcommand{\exprad}[1]{\ensuremath{\ensuremath{2}}}
@@ -117,6 +120,7 @@ uses this result to create approximation algorithms for several NP-hard problems
 \cite{abraham2014volume} shows finite embeddings that preserve both distance and volume.
 \cite{bartal2015impossibility} shows that $L_p, p>2$ spaces cannot be embedded.
 
+MLPACK \cite{curtin2013mlpack}.
 The most recent work is the Fast Library for Approximate Nearest Neighbor (FLANN) \cite{muja2014scalable}.
 FLANN uses the randomized kd-forest and the priority search $k$-means tree.
 
@@ -148,6 +152,7 @@ Survey of LHS \cite{wang2014hashing} \cite{wang2016learning}
 \cite{curtin2013tree} provides a generic framework for solving distance problems.
 \cite{clarkson2006nearest} reviews metric space properties and data structures.
 \cite{czumaj2010sublinear} is a survey of sublinear time algorithms in metric spaces.
+\cite{moore2014fast} use cover trees for faster gaussian process posteriors.
 
 The method of compression was introduced by \citet{hart1968condensed}.
 This problem is known to be NP-hard \citep{zukhba2010np}.
@@ -161,6 +166,11 @@ Nearest neighbor asymptotics first given by \citet{cover1967nearest}.
 \cite{hildrum2004note} provides a randomized data structure in growth restricted dimensions.
 \cite{talwar2004bypassing} creates the randomized split trees data structure,
 but uses it to solve NP-hard problems rather than nearest neighbor queries.
+
+\cite{krauthgamer2005black} provides hardness lower bounds on the performance of any approximate nearest neighbor algorithm. 
+In particular, they show that a metric space admits a $(1+\epsilon)-$ANN solution if and only if $\doubdim = O(\log \log n)$.
+
+\cite{arya2009space} characterizes the space time trade offs for approximate nearest neighbor in Euclidean space.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -443,6 +453,40 @@ as shown in the following two lemmas.
     \end{equation}
     We also have that $|B(y,\delta/2)|=1$.
 \end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{The hole dimension}
+
+The hole dimension is a novel measure of a set's dimensionality.
+
+The \emph{hole number} is defined as
+\begin{align}
+    \holenum
+    = 
+    &\max_{x\in\set X, \epsilon \ge 0, \delta > 0} 
+    N_\delta\big( B(x,\epsilon+2\delta) \setminus B(x,\epsilon+\delta) \big)
+    \\
+    &
+    ~~~~~~\text{s.t.}
+    ~~
+    B(x,\epsilon+\delta) \setminus B(x,\delta) = \{\}
+    .
+\end{align}
+The \emph{hole dimension} is
+\begin{align}
+    \holedim = \log_2 \holenum
+    .
+\end{align}
+
+\begin{lemma}
+    For any finite metric space,
+    \begin{equation}
+        \doubnum \le \holenum + 1 \le 
+    \end{equation}
+\end{lemma}
+
+\fixme{}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -816,6 +860,9 @@ This section can be safely skipped by the reader not interested in the details o
 
 \subsection{Algorithms}
 
+This section analyzes four common algorithms for cover trees.
+The first two algorithms are called single tree algorithms because they work with only a single cover tree at once.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{definition}
@@ -823,16 +870,16 @@ This section can be safely skipped by the reader not interested in the details o
     Then the nearest neighbor $y^*\in X$ is defined as $y^*=\argmin_{y\in X} \dist{x}{y}$.
     An $\varepsilon$-nearest neighbor (for $\varepsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \varepsilon \cdot\dist{x}{y^*}$.
 \end{definition}
-\newcommand{\eann}{\varepsilon\text{-ann}}
+\newcommand{\eann}{(1+\varepsilon)\text{-ann}}
 
 \subsubsection{Finding the nearest neighbor of a single point}
 
-The $\findnn$ function (Algorithm \ref{alg:findnn}) finds an $\eann$ in a set of cover trees.
-The function would typically be called with only a single cover tree in the input set $P$;
+The $\findnn$ function (Algorithm \ref{alg:findnn}) finds an $\eann$ of a data point $x$ in a set of cover trees $P$.
+The function would typically be called with only a single tree in the input set $P$;
 but in subsequent recursive calls, $P$ may contain many subtrees. 
 On each call,
 $\findnn$ iterates over $Q$ (the children of nodes in $P$),
-and constructs a set $Q_x \subseteq Q$ of subtrees that need to be searched.
+and constructs a set $Q_x \subseteq Q$ of subtrees that will be recursively searched.
 %If $Q_x$ is empty, then $\hat p$ is guaranteed to be an $\eann$.
 %The important property of $Q_x$ is that it always contains an $\eann$ of $x$
 %(see next paragraph).
@@ -843,30 +890,102 @@ so only a small portion of the tree is searched.
 We now prove the algorithm's correctness and runtime.
 
 \begin{algorithm}[t]
+\caption{$\findnnorig$(set of cover trees $P$, query  point $x$, tolerance $\varepsilon$)}
+\label{alg:findnnorig}
+\vspace{0.1in}
+returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
+\begin{algorithmic}[1]
+    %\State let $Q = \{ q : q\in\children{p}, p\in P \}$, $\hat q = \argmin_{q\in Q} \dist{q}{x}$
+    \State let $Q = \{ q : q\in\children{p}, p\in P \}$
+    \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
+    \If {$Q=\{\hat q\}$ \textbf{or} $\dist{x}{\hat q} \ge 2\cdot\covdist{\hat q}(1+1/\varepsilon)$}
+        \label{line:findnnorig:if}
+        \State \Return $\hat q$
+        \label{line:findnnorg:returnq}
+    \Else
+        \State let $Q_x = \{ q : q\in Q, \dist{x}{q} \le \dist{x}{\hat q}+\maxdist{q}\}$
+        \State\Return $\findnn(Q_x,x,\varepsilon)$
+        \label{line:findnnorig:recurse}
+    \EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+    \label{theorem:findnnorig:correct}
+    $\findnnorig(\{p\}, x, \varepsilon)$ returns a $\eann$ of $x$ in $\data{p}$.
+    In particular, $\findnnorig(\{p\},x,0)$ returns the exact nearest neighbor of $x$.
+\end{theorem}
+\begin{proof}
+    We show that every $\hat q$ satisfying the if statement in line $\ref{line:findnnorig:if}$ is a $\eann$.
+    For the first case where $Q=\{\hat q\}$, 
+    we show that $\hat q$ must be the true nearest neighbor.
+    Let $y^*$ denote the true nearest neighbor of $x$ in $\data{p}$.
+    By induction, we assume that $y^*$ is in $\data{P}$ and hence in $\data{Q}$.
+    Let $q^*$ denote the node in $Q$ that contains $y^*$.
+    Then we have that
+    \begin{equation}
+        \dist{x}{q^*}
+        \le \dist{x}{y^*} + \dist{y^*}{q^*}
+        \le \dist{x}{\hat q} + \maxdist{q^*}
+        .
+    \end{equation}
+    So $q^*$ is always included in the set $Q_x$,
+    which becomes $P$ in subsequent recursive calls.
+
+    Now consider the case where $\dist{x}{\hat q} \ge 2\cdot\covdist{\hat q}(1+1/\varepsilon)$.
+    We have,
+    \begin{align}
+        \dist{x}{\hat q}
+        &\le \dist{x}{q^*}
+        \\&\le \dist{x}{y^*} + \dist{y^*}{q^*}
+        \label{eq:findnnorig:1}
+        \\
+        &\le \dist{x}{y^*} + 2\cdot\covdist{q^*}
+        \label{eq:findnnorig:2}
+        \\
+        &\le \dist{x}{y^*} + \frac{\dist{x}{\hat q}}{1+1/\varepsilon}
+        \label{eq:findnnorig:3}
+        \\
+        &= (1+\varepsilon)\dist{x}{y^*}
+        \label{eq:findnnorig:4}
+    \end{align}
+    Line \eqref{eq:findnnorig:1} is the triangle inequality,
+    line \eqref{eq:findnnorig:2} uses the maximum distance between any node and a descendent,
+    line \eqref{eq:findnnorig:3} uses the condition in the if statement,
+    and line \eqref{eq:findnnorig:4} follows from algebraic manipulations.
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{algorithm}[t]
 \caption{$\findnn$(set of cover trees $P$, query  point $x$, tolerance $\varepsilon$)}
 \label{alg:findnn}
 \vspace{0.1in}
+returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
+faster than $\findnnorig$
 \begin{algorithmic}[1]
     \State let $Q = \{ q : q\in\children{p}, p\in P \}$
     \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
-    \State let $Q_x = \{ q : q\in Q, \dist{x}{q} \le \dist{x}{\hat q}/\varepsilon+\maxdist{q}\}$
-    \If {$Q_x = \{\}$}
+    %\State let $Q_x = \{ q : q\in Q, \dist{x}{q} \le \dist{x}{\hat q}/\varepsilon+\maxdist{q}\}$
+    %\If {$Q_x = \{\}$}
+    \If {$Q=\{\hat q\}$ \textbf{or} $\dist{x}{\hat q} \ge 2\cdot\covdist{\hat q}(1+1/\varepsilon)$}
         \State \Return $\hat q$
         \label{line:findnn:returnq}
     \Else
-        \State\Return $\findnn(Q_x\cup\{\hat q\},x,\varepsilon)$
+    \State let $Q_x = \{ q : q\in Q, \dist{x}{q} \le \hl{$\dist{x}{\hat q}/(1+\varepsilon)$}+\maxdist{q}\} \hl{$\cup \{\hat q\}$}$
+        %\State\Return $\findnn(Q_x\cup\{\hat q\},x,\varepsilon)$
+        \State\Return $\findnn(Q_x,x,\varepsilon)$
         \label{line:findnn:recurse}
     \EndIf
 \end{algorithmic}
 \end{algorithm}
 
-\newpage
 \begin{theorem}
     \label{theorem:findnn:correct}
     $\findnn(\{p\},x,\varepsilon)$ returns an $\eann$ of $x$ in $p$.
 \end{theorem}
 \begin{proof}
-    Let $y^*$ denote the true nearest neighbor of $x$ in $\data{P}$.
+    Let $y^*$ denote the true nearest neighbor of $x$ in $\data{p}$.
     We will show that on each recursion,
     either $y^* \in Q_x$ or $\hat q$ is an $\eann$.
     Since the algorithm only terminates when $Q_x$ is empty,
@@ -878,6 +997,7 @@ We now prove the algorithm's correctness and runtime.
     Let $q^*$ be the node in $Q$ such that $y^* \in\data{\q^*}$.
     Then by the definition of $Q_x$, we have that
     \begin{equation}
+        \label{eq:findnn:correct:1}
         \dist{x}{q^*}
         > \dist{x}{\hat q}/\varepsilon + \maxdist{q^*} 
         .
@@ -885,28 +1005,30 @@ We now prove the algorithm's correctness and runtime.
     Using the triangle inequality on the left and the definition of $\mkfunction{maxdist}$ on the right gives
     \begin{equation}
         \dist{x}{y^*} + \dist{y^*}{q^*} 
-        \ge \dist{x}{q^*} 
-        >   \dist{x}{\hat q}/\varepsilon + \maxdist{q^*}
-        \ge \dist{x}{\hat q}/\varepsilon + \dist{q^*}{y^*}
+        \ge \stackrel{\eqref{eq:findnn:correct:1}}{~~~~...~~~~}
+        %\ge \dist{x}{q^*} 
+        %>   \dist{x}{\hat q}/\varepsilon + \maxdist{q^*}
+        \ge \dist{x}{\hat q}/\varepsilon + \dist{y^*}{q^*}
         .
     \end{equation}
-    Subtracting $\dist{q^*}{y^*}$ from the leftmost and rightmost sides gives
+    Subtracting $\dist{y^*}{q^*}$ from each side gives
     \begin{equation}
-        \dist{x}{y^*} \ge \dist{x}{\hat q}/\epsilon
+        \dist{x}{y^*} \ge \dist{x}{\hat q}/\varepsilon
         ,
     \end{equation}
     and so $\hat q$ is an $\eann$.
+    %In particular, if $\varepsilon=1$, then $y^* = \hat q$.
     In the recursive call on line \ref{line:findnn:recurse},
     we call $\findnn$ with $P=Q_x\cup\{\hat q\}$ to ensure that on all future iterations,
     the distance between $\hat q$ and $x$ is non-increasing.
 \end{proof}
 
 \begin{theorem}
-    \label{theorem:findnn:runtime}
+    \label{theorem:findnn:runtime:approx}
     Let $\varepsilon\ge2$.
     Then $\findnn(\{p\},x)$ has run time $O(\doubnum^4\log\aspect{})$.
-    If the data is generated i.i.d.\ from a well behaved distribution,
-    then the run time is $O(\doubnum^4\log n)$.
+    %If the data is generated i.i.d.\ from a well behaved distribution,
+    %then the run time is $O(\doubnum^4\log n)$.
 \end{theorem}
 
 \begin{proof}
@@ -916,7 +1038,7 @@ We now prove the algorithm's correctness and runtime.
 
     The cost of each recursive call is $O(|Q|)$,
     since we perform one distance computation for each node in $Q$.
-    The size of $Q$ is the size of $P$ times the of children per node.
+    The size of $Q$ is the size of $P$ times the number of children per node.
     To bound the size of $P$, we will bound the size of $Q_x$ 
     (since $P$ is always $Q_x$ of the previous iteration).
     Let $i$ be the level of the nodes in $Q_x$.
@@ -948,6 +1070,19 @@ We now prove the algorithm's correctness and runtime.
     so the cost per iteration is $O(\doubnum^4)$.
 \end{proof}
 
+\begin{theorem}
+    $\findnn(\{p\},x,1)$ has runtime $O(\holenum^4\log\aspect{})$.
+\end{theorem}
+\begin{proof}
+    As in Theorem \ref{theorem:findnn:runtime:approx},
+    the runtime is bounded by the height of the tree times the number of children per node times the size of $Q_x$.
+    Let $\delta = \covdist{P}$.
+    Then $Q_x$ is an annulus of outer radius $\gamma = \dist{x}{\hat q}/\varepsilon + \maxdist{q}$,
+    and inner radius $\gamma-\delta$.
+    The ball $B(x,\gamma-\delta)$ is guaranteed to have no points in the data set,
+    so $|Q_x| \le \holenum^2$.
+\end{proof}
+
 \begin{remark}
     \fixme{}
 As written, $\findnn$ shows $\hat p$ being recalculated on each recursive call.
@@ -956,6 +1091,173 @@ but a substantial constant factor improvement can be made in practical implement
 Notice that for each $p\in P$, the value of $\dist{p}{x}$ was calculated in the previous iteration of the algorithm.
 This value can be cached to prevent the need for future calls to calculate it.
 \end{remark}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Dual tree nearest neighbor search}
+
+In many situations, we have two sets of data $X$ and $Y$,
+and we want to find for each $y\in Y$ the nearest neighbor in $X$.
+For simplicity of notation, we assume that both datasets have size $n$,
+although the procedures generalize to unequally sized datasets.
+A simple way to calculate the nearest neighbors is by repeatedly calling the $\findnn$ function.
+This takes time $O(\doubnum^4 n\log \aspect{})$.
+In some situations, however, a better algorithm exists.
+In particular, if we have a cover tree on both data sets $X$ and $Y$,
+we can perform a ``dual tree'' traversal of the datasets.
+
+
+\newpage
+\begin{algorithm}[h]
+    \caption{$\dualnn$(set of cover trees $P$, set of cover trees $R$, tolerance $\varepsilon$)}
+\vspace{0.1in}
+finds a $\eann$ in $P$ for each node $r\in R$
+\begin{algorithmic}[1]
+    \State let $Q = \{ q: q \in \children p, p\in P \}$
+    \For {$r \in R$}
+        \State let $\hat q = \argmin_{q\in Q} \dist{q}{r}$
+        \If {$Q = \{\hat q\}$ \textbf{or} $\dist{x}{\hat q} \ge 2\cdot\covdist{\hat q}(1+1/\varepsilon)$}
+            \label{line:dualnnorig:if}
+            %\For {$s \in \data{r}$}
+                %\State $\nn s \leftarrow \hat q$
+            %\EndFor
+            %\State set the nearest neighbor of each $s\in\data r$ to $\hat q$
+            \State set the result for each $s\in\data r$ to $\hat q$
+        \Else
+            \State let $Q_r = \{ q : q \in Q, \dist{r}{q} \le \dist{r}{\hat q} + \maxdist{q} + 2\cdot \maxdist{r} \}$
+            \State $\dualnn(Q_r,\children r)$
+        \EndIf
+    \EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}
+    $\dualnn(\{p\},\{r\},\varepsilon)$ finds a $\eann$ in $\data{p}$ for each $s\in\data{r}$.
+\end{theorem}
+\begin{proof}
+    %First notice that every $s\in\data{r}$ will have some $\hat q$ assigned to it.
+    %This is because on each recursive call to $\dualnn$,
+    %either we assign some $\hat q$ to $s$ or we recursively call $\dualnn$
+    %(which will assign some $\hat q$ to $s$).
+    We show that every $\hat q$ satisfying the if statement in line \ref{line:dualnnorig:if} is a $\eann$ of every $s\in\data{r}$.
+    The main idea is similar to the proof of Theorem \ref{theorem:findnnorig:correct},
+    but the details are more complicated due to the additional need to track descendants of the query point.
+
+    For the first case where $Q=\{\hat q\}$, 
+    we show that $\hat q$ must be the true nearest neighbor of all $s\in\data{r}$.
+    Let $s$ be an arbitrary point in $\data r$,
+    and $y^*_s$ denote the true nearest neighbor of $s$ in $\data{p_0}$.
+    By induction, we assume that $y^*_s$ is in $\data{P}$ and hence in $\data{Q}$.
+    Let $q^*_s$ denote the node in $Q$ that contains $y^*_s$.
+    Then we have that
+    \begin{align}
+        \dist{r}{q^*_s}
+        &\le \dist{r}{s} + \dist{s}{y^*_s} + \dist{y^*_s}{q^*_s}
+        \\&\le \maxdist{r} + \dist{s}{\hat q} + \maxdist{q^*}
+        \\&\le \maxdist{r} + \dist{s}{r} + \dist{r}{\hat q} + \maxdist{q^*}
+        \\&\le 2\cdot\maxdist{r} + \dist{r}{\hat q} + \maxdist{q^*}
+        .
+    \end{align}
+    This is precisely the requirement that all $q\in Q_r$ must satisfy,
+    and so $q^*_s \in Q_r$.
+
+    The second case of follows from a long sequence of calculations.
+    By the triangle inequality, we have
+    $
+        \dist {r}{s} + \dist{s}{\hat q}
+        \ge \dist{r}{\hat q}
+        $,
+        and so
+    \begin{align}
+        %\\
+        \dist{s}{\hat q} 
+        &\ge \dist{r}{\hat q} - \dist{s}{r}
+        \label{eq:dualnnorig:a}
+        \\&\ge (3\cdot\maxdist r+ 2\cdot\covdist{\hat q})(1+1/\varepsilon) - \maxdist{r}
+        \label{eq:dualnnorig:b}
+        \\&\ge (2\cdot\maxdist r+ 2\cdot\covdist{\hat q})(1+1/\varepsilon) 
+        \label{eq:dualnnorig:c}
+    \end{align}
+    We also have that
+    \begin{align}
+        \dist{s}{\hat q} 
+        &\le \dist{s}{r} + \dist{r}{\hat q}
+        \label{eq:dualnnorig:1}
+        \\&\le \maxdist{r} + \dist{r}{q^*_s}
+        \label{eq:dualnnorig:2}
+        \\&\le \maxdist{r} + \dist{r}{s} + \dist{s}{y^*_s} + \dist{y^*_s}{q^*_s}
+        \label{eq:dualnnorig:3}
+        \\&\le 2\cdot\maxdist{r} + \dist{s}{y^*_s} + 2\cdot\covdist{q^*}
+        \label{eq:dualnnorig:4}
+        .
+    \end{align}
+    %Line \eqref{eq:dualnnorig:1} is the triangle inequality,
+    %line \eqref{eq:dualnnorig:2} follows from the definition of $\mkfunction{maxdist}$ and $\hat q$;
+    %line \eqref{eq:dualnnorig:3} is again the triangle inequality,
+    %and line \eqref{eq:dualnnorig:2} 
+    Substituting \eqref{eq:dualnnorig:c} into \eqref{eq:dualnnorig:4} gives
+    \begin{align}
+        \dist{s}{\hat q} 
+        &\le \dist{s}{y^*_s} + \frac{\dist{s}{\hat q}}{1+1/\varepsilon}
+        .
+    \end{align}
+    Finally, simplifying gives $\dist{s}{\hat q} \le (1+\varepsilon)\dist{s}{y^*_s}$.
+    Hence, $\hat q$ is a $\eann$.
+\end{proof}
+
+\begin{theorem}
+    Let $p$ be a cover tree of data set $X$ and $r$ be a cover tree of data set $Y$.
+    Then for each $y\in Y$, $\dualnn(\{p\},\{r\},\varepsilon)$ finds a nearest neighbor in $X$. 
+\end{theorem}
+\begin{proof}
+    %Let $s$ be some data point in $\data{r}$,
+    %and let $s^*$ be the true nearest neighbor in $X$.
+    %Then on each iteration,
+    We first show that for each $s\in\data{r}$, 
+    the true nearest neighbor $s^*$ is in $\data{Q_r}$.
+    Assume for induction that $s^* \in \data{P}$.
+    This is clearly satisfied in the first call of $\dualnn$ where $P=\{p\}$.
+    In subsequent iterations, $s^*$ will be in $\data{P}$ precisely when $s^*$ was in $Q_r$ on the previous iteration.
+
+    For each node $r\in R$, let $\nn* r$ denote the true nearest neighbor of $r$ in $X$.
+    We will show that on each recursion,
+    for all $s\in\descendants r$,
+    either $\nn* s \in Q_r$ or $\nn s$ is an $\eann$.
+    %Since the algorithm only terminates when $Q_x$ is empty,
+    %(and Theorem \ref{theorem:findnn:runtime} below shows that $\findnn$ must terminate),
+    %the returned $\hat q$ must be an $\eann$.
+
+    In the first recursive call where $\nn*s \not\in\data{Q_r}$,
+    we must have that $\nn*s \in \data{Q}$.
+    Let $q_s^*$ be the node in $Q$ such that $\nn*s \in\data{\q_s^*}$.
+    Then by the definition of $Q_r$, we have that
+    \begin{equation}
+        \label{eq:dualknn:correctness:1}
+        \dist{r}{q_s^*}
+        > \dist{r}{\hat q}/\varepsilon + \maxdist{q_s^*} + \maxdist{r}
+        .
+    \end{equation}
+    Using the triangle inequality on the left and the definition of $\mkfunction{maxdist}$ on the right gives
+    \begin{equation}
+        \dist{r}{s} + \dist{s}{\nn*s} + \dist{\nn*s}{q_s^*} 
+        %\ge \dist{r}{q^*} 
+        %>   \dist{r}{\hat q}/\varepsilon + \maxdist{q^*}
+        \ge
+        \stackrel{\eqref{eq:dualknn:correctness:1}}{~~~~...~~~~}
+        \ge \dist{r}{\hat q}/\varepsilon + \dist{q_s^*}{\nn*s} + \dist{r}{s}
+        .
+    \end{equation}
+    Subtracting $\dist{q^*}{y^*}$ from the leftmost and rightmost sides gives
+    \begin{equation}
+        \dist{s}{\nn*s} \ge \dist{r}{\hat q}/\varepsilon
+        ,
+    \end{equation}
+    and so $\hat q$ is an $\eann$.
+    In the recursive call on line \ref{line:findnn:recurse},
+    we call $\findnn$ with $P=Q_x\cup\{\hat q\}$ to ensure that on all future iterations,
+    the distance between $\hat q$ and $x$ is non-increasing.
+\end{proof}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1075,106 +1377,6 @@ We now prove the correctness and runtime of insertion.
     \end{equation}
     Each node in $P$ has at most $\doubnum^2$ children by Lemma \ref{lemma:children},
     so $|Q| \le \doubnum^3$.
-\end{proof}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsubsection{Dual tree nearest neighbor search}
-
-In many situations, we have two sets of data $X$ and $Y$,
-and we want to find for each $y\in Y$ the nearest neighbor in $X$.
-For simplicity of notation, we assume that both datasets have size $n$,
-although the procedures generalize to unequally sized datasets.
-A simple way to calculate the nearest neighbors is by repeatedly calling the $\findnn$ function.
-This takes time $O(\doubnum^4 n\log \aspect{})$.
-In some situations, however, a better algorithm exists.
-In particular, if we have a cover tree on both data sets $X$ and $Y$,
-we can perform a ``dual tree'' traversal of the datasets.
-
-\begin{algorithm}[t]
-\caption{$\dualnn$(set of cover trees $P$, set of cover trees $R$, tolerance $\varepsilon$)}
-\vspace{0.1in}
-finds an $\eann$ (contained in $P$) for each node $r\in R$, and stores it in $\nn r$
-\begin{algorithmic}[1]
-    \State let $Q = \{ q: q \in \children p, p\in P \}$
-    \For {$r \in R$}
-        \State let $\hat q = \argmin_{q\in Q} \dist{q}{r}$
-        \State let $Q_r = \{ q : q \in Q, \dist{r}{q} \le \dist{r}{\hat q}/\epsilon + \maxdist{q} +\maxdist{r} \}$
-        \If {$\dist{r}{\hat q} \le \dist{r}{\nn r}$}
-            \State $\nn r \leftarrow \hat q$
-        \EndIf
-        %\If {$\children r \ne \{\}$}
-            \State $\dualnn(Q_r,\children r, \varepsilon)$
-        %\EndIf
-    \EndFor
-    %\If {$|P| = |R| = 1$}
-        %\State let $p$ be the element of $P$ and $r$ the element of $R$
-        %\State $\nn r \leftarrow p$
-    %\EndIf
-    %\If {$\level P < \level R$}
-        %\For {$r\in R$}
-            %\State $\dualnn(P,\children{r},\varepsilon)$
-        %\EndFor
-    %\Else
-        %\For {$p\in P$}
-            %\State $P' \leftarrow \{\}$
-            %\For {$r\in R$}
-                %\If {$\dist{r}{p} \le \dist{\nn{r}}{r}$}
-                    %\State $\nn{r} \leftarrow p$
-                %\EndIf
-                %\If {$\maxdist{r} \le \dist{r}{p}/\varepsilon+\maxdist{p}$}
-                    %%\State $P' \leftarrow P' \cup \{p\}$
-                    %\State $P' \leftarrow P' \cup \children p$
-                %\EndIf
-            %\EndFor
-            %\State $\dualnn(P',\children{r},\varepsilon)$
-        %\EndFor
-    %\EndIf
-\end{algorithmic}
-\end{algorithm}
-
-\begin{theorem}
-    Let $p$ be a cover tree of data set $X$ and $r$ be a cover tree of data set $Y$.
-    Then for each $y\in Y$, $\dualnn(\{p\},\{r\},\varepsilon)$ finds an $\eann$ in $X$. 
-\end{theorem}
-\begin{proof}
-    For each node $r\in R$, let $\nn* r$ denote the true nearest neighbor of $r$ in $X$.
-    We will show that on each recursion,
-    for all $s\in\descendants r$,
-    either $\nn* s \in Q_r$ or $\nn s$ is an $\eann$.
-    %Since the algorithm only terminates when $Q_x$ is empty,
-    %(and Theorem \ref{theorem:findnn:runtime} below shows that $\findnn$ must terminate),
-    %the returned $\hat q$ must be an $\eann$.
-
-    In the first recursive call where $\nn*s \not\in\data{Q_r}$,
-    we must have that $\nn*s \in \data{Q}$.
-    Let $q_s^*$ be the node in $Q$ such that $\nn*s \in\data{\q_s^*}$.
-    Then by the definition of $Q_r$, we have that
-    \begin{equation}
-        \label{eq:dualknn:correctness:1}
-        \dist{r}{q_s^*}
-        > \dist{r}{\hat q}/\varepsilon + \maxdist{q_s^*} + \maxdist{r}
-        .
-    \end{equation}
-    Using the triangle inequality on the left and the definition of $\mkfunction{maxdist}$ on the right gives
-    \begin{equation}
-        \dist{r}{s} + \dist{s}{\nn*s} + \dist{\nn*s}{q_s^*} 
-        %\ge \dist{r}{q^*} 
-        %>   \dist{r}{\hat q}/\varepsilon + \maxdist{q^*}
-        \ge
-        \stackrel{\eqref{eq:dualknn:correctness:1}}{~~~~...~~~~}
-        \ge \dist{r}{\hat q}/\varepsilon + \dist{q_s^*}{\nn*s} + \dist{r}{s}
-        .
-    \end{equation}
-    Subtracting $\dist{q^*}{y^*}$ from the leftmost and rightmost sides gives
-    \begin{equation}
-        \dist{s}{\nn*s} \ge \dist{r}{\hat q}/\epsilon
-        ,
-    \end{equation}
-    and so $\hat q$ is an $\eann$.
-    In the recursive call on line \ref{line:findnn:recurse},
-    we call $\findnn$ with $P=Q_x\cup\{\hat q\}$ to ensure that on all future iterations,
-    the distance between $\hat q$ and $x$ is non-increasing.
 \end{proof}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
