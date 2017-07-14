@@ -17,10 +17,10 @@
 \newcommand{\dualdim}{\text{dim}_{\textnormal{doub}^*}}
 \newcommand{\holedim}{\text{dim}_{\textnormal{hole}}}
 
-\newcommand{\krnum}{c_\textnormal{exp}}
-\newcommand{\doubnum}{c_\textnormal{doub}}
-\newcommand{\dualnum}{c_{\textnormal{doub}^*}}
-\newcommand{\holenum}{c_\textnormal{hole}}
+\newcommand{\cexp}{c_\textnormal{exp}}
+\newcommand{\cdoub}{c_\textnormal{doub}}
+\newcommand{\cdoubstar}{c_{\textnormal{doub}^*}}
+\newcommand{\chole}{c_\textnormal{hole}}
 
 \newcommand{\p}{\ensuremath p}
 \newcommand{\q}{\ensuremath q}
@@ -92,11 +92,11 @@
         data structure & space & find nearest neighbor & insertion \\
         \midrule
         ball tree \cite{} & $O(n)$ & $O(n)$ & $O(n)$ \\
-        metric skip list \cite{karger2002finding} & $O(n\log n)$ & $\krnum{}^{O(1)}\log n$ & $\krnum^{O(1)}\log n\log\log n$ \\
+        metric skip list \cite{karger2002finding} & $O(n\log n)$ & $\cexp{}^{O(1)}\log n$ & $\cexp^{O(1)}\log n\log\log n$ \\
         navigating net \cite{} & $O(n)$ \\
-        cover tree \cite{} & $O(n)$ & $O(\krnum^8\log n)$ & $O(\krnum^{12}\log n)$ \\
-        simplified cover tree & $O(n)$ & $O(\doubnum{}\log \aspect{})$ \\
-                              &        & $O(\doubnum{}\log n)$ \\
+        cover tree \cite{} & $O(n)$ & $O(\cexp^8\log n)$ & $O(\cexp^{12}\log n)$ \\
+        simplified cover tree & $O(n)$ & $O(\cdoub{}\log \aspect{})$ \\
+                              &        & $O(\cdoub{}\log n)$ \\
         \bottomrule
     \end{tabular}
     %\end{tabularx}
@@ -115,7 +115,7 @@ Every metric space embeds into an ultrametric space with distortion $O(1/\sqrt \
 uses this result to create approximation algorithms for several NP-hard problems.
 
 \cite{bartal2003metric} discusses embeddings into Hilbert spaces.
-\cite{krauthgamer2004measured} shows that any finite metric with $n$ data points can be embedded into Hilbert space with $O(\sqrt{\log\doubnum\log n})$ distortion.
+\cite{krauthgamer2004measured} shows that any finite metric with $n$ data points can be embedded into Hilbert space with $O(\sqrt{\log\cdoub\log n})$ distortion.
 \cite{neiman2016low} embeds finite metrics into $L_\infty$.
 \cite{abraham2014volume} shows finite embeddings that preserve both distance and volume.
 \cite{bartal2015impossibility} shows that $L_p, p>2$ spaces cannot be embedded.
@@ -146,13 +146,35 @@ LHS in metric spaces \cite{tellez2010locality,novak2010locality} provide no theo
 
 Survey of LHS \cite{wang2014hashing} \cite{wang2016learning}
 
-\cite{zezula2006similarity} is a book on metric space similarity search.
+\cite{krauthgamer2005black} provides hardness lower bounds on the performance of any approximate nearest neighbor algorithm. 
+In particular, they show that a metric space admits a $(1+\epsilon)-$ANN solution if and only if $\doubdim = O(\log \log n)$.
 
+Data structures for nearest neighbor queries in metric spaces can be divided into two categories:
+those that work only heuristically,
+and those that provide theoretical guarantees.
+\cite{zezula2006similarity} is a book on the heuristic techniques. 
+A lot of heuristic work continues to be done on good methods to partition space trees \cite{mao2016pivot},
+but unfortunately there are not detailed experimental results justifying the use of these methods over methods with more theoretical justification.
+
+The navigating net was the first data structure to use the doubling dimension.
+It requires quadratic space, polynomial dependency on the doubling constant, and logarithmic dependence on the aspect ratio \citep{krauthgamer2004navigating}.
+\cite{krauthgamer2005black} improve on this result by replacing the logarithmic dependence on the aspect ratio with a logarithmic dependence on the number of data points.
+\citet{beygelzimer2006cover} introduce the cover tree,
+which improves on the navigating net by reducing the space complexity to linear.
+The downside of the cover tree is that they analyze their data structure in terms of the less robust expansion constant.
+\cite{har2006fast} provides a data structure for approximate nearest neighbors.
+\cite{cole2006searching} provides a data structure for approximate nearest neighbor search with dynamic point sets that does not depend on the aspect ratio.
+Ad-hoc spanner data structures are popular in the analysis of algorithms.
+\cite{chan2005hierarchical}, \cite{gottlieb2008optimal}, \cite{gottlieb2014light} and \cite{gottlieb2015light} create data structures called spanners,
+which are embeddings of finite dimensional metric spaces into graph metrics with a low number of edges.
 \cite{ram2009linear} and \cite{curtin2015plug} improve the runtime bounds of cover trees.
 \cite{curtin2013tree} provides a generic framework for solving distance problems.
 \cite{clarkson2006nearest} reviews metric space properties and data structures.
 \cite{czumaj2010sublinear} is a survey of sublinear time algorithms in metric spaces.
 \cite{moore2014fast} use cover trees for faster gaussian process posteriors.
+
+\cite{indyk2007nearest} uses the doubling dimension to create embeddings into low dimensional Euclidean space.
+\cite{connor2010fast} uses the expansion dimension to bound the runtime of neighbor graphs in Euclidean space.
 
 The method of compression was introduced by \citet{hart1968condensed}.
 This problem is known to be NP-hard \citep{zukhba2010np}.
@@ -167,10 +189,11 @@ Nearest neighbor asymptotics first given by \citet{cover1967nearest}.
 \cite{talwar2004bypassing} creates the randomized split trees data structure,
 but uses it to solve NP-hard problems rather than nearest neighbor queries.
 
-\cite{krauthgamer2005black} provides hardness lower bounds on the performance of any approximate nearest neighbor algorithm. 
-In particular, they show that a metric space admits a $(1+\epsilon)-$ANN solution if and only if $\doubdim = O(\log \log n)$.
-
 \cite{arya2009space} characterizes the space time trade offs for approximate nearest neighbor in Euclidean space.
+
+\cite{cheeseman1991really} phase transitions for NP-hard problems.
+
+\cite{chavez2001searching} survey on searching in metric spaces.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -189,7 +212,7 @@ In particular, they show that a metric space admits a $(1+\epsilon)-$ANN solutio
 \subsection{The dimension of metric spaces}
 
 This section introduces three measures of the ``dimension'' of a metric space:
-the expansion constant $\krnum$, the doubling constant $\doubnum$, and the aspect ratio $\aspect{}$.
+the expansion constant $\cexp$, the doubling constant $\cdoub$, and the aspect ratio $\aspect{}$.
 Previous analysis of the cover tree relied only on the expansion constant,
 but the analysis in this thesis will instead use the doubling constant and aspect ratio.
 In this section, we will formally define these constants and present their basic properties.
@@ -226,12 +249,12 @@ and has been subsequently used in
 and \citet{curtin2015plug}.
 The \emph{expansion dimension} of a metric space $\set X$ is defined as
 \begin{equation}
-    \krdim = \log_2 \krnum
+    \krdim = \log_2 \cexp
     ,
 \end{equation}
-where $\krnum$ is called the \emph{expansion constant} and defined as
+where $\cexp$ is called the \emph{expansion constant} and defined as
 \begin{equation}
-    \krnum = \max_{x\in\set X, \delta\in\R^+} \frac{\mu B(x,2\delta)}{\mu B(x,\delta)}
+    \cexp = \max_{x\in\set X, \delta\in\R^+} \frac{\mu B(x,2\delta)}{\mu B(x,\delta)}
     .
 \end{equation}
 In words, the expansion dimension measures how the volume of a ball changes as you increase the radius.
@@ -344,12 +367,12 @@ We will make heavy use of the following lemma in the analysis of the cover tree.
 
 The \emph{doubling dimension} of a metric space $\set X$ is defined to be
 \begin{equation}
-    \doubdim = \log_2 \doubnum
+    \doubdim = \log_2 \cdoub
     ,
 \end{equation}
-where $\doubnum$ is called the \emph{doubling constant} and is defined to be
+where $\cdoub$ is called the \emph{doubling constant} and is defined to be
 \begin{equation}
-    \doubnum = \max_{x\in\set X, \radius\in\R^+} N_\radius(B_{\set X}(x,2\radius))
+    \cdoub = \max_{x\in\set X, \radius\in\R^+} N_\radius(B_{\set X}(x,2\radius))
     .
 \end{equation}
 Whereas the expansion dimension measures how the volume of a ball changes as the radius changes,
@@ -374,14 +397,14 @@ as shown in the following two lemmas.
     Let $\set X$ be a metric space, and $X\subset\set X$.
     Then,
     \begin{equation}
-        \label{eq:doubnuminclusion}
+        \label{eq:cdoubinclusion}
         %\doubdim\set X \ge \doubdim X,
-        \doubnum X \le \doubnum \set X.
+        \cdoub X \le \cdoub \set X.
     \end{equation}
 \end{lemma}
 
 \begin{proof}
-    %To prove \eqref{eq:doubnuminclusion},
+    %To prove \eqref{eq:cdoubinclusion},
     %let $x$ be a point in $\set X$ and $\delta\in\mathbb R^+$.
     %Then any valid $\delta$-packing of $B_{\set X_1}(x,2\delta)$ is also a valid $\delta$-packing of $B_{\set X_2}(x,2\delta)$.
 %
@@ -391,8 +414,8 @@ as shown in the following two lemmas.
     Let $\set X$ be a metric space, $X\subset\set X$, and $x\in\set X$.
     Then,
     \begin{equation}
-        \label{eq:doubnumplusone}
-        \doubnum (X\cup\{x\}) \le \doubnum X + 1.
+        \label{eq:cdoubplusone}
+        \cdoub (X\cup\{x\}) \le \cdoub X + 1.
     \end{equation}
 \end{lemma}
 \begin{proof}
@@ -405,7 +428,7 @@ as shown in the following two lemmas.
         N_\delta(B_X(y,\delta)) \le N_\delta(B_{X\cup\{x\}}(y,\delta))+1
         .
     \end{equation}
-    Taking the maximum of both sides with respect to $y$ and $\delta$ gives \eqref{eq:doubnumplusone}.
+    Taking the maximum of both sides with respect to $y$ and $\delta$ gives \eqref{eq:cdoubplusone}.
     %for any $y\in X$ and $\delta>0$.
     %let $p$ be a maximal $\delta$-packing of $\set X$.
     %Assume for contradiction that there exists a $\delta$-packing $p'$ of $\set X\cup\{x\}$ such that $|p'| > |p| + 1$.
@@ -421,7 +444,7 @@ as shown in the following two lemmas.
 
 \begin{lemma}
     Every finite metric $(\set X,d)$ satisfies
-    $\doubnum \le \krnum^4$.
+    $\cdoub \le \cexp^4$.
     %\begin{equation}
         %\doubdim\set X \le 4\cdot\krdim\set X
         %.
@@ -429,7 +452,7 @@ as shown in the following two lemmas.
 \end{lemma}
 \begin{proof}
     Fix some ball $B(x,\delta)$.
-    We will show that $B(x,\delta)$ can be covered by $\krnum^4$ balls of radius $\delta$.
+    We will show that $B(x,\delta)$ can be covered by $\cexp^4$ balls of radius $\delta$.
     Let $Y$ be a $\delta$-cover of $B(x,2\delta)$.
     Then,
     \begin{equation}
@@ -448,7 +471,7 @@ as shown in the following two lemmas.
         \le 
         |B(y,8\delta)| 
         \le 
-        \krnum^4 |B(y,\delta/2)|
+        \cexp^4 |B(y,\delta/2)|
         .
     \end{equation}
     We also have that $|B(y,\delta/2)|=1$.
@@ -462,7 +485,7 @@ The hole dimension is a novel measure of a set's dimensionality.
 
 The \emph{hole number} is defined as
 \begin{align}
-    \holenum
+    \chole
     = 
     &\max_{x\in\set X, \epsilon \ge 0, \delta > 0} 
     N_\delta\big( B(x,\epsilon+2\delta) \setminus B(x,\epsilon+\delta) \big)
@@ -475,14 +498,14 @@ The \emph{hole number} is defined as
 \end{align}
 The \emph{hole dimension} is
 \begin{align}
-    \holedim = \log_2 \holenum
+    \holedim = \log_2 \chole
     .
 \end{align}
 
 \begin{lemma}
     For any finite metric space,
     \begin{equation}
-        \doubnum \le \holenum + 1 \le 
+        \cdoub \le \chole + 1 \le 
     \end{equation}
 \end{lemma}
 
@@ -832,7 +855,7 @@ This section can be safely skipped by the reader not interested in the details o
 \begin{lemma}
     \label{lemma:children}
     For every node $p$ in a cover tree, we have that
-    $|\children\p| \le \doubnum^2$.
+    $|\children\p| \le \cdoub^2$.
 \end{lemma}
 
 \begin{proof}
@@ -844,16 +867,16 @@ This section can be safely skipped by the reader not interested in the details o
         |\children{p}| 
         \le M_{\delta/2}(B(p,\delta)) 
         \le N_{\delta/4}(B(p,\delta)) 
-        %\le \doubnum N_{\delta/2}(B(p,\delta)) 
-        %\le \doubnum^2
+        %\le \cdoub N_{\delta/2}(B(p,\delta)) 
+        %\le \cdoub^2
         .
     \end{equation}
-    We now show that $N_{\delta/4}(B(p,\delta))\le\doubnum$.
+    We now show that $N_{\delta/4}(B(p,\delta))\le\cdoub$.
     Let $Y$ be a $\delta/2$-covering of $B(p,\delta)$.
     For each $y_i\in Y$, let $Y_i$ be a minimum $\delta/4$-covering of $B(y_i,\delta/2)$.
     The union of the $Y_i$s is a $\delta/4$-covering of $B(p,\delta)$.
-    There are at most $\doubnum$ $Y_i$s, and each $Y_i$ contains at most $\doubnum$ elements.
-    So their union contains at most $\doubnum^2$ elements.
+    There are at most $\cdoub$ $Y_i$s, and each $Y_i$ contains at most $\cdoub$ elements.
+    So their union contains at most $\cdoub^2$ elements.
 \end{proof}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -904,6 +927,7 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
         \label{line:findnnorg:returnq}
     \Else
         \State let $Q_x = \{ q : q\in Q, \dist{x}{q} \le \dist{x}{\hat q}+\maxdist{q}\}$
+        \label{line:findnnorig:Q_x}
         \State\Return $\findnn(Q_x,x,\varepsilon)$
         \label{line:findnnorig:recurse}
     \EndIf
@@ -920,16 +944,18 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
     For the first case where $Q=\{\hat q\}$, 
     we show that $\hat q$ must be the true nearest neighbor.
     Let $y^*$ denote the true nearest neighbor of $x$ in $\data{p}$.
-    By induction, we assume that $y^*$ is in $\data{P}$ and hence in $\data{Q}$.
+    Assume for induction that $y^*$ is in $\data{P}$ and hence in $\data{Q}$.
     Let $q^*$ denote the node in $Q$ that contains $y^*$.
     Then we have that
     \begin{equation}
+        \label{eq:findnnorig:eq1}
         \dist{x}{q^*}
         \le \dist{x}{y^*} + \dist{y^*}{q^*}
         \le \dist{x}{\hat q} + \maxdist{q^*}
         .
     \end{equation}
-    So $q^*$ is always included in the set $Q_x$,
+    The set $Q_x$ is defined to be all elements of $q$ satisfying \eqref{eq:findnnorig:eq1}.
+    So $q^*$ is always included in $Q_x$,
     which becomes $P$ in subsequent recursive calls.
 
     Now consider the case where $\dist{x}{\hat q} \ge 2\cdot\covdist{\hat q}(1+1/\varepsilon)$.
@@ -955,6 +981,124 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
     and line \eqref{eq:findnnorig:4} follows from algebraic manipulations.
 \end{proof}
 
+\begin{theorem}
+    \label{theorem:findnn:runtime:approx}
+    %Let $\varepsilon\ge2$.
+    %Then $\findnn(\{p\},x)$ has run time $O(\cdoub^4\log\aspect{})$.
+    %If the data is generated i.i.d.\ from a well behaved distribution,
+    %then the run time is $O(\cdoub^4\log n)$.
+    %If $\varepsilon > 0$,
+    %then $\findnnorig(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\cdoub^4\log\aspect{} + (1/\varepsilon)^{\log \cdoub})$.
+    For any $\varepsilon$, $\findnnorig(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\chole^4\log\aspect{})$.
+    In particular, $\findnnorig$ finds exact nearest neighbors in this time.
+\end{theorem}
+
+\begin{proof}
+    The total runtime is bounded by the product of the number of recursive calls and the time spent in each call.
+    The number of recursions is bounded by the height of the tree because $\findnn$ descends one level of the tree with each recursion.
+    This height is bounded by $O(\log\aspect{})$ in Lemma \ref{lemma:height}.
+    The cost of each call is $O(|Q|)$,
+    since we perform one distance computation for each node in $Q$.
+    The size of $Q$ is the size of $P$ times the number of children per node.
+    The maximum number of children per node is $O(\cdoub^2) = O(\chole^2)$ by Lemma \ref{lemma:children}.
+    The size of $P$ is the same as the size of $Q_x$ in the previous recursion.
+    So we have that the overall runtime is $O(|Q_x|\cdoub^2\log\aspect{})$,
+    and all that remains is to bound $|Q_x|$.
+
+    Let $\gamma=\dist{x}{\hat q}$ and $\delta=\covdist{\hat q}$.
+    By definition of $Q_x$ on line \ref{line:findnnorig:Q_x}, all $q\in Q_x$ satisfy
+    \begin{equation}
+        \dist{x}{q} \le \dist{x}{\hat q} + \maxdist{q} \le \gamma+2\delta
+        .
+    \end{equation}
+    So $Q_x$ is a subset of $A(x,\gamma,2\delta)$,
+    and by the global separating invariant $Q_x$ is a $\delta$-packing of this annulus.
+    By Lemma \ref{lemma:coverpacking},
+    \begin{equation}
+        |Q_x| 
+        \le M_\delta A(x,\gamma,2\delta)     
+        \le N_{\delta/2} A(x,\gamma,2\delta)
+        \le \chole^2
+        .
+    \end{equation}
+    The overall runtime is then bounded by $O(\chole^4\log\aspect{})$.
+\end{proof}
+
+\begin{theorem}
+    If $\varepsilon > 0$,
+    then $\findnnorig(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\cdoub^5\log\aspect{} + (1/\varepsilon)^{\log \cdoub})$.
+\end{theorem}
+
+\begin{proof}
+    As in the proof of Theorem \ref{theorem:findnn:runtime:approx}, 
+    the runtime is bounded by $O(|Q_x|\cdoub^2\log\aspect{})$,
+    and we need to bound $|Q_x|$.
+    With respect to the doubling dimension,
+    $Q_x$ exhibits a phase transition that complicates analysis.
+    In early recursions, $Q_x$ is ball shaped,
+    and we shall see that its size can be bounded using the doubling constant as $O(\cdoub^3)$.
+    So the overall runtime through the ball shaped phase is $O(\cdoub^5\log\aspect{})$.
+    In later recursions, $Q_x$ is annulus shaped and the doubling constant cannot be applied directly to bound the runtime of an iteration.
+    Instead, we will show that the total time spent in this annulus phase is $(1/\varepsilon)^{O(\log \cdoub)}$. 
+    The theorem statement then follows because the overall runtime is the runtime of the ball phase plus the runtime of the annulus phase.
+
+    Let $\delta = \covdist{\hat q}$.
+    %and $y^*$ denote the true nearest neighbor of $x$.
+    %By the triangle inequality, we have
+    %\begin{equation}
+        %\dist{x}{\hat q} 
+        %\le \dist{x}{q^*} 
+        %\le \dist{x}{y^*} + \dist{y^*}{q^*}
+        %\le \dist{x}{y^*} + 2\delta
+        %,
+    %\end{equation}
+    %and so 
+    %\begin{equation}
+        %\label{eq:findnnorig:runtime:eq1}
+        %\dist{x}{y^*} \ge \dist{x}{\hat q} - 2\delta
+        %.
+    %\end{equation}
+    The ball phase occurs when $\dist{x}{\hat q} \le 6\delta$.
+    %By \eqref{eq:findnnorig:runtime:eq1} the nearest neighbor $y^*$ of $x$ may be arbitrarily close to $x$,
+    %and hence $y^*$ may be located anywhere in a ball determined by $Q_x$.
+    By definition of $Q_x$ on line \ref{line:findnnorig:Q_x}, all $q\in Q_x$ satisfy
+    \begin{equation}
+        \dist{x}{q} \le \dist{x}{\hat q} + \maxdist{q} \le 8\delta
+        .
+    \end{equation}
+    By the global separating invariant,
+    we also have that $Q$ is a $\delta$-packing of $B(x,8\delta)$.
+    So,
+    \begin{equation}
+        |Q_x| 
+        \le M_\delta B(x,8\delta) 
+        \le N_{\delta/2}B(x,8\delta) 
+        \le \cdoub^4
+        .
+    \end{equation}
+    Thus the ball phase takes time $O(\cdoub^6\log\aspect{})$.
+    %We used Lemma \ref{lemma:coverpacking} to connect the packing and covering numbers.
+
+    In the annulus begins on the first recursion where
+    $\dist{x}{\hat q} > 6\delta$.
+    %Substituting into \eqref{eq:findnnorig:runtime:eq1} gives $\dist{x}{y^*} > 0$.
+    %That is, there is a ball around $x$ that cannot contain $y^*$,
+    %so $y^*$ must be contained in an annulus determined by $Q_x$.
+    %Let $\gamma=\dist{x}{\hat q}$.
+    %Then $Q_x \subseteq B(x,\gamma+2\delta)\setminus B(x,\gamma)$,
+    %and $Q_x$ is a $\delta$-packing of this annulus.
+    %Using the hole constant, we get
+    %\begin{equation}
+        %|Q_x| 
+        %\le M_\delta A(x,\gamma,2\delta)     
+        %\le N_{\delta/2} A(x,\gamma,2\delta)
+        %\le \chole^2
+        %.
+    %\end{equation}
+    %In each subsequent recursive call, $\delta$ shrinks by half, but the 
+    \fixme{The number of iterations at this point is bounded by $m=\log_2 1/\varepsilon$; the cost of each iteration is $O(\cdoub^{4+m})$}
+\end{proof}
+
 %%%%%%%%%%%%%%%%%%%%
 
 \begin{algorithm}[t]
@@ -972,7 +1116,7 @@ faster than $\findnnorig$
         \State \Return $\hat q$
         \label{line:findnn:returnq}
     \Else
-    \State let $Q_x = \{ q : q\in Q, \dist{x}{q} \le \hl{$\dist{x}{\hat q}/(1+\varepsilon)$}+\maxdist{q}\} \hl{$\cup \{\hat q\}$}$
+    \State let $Q_x = \{ q : q\in Q, \dist{x}{q} \le \dist{x}{\hat q}\hl{$/(1+\varepsilon)$}+\maxdist{q}\} \hl{$\cup \{\hat q\}$}$
         %\State\Return $\findnn(Q_x\cup\{\hat q\},x,\varepsilon)$
         \State\Return $\findnn(Q_x,x,\varepsilon)$
         \label{line:findnn:recurse}
@@ -1025,72 +1169,66 @@ faster than $\findnnorig$
 
 \begin{theorem}
     \label{theorem:findnn:runtime:approx}
-    Let $\varepsilon\ge2$.
-    Then $\findnn(\{p\},x)$ has run time $O(\doubnum^4\log\aspect{})$.
+    Let $\varepsilon\ge1$.
+    Then $\findnn(\{p\},x,\varepsilon)$ has run time $O(\cdoub^5\log\aspect{})$.
     %If the data is generated i.i.d.\ from a well behaved distribution,
-    %then the run time is $O(\doubnum^4\log n)$.
+    %then the run time is $O(\cdoub^4\log n)$.
+    %If $\varepsilon > 0$,
+    %then $\findnn(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\cdoub^4\log\aspect{} + (1/\varepsilon)^{\log \cdoub})$.
+    %Furthermore, $\findnn(\{p\},x,0)$ finds an exact nearest neighbor in time $O(\chole^4\log\aspect{})$.
 \end{theorem}
 
 \begin{proof}
-    The total runtime is bounded by the product of the number of recursive calls and the time spent in each call.
-    The number of recursions is bounded by the height of the tree because $\findnn$ descends one level of the tree with each recursive call. 
-    This height is bounded by $O(\log\aspect{})$ in Lemma \ref{lemma:height}.
-
-    The cost of each recursive call is $O(|Q|)$,
-    since we perform one distance computation for each node in $Q$.
-    The size of $Q$ is the size of $P$ times the number of children per node.
-    To bound the size of $P$, we will bound the size of $Q_x$ 
-    (since $P$ is always $Q_x$ of the previous iteration).
-    Let $i$ be the level of the nodes in $Q_x$.
+    As in the proof of Theorem \ref{theorem:findnn:runtime:approx}, 
+    the runtime is bounded by $O(|Q_x|\cdoub^2\log\aspect{})$,
+    and we need to bound $|Q_x|$.
+    Let $\delta=\covdist{\hat q}$.
     Then by construction, all $q\in Q_x$ satisfy
     \begin{equation}
         \label{eq:findnn:runtime:proof}
         \dist{x}{q} 
         \le \dist{x}{\hat q}/\varepsilon + \maxdist{q}
-        \le \dist{x}{q}/2 + 2^i
+        \le \dist{x}{q}/2 + 2\delta
         %\le 2^{i+1}
         .
     \end{equation}
     In the last inequality we used the fact that $\dist{x}{\hat q} \le \dist{x}{q}$, 
-    $\varepsilon\ge 2$,
-    and $\maxdist{q}\le2^i$.
-    Subtracting $\dist{x}{q}/2$ from the left and rightmost sides of \eqref{eq:findnn:runtime:proof} gives $\dist{x}{q} \le 2^{i+1}$.
-    Now let $\delta=2^i$.
+    $\varepsilon\ge 1$,
+    and $\maxdist{q}\le2\delta$.
+    Subtracting $\dist{x}{q}/2$ from the left and rightmost sides of \eqref{eq:findnn:runtime:proof} gives $\dist{x}{q} \le 4\delta$.
     Then by the global separating invariant, 
-    $Q_x$ is a $\delta$-packing of $B(x,2\delta)$.
+    $Q_x$ is a $\delta$-packing of $B(x,4\delta)$.
     So,
     \begin{equation}
         |Q_x|
-        \le M_\delta(B(x,2\delta))
-        \le N_\delta/2(B(x,2\delta))
-        \le \doubnum^2
+        \le M_\delta(B(x,4\delta))
+        \le N_\delta/2(B(x,4\delta))
+        \le \cdoub^3
         .
     \end{equation}
-    The number of children per node is $O(\doubnum^2)$ by Lemma \ref{lemma:children},
-    so the cost per iteration is $O(\doubnum^4)$.
 \end{proof}
 
-\begin{theorem}
-    $\findnn(\{p\},x,1)$ has runtime $O(\holenum^4\log\aspect{})$.
-\end{theorem}
-\begin{proof}
-    As in Theorem \ref{theorem:findnn:runtime:approx},
-    the runtime is bounded by the height of the tree times the number of children per node times the size of $Q_x$.
-    Let $\delta = \covdist{P}$.
-    Then $Q_x$ is an annulus of outer radius $\gamma = \dist{x}{\hat q}/\varepsilon + \maxdist{q}$,
-    and inner radius $\gamma-\delta$.
-    The ball $B(x,\gamma-\delta)$ is guaranteed to have no points in the data set,
-    so $|Q_x| \le \holenum^2$.
-\end{proof}
+%\begin{theorem}
+    %$\findnn(\{p\},x,1)$ has runtime $O(\chole^4\log\aspect{})$.
+%\end{theorem}
+%\begin{proof}
+    %As in Theorem \ref{theorem:findnn:runtime:approx},
+    %the runtime is bounded by the height of the tree times the number of children per node times the size of $Q_x$.
+    %Let $\delta = \covdist{P}$.
+    %Then $Q_x$ is an annulus of outer radius $\gamma = \dist{x}{\hat q}/\varepsilon + \maxdist{q}$,
+    %and inner radius $\gamma-\delta$.
+    %The ball $B(x,\gamma-\delta)$ is guaranteed to have no points in the data set,
+    %so $|Q_x| \le \chole^2$.
+%\end{proof}
 
-\begin{remark}
-    \fixme{}
-As written, $\findnn$ shows $\hat p$ being recalculated on each recursive call.
-This does not affect the asymptotic runtime of the algorithm,
-but a substantial constant factor improvement can be made in practical implementations.
-Notice that for each $p\in P$, the value of $\dist{p}{x}$ was calculated in the previous iteration of the algorithm.
-This value can be cached to prevent the need for future calls to calculate it.
-\end{remark}
+%\begin{remark}
+    %\fixme{}
+%As written, $\findnn$ shows $\hat p$ being recalculated on each recursive call.
+%This does not affect the asymptotic runtime of the algorithm,
+%but a substantial constant factor improvement can be made in practical implementations.
+%Notice that for each $p\in P$, the value of $\dist{p}{x}$ was calculated in the previous iteration of the algorithm.
+%This value can be cached to prevent the need for future calls to calculate it.
+%\end{remark}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1101,7 +1239,7 @@ and we want to find for each $y\in Y$ the nearest neighbor in $X$.
 For simplicity of notation, we assume that both datasets have size $n$,
 although the procedures generalize to unequally sized datasets.
 A simple way to calculate the nearest neighbors is by repeatedly calling the $\findnn$ function.
-This takes time $O(\doubnum^4 n\log \aspect{})$.
+This takes time $O(\cdoub^4 n\log \aspect{})$.
 In some situations, however, a better algorithm exists.
 In particular, if we have a cover tree on both data sets $X$ and $Y$,
 we can perform a ``dual tree'' traversal of the datasets.
@@ -1147,7 +1285,7 @@ finds a $\eann$ in $P$ for each node $r\in R$
     we show that $\hat q$ must be the true nearest neighbor of all $s\in\data{r}$.
     Let $s$ be an arbitrary point in $\data r$,
     and $y^*_s$ denote the true nearest neighbor of $s$ in $\data{p_0}$.
-    By induction, we assume that $y^*_s$ is in $\data{P}$ and hence in $\data{Q}$.
+    Assume for induction that $y^*_s$ is in $\data{P}$ and hence in $\data{Q}$.
     Let $q^*_s$ denote the node in $Q$ that contains $y^*_s$.
     Then we have that
     \begin{align}
@@ -1205,6 +1343,33 @@ finds a $\eann$ in $P$ for each node $r\in R$
     Hence, $\hat q$ is a $\eann$.
 \end{proof}
 
+%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+\begin{algorithm}[h]
+    \caption{$\dualnn$(set of cover trees $P$, set of cover trees $R$, tolerance $\varepsilon$)}
+\vspace{0.1in}
+finds a $\eann$ in $P$ for each node $r\in R$
+\begin{algorithmic}[1]
+    \State let $Q = \{ q: q \in \children p, p\in P \}$
+    \For {$r \in R$}
+        \State let $\hat q = \argmin_{q\in Q} \dist{q}{r}$
+        \If {$Q = \{\hat q\}$ \textbf{or} $\dist{x}{\hat q} \ge 2\cdot\covdist{\hat q}(1+1/\varepsilon)$}
+            \label{line:dualnnorig:if}
+            %\For {$s \in \data{r}$}
+                %\State $\nn s \leftarrow \hat q$
+            %\EndFor
+            %\State set the nearest neighbor of each $s\in\data r$ to $\hat q$
+            \State set the result for each $s\in\data r$ to $\hat q$
+        \Else
+        \State let $Q_r = \{ q : q \in Q, \dist{r}{q} \le \dist{r}{\hat q}\hl{$/(1+\varepsilon)$} + \maxdist{q} + 2\cdot \maxdist{r} \}$ 
+            \State $\dualnn(Q_r \hl{$\cup\{\hat q\}$},\children r)$
+        \EndIf
+    \EndFor
+\end{algorithmic}
+\end{algorithm}
+
+
 \begin{theorem}
     Let $p$ be a cover tree of data set $X$ and $r$ be a cover tree of data set $Y$.
     Then for each $y\in Y$, $\dualnn(\{p\},\{r\},\varepsilon)$ finds a nearest neighbor in $X$. 
@@ -1219,10 +1384,10 @@ finds a $\eann$ in $P$ for each node $r\in R$
     This is clearly satisfied in the first call of $\dualnn$ where $P=\{p\}$.
     In subsequent iterations, $s^*$ will be in $\data{P}$ precisely when $s^*$ was in $Q_r$ on the previous iteration.
 
-    For each node $r\in R$, let $\nn* r$ denote the true nearest neighbor of $r$ in $X$.
+    For each node $r\in R$, let $y^*_r$ denote the true nearest neighbor of $r$ in $X$.
     We will show that on each recursion,
     for all $s\in\descendants r$,
-    either $\nn* s \in Q_r$ or $\nn s$ is an $\eann$.
+    either $y^*_s \in Q_r$ or $\hat q$ is an $\eann$.
     %Since the algorithm only terminates when $Q_x$ is empty,
     %(and Theorem \ref{theorem:findnn:runtime} below shows that $\findnn$ must terminate),
     %the returned $\hat q$ must be an $\eann$.
@@ -1271,7 +1436,7 @@ a set $Q_x$ is created that contains all the subtrees that may need to be search
 The global separating invariant requires that we traverse several subtrees simultaneously to ensure that the distance between $x$ is not too close to other nodes on the same level in a different subtree.
 (A simple depth first search, for example, would not ensure this property.)
 Interestingly, the maximum size of $Q_x$ is smaller in $\ctinsertloop$ than in $\findnn$,
-so the runtime dependence on $\doubnum$ is somewhat better
+so the runtime dependence on $\cdoub$ is somewhat better
 (to the 3rd power instead of the 4th).
 $\ctinsertloop$ requires that the inserted data point be ``close enough'' to one of the sub trees to be inserted as a child. 
 This prerequisite will not be satisfied by all data, 
@@ -1352,7 +1517,7 @@ We now prove the correctness and runtime of insertion.
 \end{proof}
 
 \begin{theorem}
-    The runtime of $\ctinsert(p,x)$ is $O(\doubnum^3 \log\aspect{})$.
+    The runtime of $\ctinsert(p,x)$ is $O(\cdoub^3 \log\aspect{})$.
 \end{theorem}
 
 \begin{proof}
@@ -1373,10 +1538,10 @@ We now prove the correctness and runtime of insertion.
     Then $Q_x$ is a $\delta$-packing of $B(x,\delta)$ by construction.
     So,
     \begin{equation}
-        |Q_x| \le M_\delta(B(x,\delta)) \le N_{\delta/2}(B(x,\delta)) \le \doubnum.
+        |Q_x| \le M_\delta(B(x,\delta)) \le N_{\delta/2}(B(x,\delta)) \le \cdoub.
     \end{equation}
-    Each node in $P$ has at most $\doubnum^2$ children by Lemma \ref{lemma:children},
-    so $|Q| \le \doubnum^3$.
+    Each node in $P$ has at most $\cdoub^2$ children by Lemma \ref{lemma:children},
+    so $|Q| \le \cdoub^3$.
 \end{proof}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1581,19 +1746,19 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
 
 \begin{theorem}
     \label{theorem:ctinsert1}
-    The runtime of $\ctinsert$ is $O(\doubnum^2\log\aspect{X})$.
+    The runtime of $\ctinsert$ is $O(\cdoub^2\log\aspect{X})$.
 \end{theorem}
 \begin{proof}
     If $\dist{p}{x} > \covdist{p}$, then the running time is constant.
     Otherwise, the algorithm loops over all the children of $p$ and recurses on at most one child.
-    There are at most $\doubnum^2$ children (Lemma \ref{lemma:children}),
+    There are at most $\cdoub^2$ children (Lemma \ref{lemma:children}),
     and the height of the tree is at most $\log_2\aspect{X}$ (Lemma \ref{lemma:height}).
 \end{proof}
 
 \begin{theorem}
     \label{theorem:ctinsert2}
     When the data is drawn i.i.d.\ from a well behaved distribution,
-    then the expected runtime of $\ctinsert$ is $O(\doubnum^2\log n)$.
+    then the expected runtime of $\ctinsert$ is $O(\cdoub^2\log n)$.
 \end{theorem}
 \begin{proof}
     Apply Lemma \ref{lemma:Easpect} to Theorem \ref{theorem:ctinsert1}.
@@ -1712,7 +1877,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
 \end{lemma}
 
 \begin{lemma}
-    The functions $\ctmerge$ and $\ctmergeloop$ obey the invariant that when $\ctmergeloop$ is called, $|P| \le \doubnum^3$.
+    The functions $\ctmerge$ and $\ctmergeloop$ obey the invariant that when $\ctmergeloop$ is called, $|P| \le \cdoub^3$.
 \end{lemma}
 
 %%%%%%%%%%%%%%%%%%%%
@@ -1900,13 +2065,13 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
 \end{algorithm}
 
 \begin{theorem}
-    The runtime of $\findnn$ with $\varepsilon \ge 2$ is $O(\doubnum^2\log\aspect{})$.
+    The runtime of $\findnn$ with $\varepsilon \ge 2$ is $O(\cdoub^2\log\aspect{})$.
 \end{theorem}
 \begin{proof}
     Since the algorithm contains three nested loops, 
     the total runtime is bounded by the product of the maximum iterations of each loop.
     The innermost for loop (line 9) executes once per child,
-    which by Lemma \ref{lemma:children} is $O(\doubnum^2)$.
+    which by Lemma \ref{lemma:children} is $O(\cdoub^2)$.
     The outermost while loop (line 4) executes at most once per level of the tree.
     To see this, notice that $P_i$ contains only nodes that are $i$ edges away from $p$,
     and so $P_{\height p+1}$ is guaranteed to be the empty set.
@@ -1928,7 +2093,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
         |P_i|
         \le M_\delta(B(x,2\delta))
         \le N_\delta/2(B(x,2\delta))
-        \le \doubnum^2
+        \le \cdoub^2
         .
     \end{equation}
 \end{proof}
@@ -1936,7 +2101,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
 \begin{theorem}
     The runtime of $\findnn$ with $\varepsilon=1$ 
     (i.e. $\findnn$ must return the exact nearest neighbor),
-    is $O(\doubnum^2 ...)$.
+    is $O(\cdoub^2 ...)$.
 \end{theorem}
 
 %%%%%%%%%%%%%%%%%%%%
@@ -2026,7 +2191,7 @@ If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
 
 \begin{theorem}
     Let $p$ and $r$ be the root of two cover trees.
-    The runtime of $\dualnn(\{p\},\{r\},\varepsilon)$ for all $\varepsilon\ge2$ is $O(\doubnum^4\log\aspect{})$.
+    The runtime of $\dualnn(\{p\},\{r\},\varepsilon)$ for all $\varepsilon\ge2$ is $O(\cdoub^4\log\aspect{})$.
 \end{theorem}
 \begin{proof}
 \end{proof}

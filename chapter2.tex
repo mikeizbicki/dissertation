@@ -6,6 +6,19 @@
 \newcommand{\mempty}[1]{\epsilon_{\set {#1}}}
 \newcommand{\monoid}[1]{(\set {#1}, \mappend {#1}, \mempty {#1})}
 
+\newcommand{\mse}[1]{}
+
+\newcommand{\eye}[1]{I_{#1}}
+\newcommand{\p}[1]{p({#1})}
+\newcommand{\psup}[2]{\hat p^{#1}({#2})}
+\newcommand{\phat}[1]{\psup{}{#1}}
+\newcommand{\pkde}[1]{\psup{\text{kde}}{#1}}
+\newcommand{\pnp}[1]{\psup{\text{NWX,nonparametric}}{#1}}
+\newcommand{\psp}[1]{\psup{\text{NWX,semiparametric}}{#1}}
+\newcommand{\gaussian}[3]{\mathcal N({#1};{#2},{#3})}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 \begin{document}
 \chapter{Chapter 2}
 
@@ -57,29 +70,143 @@ they are not widely used in practice or research.
     trivial learner, bad runtime properties
 \end{example}
 
-\section{Examples}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Examples: Sufficient Statistics}
 
 \subsection{Exponential Family}
 
-\subsection{Moment Estimators}
+\subsection{Ridge Regression}
 
 \subsection{Empirical Characteristic function}
 \cite{yu2004empirical}
-
-\subsection{Ridge Regression}
-
-\subsection{The Free Monoid}
 
 \subsection{High Dimensional Logistic Regression}
 
 \subsection{Information Theoretic Metric Learning}
 
-\subsection{Averaging}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Cupulae}
+\section{Examples: Optimization}
+
+\subsection{Averaging}
 
 \subsection{One step estimators}
 
-\subsection{MCMC}
+%\section{Examples}
+%
+%\subsection{The Free Monoid}
+%
+%\subsection{Moment Estimators}
+%
+%\subsection{Cupulae}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Examples: Bayesian Methods}
+
+Bayesian machine learning methods estimate the \emph{posterior distribution} $\p{\theta|Z}$ of a parameter $\theta$ given data set $Z$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Gaussian posteriors}
+
+The simplest method of merging posterior distributions was proposed by \cite{neiswanger2013asymptotically}.
+They assume that the posterior distribution is approximately normal.
+That is,
+\begin{equation}
+    \p{\theta | Z_i}
+    \approx
+    \gaussian{\theta}{\hat\mu_i}{\hat\Sigma_i}
+    .
+\end{equation}
+This assumption is justified by the Bernstein-von Mises theorem.%
+\footnote{
+    The Bernstein-von Mises theorem is also often called the Bayesian central limit theorem.
+}
+
+The final posterior density is then given by
+\begin{equation}
+    \phat{\theta | Z}
+    =
+    \prod_{i=1}^m
+    \phat{\theta | Z_i}
+    \approx
+    \gaussian{\theta}{\hat\mu}{\hat\Sigma}
+    ,
+\end{equation}
+where
+\begin{align}
+    \hat\Sigma
+    &=
+    \left(
+        \sum_{i=1}^m
+        \hat\Sigma_i^{-1}
+    \right)^{-1}
+    ,
+    \\
+    \hat\mu
+    &=
+    \hat\Sigma \left(\sum_{i=1}^m \hat\Sigma^{-1} \mu_i \right)
+    .
+\end{align}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Nonparametric and semiparametric merging}
+
+Recent work has focused on improving non-asymptotic bounds of MCMC 
+\citep[e.g.][]{latuszynski2013nonasymptotic,andrieu2015convergence,adamczak2015exponential,andrieu2016establishing}.
+
+\cite{neiswanger2014asymptotically} also present asymptotically efficient estimators.
+We can write the kernel density estimate of the posterior as
+\begin{equation}
+    \pkde{\theta|Z}
+    =
+    \frac{1}{Z}\sum_{z\in Z}
+    \frac{1}{h}k(\theta,z)
+    =
+    \frac{1}{Z}\sum_{z\in Z}
+    \gaussian{\theta}{z}{h^2 \eye d}
+    ,
+\end{equation}
+where $\eye d$ is the $d$ dimensional identity matrix.
+\begin{align}
+    \pnp{\theta|Z}
+    &=
+    \prod_{i=1}^m \pkde{\theta|Z_i}
+    \\
+    &=
+    \frac{1}{n^m}
+    \prod_{i=1}^m 
+    \sum_{z\in Z_i}
+    \gaussian{\theta}{z}{h^2 \eye d}
+    \\
+    &\propto
+    \sum_{z_1\in Z_1}
+    \dots
+    \sum_{z_m\in Z_m}
+    \gaussian{\theta}{z_{\{z_1,...,z_m\}}}{h^2 \eye d}
+\end{align}
+where
+\begin{align}
+    \bar\theta_{\{z_1,...,z_m\}} 
+    &= 
+    \frac{1}{m}\sum_{z_i\in\{z_1,...,z_m\}} z_i
+    ,
+    \\
+    w_{\{z_1,...,z_m\}} 
+    &=
+    \prod_{i=1}^m\gaussian{z_i}{\bar\theta_{\{z_1,...,z_m\}}}{h^2\eye d}
+\end{align}
+
+\begin{theorem}
+    If $h \asymp T^{-1/d}$,
+    then
+    \begin{equation}
+        \mse{}
+        \E((\phat{\theta} - \p{\theta})^2)
+    \end{equation}
+\end{theorem}
 
 \end{document}
