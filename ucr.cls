@@ -809,7 +809,7 @@ Dissertation Committee Chair
 \def\thechapter       {\arabic{chapter}}
 \def\thesection       {\thechapter.\arabic{section}}
 \def\thesubsection    {\thesection.\arabic{subsection}}
-\def\thesubsubsection {\thesubsection .\arabic{subsubsection}}
+\def\thesubsubsection {\thesubsection.\arabic{subsubsection}}
 \def\theparagraph     {\thesubsubsection.\arabic{paragraph}}
 \def\thesubparagraph  {\theparagraph.\arabic{subparagraph}}
 
@@ -965,7 +965,7 @@ Dissertation Committee Chair
 
 \def\l@section{\@dottedtocline{1}{1.5em}{2.3em}}
 \def\l@subsection{\@dottedtocline{2}{3.8em}{3.2em}}
-\def\l@subsubsection{\@dottedtocline{3}{7.0em}{4.1em}}
+\def\l@subsubsection{\@dottedtocline{2}{7.0em}{4.1em}}
 \def\l@paragraph{\@dottedtocline{4}{10em}{5em}}
 \def\l@subparagraph{\@dottedtocline{5}{12em}{6em}}
 

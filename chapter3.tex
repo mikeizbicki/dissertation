@@ -9,7 +9,7 @@
 \newcommand{\distf}{d}
 \newcommand{\diam}[1]{\textnormal{diam}({#1})}
 \newcommand{\codiam}[1]{\textnormal{codiam}({#1})}
-\newcommand{\aspect}[1]{\Delta}
+\newcommand{\aspect}[1]{\Delta_{#1}}
 
 \newcommand{\minkdim}{\text{dim}_\textnormal{Mink}}
 \newcommand{\krdim}{\text{dim}_\textnormal{exp}}
@@ -30,6 +30,7 @@
 \newcommand{\parent}[1]     {\mkfunction{parent}({#1})}
 \newcommand{\children}[1]   {\mkfunction{children}({#1})}
 \newcommand{\covdist}[1]    {\mkfunction{covdist}({#1})}
+\newcommand{\sepdist}[1]    {\mkfunction{sepdist}({#1})}
 \newcommand{\descendants}[1]{\mkfunction{descendants}({#1})}
 \newcommand{\maxdist}[1]    {\mkfunction{maxdist}({#1})}
 \newcommand{\height}[1]     {\mkfunction{height}({#1})}
@@ -58,11 +59,21 @@
 \newcommand{\ctmerge}{\ensuremath{\textnormal{\ttfamily merge}}}
 \newcommand{\ctinsert}{\ensuremath{\textnormal{\ttfamily insert}}}
 \newcommand{\ctinsertloop}{\ensuremath{\textnormal{\ttfamily insert\_loop}}}
+\newcommand{\ctinsertHelper}{\ensuremath{\text{\ttfamily insert\_}}}
 \newcommand{\rebalance}{\ensuremath{\textnormal{\ttfamily rebalance}}}
 \newcommand{\rebalanceHelper}{\ensuremath{\textnormal{\ttfamily rebalance\_}}}
 \newcommand{\mkvar}[1]{\ensuremath{\textnormal{\emph{{#1}}}}}
 \newcommand{\nullvar}{\ensuremath{\textup{\textnormal{\ttfamily null}}}}
 %\newcommand{\datapoint}[1]{\ensuremath{\textup{\textnormal{\ttfamily dp}({#1})}}}
+
+\algnewcommand\TRUE{\textbf{true}\space}
+\algnewcommand\FALSE{\textbf{false}\space}
+\algnewcommand\NOT{\textbf{not}\space}
+
+\definecolor{darkred}{rgb}{0.5,0,0}
+\definecolor{lightblue}{rgb}{0.5,0.5,1}
+\definecolor{colorOrig}{RGB}{102,51,0}
+\definecolor{colorMlpack}{RGB}{204,153,0}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -109,6 +120,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Methods for faster nearest neighbors}
+
+\begin{definition}
+    Let $\set X$ be a metric space, $X\subset\set X$, and $x$ be in $\set X$ but not $X$.
+    Then the nearest neighbor $y^*\in X$ is defined as $y^*=\argmin_{y\in X} \dist{x}{y}$.
+    An $\varepsilon$-nearest neighbor (for $\varepsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \varepsilon \cdot\dist{x}{y^*}$.
+\end{definition}
+\newcommand{\eann}{(1+\varepsilon)\text{-ann}}
 
 Every metric space embeds into an ultrametric space with distortion $O(1/\sqrt \varepsilon)$ \citep{abraham2007embedding}.
 \cite{charikar1998approximating} creates tree metrics from finite metric spaces;
@@ -754,9 +772,9 @@ An immediate consequence of Lemmas \ref{lemma:Ediam} and \ref{lemma:Ecodiam} is 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{The Simplified Cover Tree}
+\section{The Original Cover Tree}
 
-A \emph{simplified cover tree} is a data structure for efficiently representing a finite metric space.
+A \emph{cover tree} is a data structure for efficiently representing a finite metric space.
 Each node in the tree corresponds to exactly one point in the space,
 and the tree obeys the following three invariants.
 \begin{enumerate}
@@ -792,7 +810,7 @@ and its exact value can be cached within the data structure.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Properties of the Simplified Cover Tree}
+\subsection{Properties of the Cover Tree}
 
 Before we present algorithms for manipulating the cover tree, 
 we present two lemmas that bound the shape of the tree.
@@ -879,23 +897,8 @@ This section can be safely skipped by the reader not interested in the details o
     So their union contains at most $\cdoub^2$ elements.
 \end{proof}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Algorithms}
-
-This section analyzes four common algorithms for cover trees.
-The first two algorithms are called single tree algorithms because they work with only a single cover tree at once.
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{definition}
-    Let $\set X$ be a metric space, $X\subset\set X$, and $x$ be in $\set X$ but not $X$.
-    Then the nearest neighbor $y^*\in X$ is defined as $y^*=\argmin_{y\in X} \dist{x}{y}$.
-    An $\varepsilon$-nearest neighbor (for $\varepsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \varepsilon \cdot\dist{x}{y^*}$.
-\end{definition}
-\newcommand{\eann}{(1+\varepsilon)\text{-ann}}
-
-\subsubsection{Finding the nearest neighbor of a single point}
+\subsection{$\eann$ query for a single point}
 
 The $\findnn$ function (Algorithm \ref{alg:findnn}) finds an $\eann$ of a data point $x$ in a set of cover trees $P$.
 The function would typically be called with only a single tree in the input set $P$;
@@ -1101,6 +1104,7 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
 
 %%%%%%%%%%%%%%%%%%%%
 
+\subsection{Improved $\eann$ query for a single point}
 \begin{algorithm}[t]
 \caption{$\findnn$(set of cover trees $P$, query  point $x$, tolerance $\varepsilon$)}
 \label{alg:findnn}
@@ -1232,7 +1236,7 @@ faster than $\findnnorig$
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsubsection{Dual tree nearest neighbor search}
+\subsection{$\eann$ query for many points}
 
 In many situations, we have two sets of data $X$ and $Y$,
 and we want to find for each $y\in Y$ the nearest neighbor in $X$.
@@ -1273,11 +1277,13 @@ precondition: forall $p\in P$ and $r \in R$, $\level p = \level r$
 
 \begin{theorem}
     For all $\varepsilon \ge 0$,
-    the runtime of $\dualnn(\{p\}, \{r\}, \varepsilon)$ is $O()$.
+    the runtime of $\dualnn(\{p\}, \{r\}, \varepsilon)$ is $O(n_p\cdoub^6+n_r)$.
 \end{theorem}
 \begin{proof}
-    First we bound the total number of recursive calls to $\dualnn$,
-    then we bound the time spent in each call.
+    %First we bound the total number of recursive calls to $\dualnn$,
+    %then we bound the time spent in each call.
+    First we bound the total number of recursive calls to $\dualnn$. 
+
 \end{proof}
 
 \begin{theorem}
@@ -1356,88 +1362,88 @@ precondition: forall $p\in P$ and $r \in R$, $\level p = \level r$
 
 %%%%%%%%%%%%%%%%%%%%
 
-\newpage
-\begin{algorithm}[h]
-    \caption{$\dualnn$(set of cover trees $P$, set of cover trees $R$, tolerance $\varepsilon$)}
-\vspace{0.1in}
-finds a $\eann$ in $P$ for each node $r\in R$
-\begin{algorithmic}[1]
-    \State let $Q = \{ q: q \in \children p, p\in P \}$
-    \For {$r \in R$}
-        \State let $\hat q = \argmin_{q\in Q} \dist{q}{r}$
-        \If {$Q = \{\hat q\}$ \textbf{or} $\dist{x}{\hat q} \ge 2\cdot\covdist{\hat q}(1+1/\varepsilon)$}
-            \label{line:dualnnorig:if}
-            %\For {$s \in \data{r}$}
-                %\State $\nn s \leftarrow \hat q$
-            %\EndFor
-            %\State set the nearest neighbor of each $s\in\data r$ to $\hat q$
-            \State set the result for each $s\in\data r$ to $\hat q$
-        \Else
-        \State let $Q_r = \{ q : q \in Q, \dist{r}{q} \le \dist{r}{\hat q}\hl{$/(1+\varepsilon)$} + \maxdist{q} + 2\cdot \maxdist{r} \}$ 
-            \State $\dualnn(Q_r \hl{$\cup\{\hat q\}$},\children r)$
-        \EndIf
-    \EndFor
-\end{algorithmic}
-\end{algorithm}
-
-
-\begin{theorem}
-    Let $p$ be a cover tree of data set $X$ and $r$ be a cover tree of data set $Y$.
-    Then for each $y\in Y$, $\dualnn(\{p\},\{r\},\varepsilon)$ finds a nearest neighbor in $X$. 
-\end{theorem}
-\begin{proof}
-    %Let $s$ be some data point in $\data{r}$,
-    %and let $s^*$ be the true nearest neighbor in $X$.
-    %Then on each iteration,
-    We first show that for each $s\in\data{r}$, 
-    the true nearest neighbor $s^*$ is in $\data{Q_r}$.
-    Assume for induction that $s^* \in \data{P}$.
-    This is clearly satisfied in the first call of $\dualnn$ where $P=\{p\}$.
-    In subsequent iterations, $s^*$ will be in $\data{P}$ precisely when $s^*$ was in $Q_r$ on the previous iteration.
-
-    For each node $r\in R$, let $y^*_r$ denote the true nearest neighbor of $r$ in $X$.
-    We will show that on each recursion,
-    for all $s\in\descendants r$,
-    either $y^*_s \in Q_r$ or $\hat q$ is an $\eann$.
-    %Since the algorithm only terminates when $Q_x$ is empty,
-    %(and Theorem \ref{theorem:findnn:runtime} below shows that $\findnn$ must terminate),
-    %the returned $\hat q$ must be an $\eann$.
-
-    In the first recursive call where $\nn*s \not\in\data{Q_r}$,
-    we must have that $\nn*s \in \data{Q}$.
-    Let $q_s^*$ be the node in $Q$ such that $\nn*s \in\data{\q_s^*}$.
-    Then by the definition of $Q_r$, we have that
-    \begin{equation}
-        \label{eq:dualknn:correctness:1}
-        \dist{r}{q_s^*}
-        > \dist{r}{\hat q}/\varepsilon + \maxdist{q_s^*} + \maxdist{r}
-        .
-    \end{equation}
-    Using the triangle inequality on the left and the definition of $\mkfunction{maxdist}$ on the right gives
-    \begin{equation}
-        \dist{r}{s} + \dist{s}{\nn*s} + \dist{\nn*s}{q_s^*} 
-        %\ge \dist{r}{q^*} 
-        %>   \dist{r}{\hat q}/\varepsilon + \maxdist{q^*}
-        \ge
-        \stackrel{\eqref{eq:dualknn:correctness:1}}{~~~~...~~~~}
-        \ge \dist{r}{\hat q}/\varepsilon + \dist{q_s^*}{\nn*s} + \dist{r}{s}
-        .
-    \end{equation}
-    Subtracting $\dist{q^*}{y^*}$ from the leftmost and rightmost sides gives
-    \begin{equation}
-        \dist{s}{\nn*s} \ge \dist{r}{\hat q}/\varepsilon
-        ,
-    \end{equation}
-    and so $\hat q$ is an $\eann$.
-    In the recursive call on line \ref{line:findnn:recurse},
-    we call $\findnn$ with $P=Q_x\cup\{\hat q\}$ to ensure that on all future iterations,
-    the distance between $\hat q$ and $x$ is non-increasing.
-\end{proof}
+%\newpage
+%\begin{algorithm}[h]
+    %\caption{$\dualnn$(set of cover trees $P$, set of cover trees $R$, tolerance $\varepsilon$)}
+%\vspace{0.1in}
+%finds a $\eann$ in $P$ for each node $r\in R$
+%\begin{algorithmic}[1]
+    %\State let $Q = \{ q: q \in \children p, p\in P \}$
+    %\For {$r \in R$}
+        %\State let $\hat q = \argmin_{q\in Q} \dist{q}{r}$
+        %\If {$Q = \{\hat q\}$ \textbf{or} $\dist{x}{\hat q} \ge 2\cdot\covdist{\hat q}(1+1/\varepsilon)$}
+            %\label{line:dualnnorig:if}
+            %%\For {$s \in \data{r}$}
+                %%\State $\nn s \leftarrow \hat q$
+            %%\EndFor
+            %%\State set the nearest neighbor of each $s\in\data r$ to $\hat q$
+            %\State set the result for each $s\in\data r$ to $\hat q$
+        %\Else
+        %\State let $Q_r = \{ q : q \in Q, \dist{r}{q} \le \dist{r}{\hat q}\hl{$/(1+\varepsilon)$} + \maxdist{q} + 2\cdot \maxdist{r} \}$ 
+            %\State $\dualnn(Q_r \hl{$\cup\{\hat q\}$},\children r)$
+        %\EndIf
+    %\EndFor
+%\end{algorithmic}
+%\end{algorithm}
+%
+%
+%\begin{theorem}
+    %Let $p$ be a cover tree of data set $X$ and $r$ be a cover tree of data set $Y$.
+    %Then for each $y\in Y$, $\dualnn(\{p\},\{r\},\varepsilon)$ finds a nearest neighbor in $X$. 
+%\end{theorem}
+%\begin{proof}
+    %%Let $s$ be some data point in $\data{r}$,
+    %%and let $s^*$ be the true nearest neighbor in $X$.
+    %%Then on each iteration,
+    %We first show that for each $s\in\data{r}$, 
+    %the true nearest neighbor $s^*$ is in $\data{Q_r}$.
+    %Assume for induction that $s^* \in \data{P}$.
+    %This is clearly satisfied in the first call of $\dualnn$ where $P=\{p\}$.
+    %In subsequent iterations, $s^*$ will be in $\data{P}$ precisely when $s^*$ was in $Q_r$ on the previous iteration.
+%
+    %For each node $r\in R$, let $y^*_r$ denote the true nearest neighbor of $r$ in $X$.
+    %We will show that on each recursion,
+    %for all $s\in\descendants r$,
+    %either $y^*_s \in Q_r$ or $\hat q$ is an $\eann$.
+    %%Since the algorithm only terminates when $Q_x$ is empty,
+    %%(and Theorem \ref{theorem:findnn:runtime} below shows that $\findnn$ must terminate),
+    %%the returned $\hat q$ must be an $\eann$.
+%
+    %In the first recursive call where $\nn*s \not\in\data{Q_r}$,
+    %we must have that $\nn*s \in \data{Q}$.
+    %Let $q_s^*$ be the node in $Q$ such that $\nn*s \in\data{\q_s^*}$.
+    %Then by the definition of $Q_r$, we have that
+    %\begin{equation}
+        %\label{eq:dualknn:correctness:1}
+        %\dist{r}{q_s^*}
+        %> \dist{r}{\hat q}/\varepsilon + \maxdist{q_s^*} + \maxdist{r}
+        %.
+    %\end{equation}
+    %Using the triangle inequality on the left and the definition of $\mkfunction{maxdist}$ on the right gives
+    %\begin{equation}
+        %\dist{r}{s} + \dist{s}{\nn*s} + \dist{\nn*s}{q_s^*} 
+        %%\ge \dist{r}{q^*} 
+        %%>   \dist{r}{\hat q}/\varepsilon + \maxdist{q^*}
+        %\ge
+        %\stackrel{\eqref{eq:dualknn:correctness:1}}{~~~~...~~~~}
+        %\ge \dist{r}{\hat q}/\varepsilon + \dist{q_s^*}{\nn*s} + \dist{r}{s}
+        %.
+    %\end{equation}
+    %Subtracting $\dist{q^*}{y^*}$ from the leftmost and rightmost sides gives
+    %\begin{equation}
+        %\dist{s}{\nn*s} \ge \dist{r}{\hat q}/\varepsilon
+        %,
+    %\end{equation}
+    %and so $\hat q$ is an $\eann$.
+    %In the recursive call on line \ref{line:findnn:recurse},
+    %we call $\findnn$ with $P=Q_x\cup\{\hat q\}$ to ensure that on all future iterations,
+    %the distance between $\hat q$ and $x$ is non-increasing.
+%\end{proof}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsubsection{Inserting a single point}
+\subsection{Inserting a single point}
 
 The algorithm for inserting points is split into two functions.
 The most important is $\ctinsertloop$ (Algorithm \ref{alg:ctinsertloop}).
@@ -1559,7 +1565,7 @@ We now prove the correctness and runtime of insertion.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsubsection{Merging cover trees}
+\subsection{Inserting many points (i.e. merging cover trees)}
 
 \begin{pseudocode}{$\ctmergeloop$(set of cover trees $P$, cover tree $r$)}
     \State $P' \leftarrow P$, $R' \leftarrow \{\}$
@@ -1597,6 +1603,578 @@ We now prove the correctness and runtime of insertion.
     \EndIf
     \State \Return $(P',R')$
 \end{pseudocode}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{The Simplified Cover Tree}
+
+\subsection{$\eann$ query for a single point}
+\begin{algorithm}[t]
+    \caption{Find nearest neighbor}
+    \label{alg:query}
+
+{\bfseries function} \findnn(cover tree $p$, query  point $x$, nearest neighbor so far $y$)
+
+\begin{algorithmic}[1]
+    \If {$d(p,x) < d(y,x)$}
+        \State $y \leftarrow p$
+    \EndIf
+    \For {each child $q$ of $p$ sorted by distance to $x$}
+        \If {$d(y,x) > d(y,q) - \maxdist{q}$} %2^{\level q}$}
+            \State $y \leftarrow \findnn(q,x,y)$
+        \EndIf
+    \EndFor
+    \State\Return $y$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Inserting a single point}
+\begin{algorithm}[t]
+\caption{Simplified cover tree insertion}
+\label{alg:insert}
+
+{\bfseries function} \ctinsert(cover tree $p$, data point $x$)
+
+\begin{algorithmic}[1]
+    \If {$\dist p x > \covdist p$}
+        \While {$\dist p x > 2\covdist p$}
+            \State Remove any leaf $q$ from $p$
+            \State $p' \leftarrow $ tree with root $q$ and $p$ as only child
+		  \State $p \leftarrow p'$
+        \EndWhile
+        \State\Return tree with $x$ as root and $p$ as only child
+    \EndIf
+    \State\Return \ctinsertHelper($p$,$x$)
+\end{algorithmic}
+
+{\bfseries function} \ctinsertHelper(cover tree $p$, data point $x$)
+
+\emph{prerequisites:} $\dist p x \le \covdist p$
+
+\begin{algorithmic}[1]
+    \For {$q \in \children{p}$}
+        \If {$\dist q x \le \covdist q$}
+            \State $q' \leftarrow \ctinsertHelper(q,x)$
+            \State $p' \leftarrow p$ with child $q$ replaced with $q'$
+            \State \Return $p'$
+        \EndIf
+    \EndFor
+    \State\Return $p$ with $x$ added as a child
+\end{algorithmic}
+\end{algorithm}
+
+Algorithm \ref{alg:insert} shows how to insert into the simplified cover tree.
+It is divided into two cases.
+In the first case, we cannot insert our data point $x$ into the tree without violating the covering invariant.
+So we raise the level of the tree $p$ by taking any leaf node and using that as the new root.
+Because $\maxdist{p} \le 2\covdist{p}$, we are guaranteed that $d(p,x) \le \covdist{x}$, and so we do not violate the covering constraint.
+In the second case, the \ctinsertHelper~function recursively descends the tree.
+On each function call, we search through $\children{p}$ to find a node we can insert into without violating the covering invariant.
+If we find such a node, we recurse; otherwise, we know we can add $x$ to $\children{p}$ without violating the separating invariant.
+In all cases, exactly one node is added per data point, so the resulting tree will have exactly $n$ nodes.
+%\textcolor{red}{
+Since every node can have at most $O(c^4)$ children
+and the depth of the tree is bounded by $O(c^2\log n)$,
+the runtime is $O(c^6 \log n)$.
+%}
+
+The simplified cover tree has the same runtime bounds as the original cover tree,
+but it has an improved constant factor, as it needs only $n$ nodes.
+Fewer nodes reduces both the overhead from traversing the data structure and the number of required distance comparisons.
+The original cover tree's \emph{nesting invariant} dictated these extra nodes.
+In our definitions, the nesting invariant states that
+for every node $p$, if $p$ has any children, then $p$ also has itself as a child (this child need not satisfy the leveling invariant).
+%Thus, for any original cover tree containing $n>1$ data points, the number of nodes in the tree must be strictly greater than $n$.
+The nesting invariant comes from the presentation of the original cover tree as an infinite data structure,
+but it does not play a key role in the cover tree's runtime analysis.
+Therefore, we can discard it and maintain the runtime guarantees.
+
+Figure \ref{fig:nodes} shows the reduction in nodes by using the simplified cover tree on benchmark datasets taken from the MLPack test suite \cite{mlpack2013}.
+Section \ref{sec:experiments} contains more details on these datasets,
+and Figure \ref{fig:numdist} in the same section shows how this reduced node count translates into improved query performance.
+
+% I think the vertical axis can be reworded to (the shorter)
+%  ratio of nodes in simplified cover tree to original cover tree
+\begin{figure}[t]
+\centering\input{./img/nodes.tex}
+%\resizebox{\columnwidth}{2in}{\input{./img/nodes.tex}}
+%\resizebox{\columnwidth}{2in}{\includegraphics{./img/nodes}}
+%\includegraphics[width=9cm,height=6cm]{img/nodes}
+\caption{
+	Fraction of nodes required for the simplified cover tree.
+    Fewer nodes means less overhead from traversing the tree and fewer distance comparisons.
+    See Table \ref{tab:datasets} for information on the datasets.
+    }
+\label{fig:nodes}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Nearest ancestor cover trees}
+
+In this section, we exploit a similarity between simplified cover trees and binary search trees (BSTs).
+Insertion into both trees follows the same procedure:
+Perform a depth first search to find the right location to insert the point.
+In particular, there is no rebalancing after the insertion.
+Many alternatives to plain BSTs produce better query times by introducing new invariants.
+These invariants force the insertion algorithm to rebalance the tree during the insertion step.
+% cshelton1: is the following statement correct?  Insertion into an AVL tree is faster than into a BST
+% (at least if we hold the elements in the tree fixed, and not the exact tree) because the depth of
+% the tree is smaller.
+% mike: I think it depends on exactly what you mean by "faster".
+% On any particular tree, doing a BST insertion will be faster because there's no need to rebalance; but doing a series of AVL insertion may be faster if it avoids worst case BST behavior.
+% I think in the cover tree case, the rebalancing step is expensive enough compared to the gains from balancing that you almost always end up slower.
+Our definition of the simplified cover tree makes adding similar invariants easy.
+%This gives us faster query times in exchange for a longer tree construction.
+We now introduce one possible invariant.
+
+%\begin{defn}
+A \emph{nearest ancestor cover tree} is a simplified cover tree where every point $p$ has the nearest ancestor invariant:
+If $q_1$ is an ancestor of $p$ and $q_2$ is a sibling of $q_1$, then
+$$
+d(p,q_1) \le d(p,q_2)
+$$
+%\end{defn}
+In other words, the nearest ancestor cover tree ensures that for every data point, each of its ancestors is the ``best possible'' ancestor for it at that level.
+Figure \ref{fig:nearestancestorexample} shows a motivating one dimensional example.
+
+\begin{figure}
+\definecolor{lightred}{rgb}{1,0.8,0.8}
+\definecolor{lightgreen}{rgb}{0.8,1,0.8}
+\centering
+\begin{tikzpicture}
+    [ draw
+    , scale=1.8
+    , every node/.style={minimum size=9mm,fill=white}
+    , level/.style={sibling distance = 18mm/#1, level distance=12mm}
+    %,    level distance = 1.5cm}
+    , sibling distance=8mm
+    ]
+\draw (-2,0) -- (6.3,0)[dotted];
+\draw (-2,-12mm) -- (6.3,-12mm)[dotted];
+\draw (-2,-24mm) -- (6.3,-24mm)[dotted];
+\node[shape=circle,draw] at (0,0) {10}
+    child { node[circle,draw] {8}
+        child { node[circle,draw] {7}  }
+        child { node[circle,draw,fill=lightred,line width=1pt] {11} }
+        }
+    child { node[circle,draw] {12}
+        child { node[circle,draw,fill=lightred,line width=1pt] {9}  }
+        child { node[circle,draw] {13} }
+        }
+    ;
+\node[shape=circle,draw] at (3.5,0) {10}
+    child { node[circle,draw] {8}
+        child { node[circle,draw] {7}  }
+        child { node[circle,draw,fill=lightgreen,line width=1pt] {9} }
+        }
+    child { node[circle,draw] {12}
+        child { node[circle,draw,fill=lightgreen,line width=1pt] {11}  }
+        child { node[circle,draw] {13} }
+        }
+    ;
+\node[fill=none] at (5.8,3mm) {level 3};
+\node[fill=none] at (5.8,-9mm) {level 2};
+\node[fill=none] at (5.8,-21mm) {level 1};
+\end{tikzpicture}
+\caption{
+    Using the metric $d(a,b)=|a-b|$,
+    both trees are valid simplified cover trees;
+    but only the right tree is a valid nearest ancestor cover tree.
+    %Moving the 9 and 11 nodes reduces the value of $\mkfunction{maxdist}$ for their ancestor nodes.
+    Moving the 9 and 11 nodes reduces the value of maxdist for their ancestor nodes.
+    This causes pruning to happen more often during nearest neighbor queries (Algorithm \ref{alg:query}), resulting in fewer distance comparisons.
+    }
+\label{fig:nearestancestorexample}
+\end{figure}
+
+Algorithm \ref{alg:nearestancestor} shows how to insert a point into a nearest ancestor cover tree.
+It uses the same \ctinsert~function as \ref{alg:insert}, but the helper function \ctinsertHelper~is slightly modified in two ways (shown with an \underline{underline}).
+First, we sort $\children{p}$ according to their distance from the data point $x$.
+This sorting ensures that our newly inserted point will satisfy the nearest ancestor invariant.
+But this new point $x$ may cause other points to violate the nearest ancestor invariant.
+In particular, if $x$ has a sibling $q$; $q$ has a descendent $r$; and $\dist r x < \dist r q$; then $r$ now violates the nearest ancestor invariant.
+Our second step is to call $\mkfunction{rebalance}$, which finds all these violating data points and moves them underneath $x$.
+%Edge cases make rebalancing look awkward.
+%Rebalancing is awkward only because there are many edge cases to check.
+
+Most of the work of the $\rebalance$ function happens in the helper $\rebalanceHelper$.
+$\rebalanceHelper$ returns a valid nearest ancestor cover tree and a set of points that still need to be inserted;
+$\rebalance$ just inserts those extra points.
+$\rebalanceHelper$ takes two nearest ancestor cover trees $p$ and $q$ (where $p$ is an ancestor of $q$) and a point $x$.
+Its goal is to ``extract'' all points from $q$ that would violate the nearest ancestor invariant if $x$ became a sibling of $p$.
+It returns three values:
+a modified version of $q$,
+a set of points that cannot remain in any point along the path from $p$ to $q$ called the \mkvar{moveset},
+and a set of points that need to be reinserted somewhere along the path from $p$ to $q$ called the \mkvar{stayset}.
+There are two cases.
+In the first case, the data point at node $q$ must move.
+We then filter the descendants of $q$ into the \mkvar{moveset} or \mkvar{stayset} as appropriate and return \nullvar\ for our modified $q$.
+In the second case, the data point at node $q$ must stay.
+We recursively apply \rebalanceHelper~to each of $q$'s children;
+we use the results to update the corresponding child, the \mkvar{moveset} and the \mkvar{stayset} variables.
+Finally, we try to reinsert any nodes in \mkvar{stayset}.
+If \rebalanceHelper~was called with $q$ a child of $p$, then the return value of \mkvar{stayset} will be empty;
+any children that could not be directly reinserted must be in the \mkvar{moveset}.
+
+%\textcolor{red}{
+The \rebalanceHelper~function loops over all $O(c^4)$ children of a node, and the maximum depth of the recursion is $O(c^2 \log n)$.
+Therefore the overall runtime is $O(c^6 \log n)$.
+% cshelton1: check the line reference below
+It may be called up to $O(c^4)$ times within \rebalance, so the body of the for loop on line~\ref{rebalanceloop} executes $O(c^{10}\log n)$ times.
+Unfortunately, we have no bound on the size of \emph{moveset}, except to note that it is usually small in practice.
+On the datasets in our experiments (see Table \ref{tab:datasets}), the value is usually zero or at worst in the single digits.
+%This is a rather unsatisfying theoretical analysis, but empirical performance is good.
+%}
+Figure \ref{fig:numdist}(a) shows that nearest ancestor cover tree construction is not that much slower in practice,
+and Figure \ref{fig:numdist}(b) shows that this slowdown is overshadowed by the resulting speedup in nearest neighbor queries.
+
+\begin{algorithm}[t!]
+    \caption{Nearest ancestor cover tree insertion}
+    \label{alg:nearestancestor}
+
+{\bfseries function} \ctinsertHelper(cover tree $p$, data point $x$)
+
+\begin{algorithmic}[1]
+    \For {$q \in \children{p}$ \underline{sorted by distance to $x$}}
+        \If {$\dist q x \le \covdist q$}
+            \State $q' \leftarrow \ctinsertHelper(q,x)$
+            \State $p' \leftarrow p$ with child $q$ replaced with $q'$
+            \State \Return $p'$
+        \EndIf
+    \EndFor
+    \State \Return \underline{\mkprocedure{rebalance}($p$, $x$)}
+\end{algorithmic}
+\hrulefill
+
+{\bfseries function} \mkprocedure{rebalance}(cover trees $p$, data point $x$)
+
+\emph{prerequisites:} $x$ can be added as a child of $p$ without violating the covering or separating invariants
+
+\begin{algorithmic}[1]
+    %\State $x' \leftarrow $ tree with root $x$ and level $\level{p}-1$
+    \State create tree $x'$ with root node $x$ at level $\level{p}-1$
+           $x'$ contains no other points
+    \State $p' \leftarrow p$
+    \For { $q \in \children{p}$}
+        \State $(q',moveset,stayset) \leftarrow \rebalanceHelper(p,q,x)$
+        \State $p' \leftarrow p'$ with child $q$ replaced with $q'$
+        \For {$r \in moveset$}
+            \State $x' \leftarrow \ctinsert(x',r)$
+        \EndFor
+    \EndFor
+    \State\Return $p'$ with $x'$ added as a child
+\end{algorithmic}
+
+{\bfseries function} \rebalanceHelper(cover trees $p$ and $q$, point $x$)
+
+\emph{prerequisites:} $p$ is an ancestor of $q$
+
+\begin{algorithmic}[1]
+    \If {$\dist p q > \dist q x$}
+        \State $moveset, stayset \leftarrow \emptyset$
+        \For {$r \in \descendants q$}
+            \If {$\dist r p > \dist r x$}
+                \State $moveset \leftarrow moveset \cup \{r\}$
+            \Else
+                \State $stayset \leftarrow stayset \cup \{r\}$
+            \EndIf
+        \EndFor
+        \State\Return $(\nullvar, moveset, stayset)$
+        %\State\Return (\nullvar, $\{q\} \cup $descendants closer to q, descendants closer to x)
+    \Else
+        \State $\mkvar{moveset}',\mkvar{stayset}' \leftarrow \emptyset$
+        \State $q' \leftarrow q$
+        %\State $\mkvar{moveset}',\mkvar{stayset}' \leftarrow \emptyset$
+        %\State $q' \leftarrow q$
+        \For {$r \in \children q$} \label{rebalanceloop}
+            \State $(r',moveset,stayset) \!\leftarrow\! \rebalanceHelper(p,r,x)$
+            \State $\mkvar{moveset}' \leftarrow \mkvar{moveset}\cup\mkvar{moveset}'$
+            \State $\mkvar{stayset}' \leftarrow \mkvar{stayset}\cup\mkvar{stayset}'$
+            \If {$r' = \nullvar$}
+                \State $q' \leftarrow q$ with the subtree $r$ removed
+            \Else
+                \State $q' \leftarrow q$ with the subtree $r$ replaced by $r'$
+                %\State $r'' \leftarrow $ insert stayset into $r'$
+            \EndIf
+        \EndFor
+        \For {$r \in stayset'$}
+            \If {$\dist r q' \le \covdist q'$}
+                \State $q' \leftarrow \ctinsert (q',r)$
+                \State $\mkvar{stayset}' \leftarrow \mkvar{stayset}' - \{r\}$
+            \EndIf
+        \EndFor
+        \State\Return $(q',moveset',stayset')$
+    \EndIf
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Merging simplified cover trees}
+
+In this section we discuss parallelism on shared-memory, multiprocessor machines.
+Querying in parallel is easy.
+%Querying a cover tree in parallel is easy.
+Since the results of neighbor queries for a data point do not depend on other data points, we can:
+divide the points among the processors;
+then each processor traverses the tree independently.
+More difficult is constructing the tree in parallel.
+Our strategy is to split the data, create one cover tree on each processor, then merge these trees together.
+Previous work on parallelizing cover trees applied only to the GPU \cite{Kumar2010}.
+Our approach is suitable for any shared-memory multiprocessor machine.
+We give a detailed description for merging simplified cover trees and discuss at a high level how to extend this procedure to nearest ancestor cover trees.
+
+Algorithm \ref{alg:merge} shows the merging procedure.
+The \mkprocedure{merge} function's main purpose is to satisfy the prerequisites for \mkprocedure{mergeHelper}, which has two phases.
+%Most of this work is done in the \mkprocedure{mergeHelper} function.
+%\mkprocedure{mergeHelper} has two phases.
+First, we find all the subtrees of $q$ that can be inserted directly into $p$ without violating any invariants, and we insert them.
+Second, we insert the remaining nodes from $q$ into $p$ directly via the \ctinsert~function.
+
+The \mkprocedure{mergeHelper} function returns a partially merged tree and a set of nodes called the \mkvar{leftovers} that still need to be inserted into the tree.
+The first phase uses the for loop starting on line~\ref{mergeloop} to categorize the children of $q$ into three disjoint sets.
+The \mkvar{uncovered} set contains all of $q$'s children that would violate the covering invariant if inserted into $p$.
+The \mkvar{sepcov} set contains all of $q$'s children that would not violate the separating or covering invariants when inserted into $p$.
+Both of these sets are unused in the second phase of \mkprocedure{mergeHelper}.
+Every child of $q$ that is not inserted into the \mkvar{uncovered} or \mkvar{sepcov} sets gets merged with a suitable node in $\children{p}$.
+This is done by recursively calling the \mkprocedure{mergeHelper} function.
+Any points that could not be inserted into the results of \mkprocedure{mergeHelper} get added to the \mkvar{leftovers} set.
+
+In the second phase of \mkprocedure{mergeHelper}, we insert as many nodes as possible into our merged tree $p'$.
+First update the children with the subtrees in \mkvar{sepcov}.
+Then insert the root of $q$.
+We know that $d(p,q) \le \covdist{p}$, so this insertion is guaranteed not to change the level of $p'$.
+Finally, we loop over the elements in \mkvar{leftovers} and insert them into $p'$ only if it would not change the level of $p'$.
+Any elements of \mkvar{leftovers} that cannot be inserted into $p'$ get inserted into $\mkvar{leftovers}'$ and returned.
+It is important to do this insertion of \mkvar{leftovers} at the lowest level possible (rather than wait until the recursion ends and have the insertion performed in \mkprocedure{merge}) to avoid unnecessary distance computations.
+
+%Extending \mkprocedure{merge} to work on nearest ancestor cover trees requires a similar procedure to how we modified \ctinsert.
+%Extending \mkprocedure{merge} to work on nearest ancestor cover trees requires the following rebalancing operations.
+The \mkprocedure{merge} function does not maintain the nearest ancestor invariant.
+A modified version of \mkprocedure{merge} that calls the \rebalance~function appropriately could.
+But for space reasons, we do not provide this modified algorithm.
+In our experiments below, we use the provided \mkprocedure{merge} function in Algorithm \ref{alg:merge} to parallelize both simplified and nearest ancestor tree construction.
+In practice, this retains the benefits of the nearest ancestor cover tree because the nearest ancestor invariant is violated in only a few places.
+
+Providing explicit bounds on the runtime of \mkprocedure{merge} is difficult.
+%We cannot give any bounds on the runtime of \mkprocedure{merge}.
+But in practice it is fast.
+When parallelizing on two processors, approximately 1\% of the distance calculations occur within \mkprocedure{merge}. %the merge operation typically requires about 1\% of the total distance comparisons.
+So this is not our bottleneck.
+Instead, the main bottleneck of parallelism is cache performance.
+On modern desktop computers, last level cache is shared between all cores on a CPU.
+Cover tree construction results in many cache misses,
+and this effect is exaggerated when the tree is constructed in parallel.
+%The next section improves cache performance, and the following section provides experimental results on parallel speedup.
+
+%The next section discusses how to improve cache performance, and the following section provides experimental results on parallel speedup.
+%The next section provides guidance on better cache performance on the CPU, and the following section provides experimental results on parallel speedup.
+%\fixme{I'm pretty sure this algorithm should be $o(c^{O(1)}n)$ (the little o is correct), but I can't think of a proof.}
+
+\begin{algorithm}[t!]
+\caption{Merging cover trees}
+\label{alg:merge}
+
+{\bfseries function} \mkprocedure{merge}(cover tree $p$, cover tree $q$)
+
+\begin{algorithmic}[1]
+\If {$\level q > \level p$}
+	\State swap $p$ and $q$
+    %\State $p' \leftarrow q$; $q' \leftarrow p$
+%\Else
+%    \State $p' \leftarrow p$; $q' \leftarrow q$
+\EndIf
+
+\While {$\level q < \level p$}
+    \State move a node from the leaf of $q$ to the root;
+    \State this raises the level of $q$ by 1
+\EndWhile
+
+\State $(p,leftovers) \leftarrow \mkprocedure{mergeHelper}(p,q)$
+\For {$r \in leftovers$}
+    \State $p \leftarrow \ctinsert(p,r)$
+\EndFor
+\State\Return $p$
+
+\end{algorithmic}
+
+{\bfseries function} \mkprocedure{mergeHelper}(cover tree $p$, cover tree $q$)
+
+%\emph{prerequisite:} $\level{p}=\level{q}$
+
+%\emph{prerequisite:} $d(p,q) \le \covdist p$
+\emph{prereqs:} $\level{p}=\level{q}$, $d(p,q)\le\covdist p$
+
+
+\begin{algorithmic}[1]
+\State $\mkvar{children}' \leftarrow \children p$ \Comment{Phase 1}
+\State $\mkvar{uncovered}, \mkvar{sepcov}, \mkvar{leftovers} \leftarrow \emptyset$
+\For { $r \in \children q $} \label{mergeloop}
+    \If {$\dist p r < \covdist p$}
+            \State $\mkvar{foundmatch} \leftarrow $\FALSE
+            \For {$s \in \mkvar{children}'$}
+                \If {$\dist s r \le \sepdist p$}
+                    \State $(s',\mkvar{leftovers}_s) \leftarrow \mkprocedure{mergeHelper}(s, r)$
+                    \State $\mkvar{children}' \leftarrow \mkvar{children}' \cup \{s'\} - \{s\}$
+                    \State $\mkvar{leftovers} \leftarrow \mkvar{leftovers} \cup \mkvar{leftovers}_s$
+                    \State $\mkvar{foundmatch} \leftarrow \TRUE$
+                    \State {\bfseries break} from inner loop
+                \EndIf
+            \EndFor
+            \If {\NOT $\mkvar{foundmatch}$}
+                \State $\mkvar{sepcov} \leftarrow\mkvar{sepcov} \cup \{r\}$
+            \EndIf
+    \Else
+        \State $\mkvar{uncovered} \leftarrow\mkvar{uncovered} \cup \{r\}$
+    \EndIf
+\EndFor
+
+%\State $children',sepcov,leftovers \leftarrow \emptyset$
+\State $\mkvar{children}' \leftarrow \mkvar{children}' \cup \mkvar{sepcov}$ \Comment{Phase 2}
+\State $p' \leftarrow $ tree rooted at $p$ with $\children{p'}=\mkvar{children}'$
+%\State $\children{p} \leftarrow \children{p} \cup \mkvar{sepcov}$
+\State $p' \leftarrow \ctinsert(p',q)$
+\State $\mkvar{leftovers}' \leftarrow \emptyset$
+\For {$r \in \mkvar{leftovers}$}
+    \If {$\dist r p' \le \covdist p'$}
+        \State $p' \leftarrow \ctinsert(p',r)$
+    \Else
+        \State $\mkvar{leftovers}' \leftarrow \mkvar{leftovers}' \cup \{r\}$
+    \EndIf
+\EndFor
+\State\Return $(p',\mkvar{leftovers}' \cup \mkvar{uncovered})$
+\end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Cache efficiency}
+\label{sec:cache}
+
+One of the biggest sources of overhead in the cover tree is cache misses.
+Our last improvement is to make cover trees more cache efficient.
+A simple way to reduce cache misses for tree data structures is to use the \emph{van Emde Boas} tree layout
+\cite{frigo1999}.
+This layout arranges nodes in memory according to a depth first traversal of the tree.
+This arrangement creates a \emph{cache oblivious} data structure.
+That is, the programmer does not need any special knowledge about the cache sizes to obtain optimal speedup---the van Embde Boas tree layout works efficiently on any cache architecture.
+This layout has been known for a long time in the data structures community, but it seems unused in machine learning libraries.
+Frigo (1999) provides a detailed tutorial.
+\nocite{frigo1999}
+
+Our implementation of the cache oblivious cover tree is \emph{static}.
+That is, we first construct the cover tree, then we call a function \pack~that rearranges the tree in memory.
+This means we do not get the reduced cache misses while constructing the tree, but only while querying the tree.
+The \pack\ function is essentially free to run because it requires only a single traversal through the dataset.
+Figure \ref{fig:cache} shows that the van Emde Boas tree layout reduces cache misses by 5 to 20 percent.
+This results in a reduction of stalled CPU cycles by 2 to 15 percent.
+
+\begin{figure*}
+\centering
+%\subfigure[]{
+%\resizebox{2in}{!}{\input{img/numdist_query}}
+%}
+\subfigure[]{\small
+\resizebox{2.5in}{2in}{\input{img/numdist_insert}}
+}
+\subfigure[]{\small
+\resizebox{2.5in}{2in}{\input{img/numdist}}
+}
+\begin{tikzpicture}
+    \node[draw,fill=darkred,minimum width=0.03in,minimum height=0.3in] at (0,0) {};
+    \node at (0,0.57in) {\small\rotatebox{90}{Original c.t.}};
+    \node[draw,fill=darkgreen,minimum width=0.03in,minimum height=0.3in] at (0.15in,0) {};
+    \node at (0.15in,0.62in) {\small\rotatebox{90}{Simplified c.t.}};
+    \node[draw,fill=blue,minimum width=0.03in,minimum height=0.3in] at (0.3in,0) {};
+    \node at (0.3in,0.80in) {\small\rotatebox{90}{Nearest ancestor c.t.}};
+    \node[minimum width=0.05in,minimum height=0.5in] at (0.45in,0) {};
+    \node at (0.45in,0.6in) {\small\rotatebox{90}{}};
+    \node at (0,-0.5in) {};
+\end{tikzpicture}
+\caption{
+    (a)
+    Constructing a nearest ancestor query tree usually takes longer than the original cover tree and the simplified cover tree.
+    %The extra distance comparisons come from the sorting and rebalancing steps of the nearest ancestor insertion algorithm.
+    (b)
+    Construction {\em plus} querying is faster in the nearest ancestor cover tree.
+    On most datasets, this faster query time more than offsets the increased construction cost, giving an overall speedup.
+}
+\label{fig:numdist}
+\end{figure*}
+\begin{figure*}
+\centering
+\subfigure[]{\small
+\resizebox{2.5in}{1.8in}{\input{img/cache}}
+}
+\subfigure[]{\small
+\resizebox{2.5in}{1.8in}{\input{img/stalled-front}}
+}
+\definecolor{colorOrig}{RGB}{102,51,0}
+\definecolor{colorMlpack}{RGB}{204,153,0}
+\begin{tikzpicture}
+    \node[draw,fill=colorOrig,minimum width=0.05in,minimum height=0.3in] at (0,0) {};
+    \node at (0,0.48in) {\small\rotatebox{90}{Reference}};
+    \node[draw,fill=colorMlpack,minimum width=0.05in,minimum height=0.3in] at (0.15in,0) {};
+    \node at (0.15in,0.45in) {\small\rotatebox{90}{MLPack}};
+    \node[draw,fill=blue,minimum width=0.05in,minimum height=0.3in] at (0.3in,0) {};
+    \node at (0.3in,0.68in) {\small\rotatebox{90}{Ours (unpacked)}};
+    \node[draw,fill=lightblue,minimum width=0.05in,minimum height=0.3in] at (0.45in,0) {};
+    \node at (0.45in,0.61in) {\small\rotatebox{90}{Ours (packed)}};
+    \node at (0,-0.475in) {};
+\end{tikzpicture}
+\caption{
+    (a)
+	Comparison of our packed nearest ancestor cover tree to our unpacked tree and other implementations, demonstrating better cache performance.
+    %Our packed cover tree has better cache performance than our unpacked cover tree, and usually has better cache performance than the other two implementations.
+    (b)
+    A stalled CPU cycle is when the CPU does no work because it must wait for a memory access. %can do no work processing an instruction because it must wait on data to be retrieved from memory.
+    Reducing the number of cache misses results in fewer stalled cycles, and so faster run times.
+    We used the Linux \mkprocedure{perf stat} utility to measure the \mkprocedure{cache-references}, \mkprocedure{cache-misses}, \mkprocedure{cycles}, and \mkprocedure{stalled-cycles-frontend} hardware counters.
+    \mkprocedure{perf stat} uses a sampling strategy with negligible affect on program performance.
+    %(a)
+    %Our packed cover tree always has better cache performance than our unpacked cover tree, and usually has better cache performance than the other two implementations.
+    %For this experiment, the Linux \mkprocedure{perf stat} utility was used to measure the \mkprocedure{cache-references} and \mkprocedure{cache-misses} hardware counters.
+    %This corresponds to the cache level closest to memory (i.e. the Last Level Cache).
+    %\mkprocedure{perf stat} uses a sampling strategy that has a negligible affect on the program's actual performance.
+    %(b)
+    %A stalled CPU cycle is one where the CPU can do no work processing an instruction because it must wait on data to be retrieved from memory.
+    %Reducing the number of cache misses results in fewer stalled cycles, and so faster run times.
+    %Measurements are from the \mkprocedure{cycles} and \mkprocedure{stalled-cycles-frontend} hardware counters.
+    }
+\label{fig:cache}
+\end{figure*}
+
+\begin{figure*}
+\centering
+\subfigure[]{\small
+\resizebox{2.5in}{1.8in}{\input{img/parallel-ancestor-build}}
+}
+\subfigure[]{\small
+\resizebox{2.5in}{1.8in}{\input{img/parallel}}
+}
+\begin{tikzpicture}
+    \node[draw,fill=colorOrig,minimum width=0.05in,minimum height=0.3in] at (0,0) {};
+    \node at (0,0.48in) {\small\rotatebox{90}{Reference}};
+    \node[draw,fill=colorMlpack,minimum width=0.05in,minimum height=0.3in] at (0.15in,0) {};
+    \node at (0.15in,0.45in) {\small\rotatebox{90}{MLPack}};
+    \node[draw,fill=blue,minimum width=0.05in,minimum height=0.3in] at (0.3in,0) {};
+    \node at (0.3in,0.35in) {\small\rotatebox{90}{Ours}};
+    \node[minimum width=0.05in,minimum height=0.3in] at (0.45in,0) {};
+    \node at (0.45in,0.61in) {\small\rotatebox{90}{}};
+    \node at (0,-0.475in) {};
+\end{tikzpicture}
+\caption{
+    Run times on the ``all nearest neighbor'' procedure for only those datasets that take more than 5 minutes.
+    (a) Tree construction. %The effectiveness of parallelization on tree construction.
+    A single cover tree merge takes about 1\% of the computation time;
+    the main reason for the lack of perfect parallel speedup is the increased number of cache misses caused by inserting into multiple trees simultaneously.
+    (b) Comparison on total performance to reference and MLPack implementations. %This figure shows the overall effectiveness of parallelization, and compares our runtimes with those of the reference implementation and MLPack implementation of cover trees.
+    Runtimes in both figures are divided by that of our single processor implementation (shown in parenthesis).
+    }
+\label{fig:parallel}
+\end{figure*}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1654,7 +2232,7 @@ We next compare our implementation against two good cover tree implementations c
 the reference implementation used in the original paper \cite{beygelzimer2006cover}
 and MLPack's implementation \cite{curtin2013mlpack}.
 Both of these programs were written in C++ and compiled using \texttt{g++ 4.4.7} with full optimizations.
-Our implementation was written in Haskell and compiled with \texttt{ghc 7.8.4} also with full optimizations.\footnote{Our code can be downloaded at \url{http://github.com/mikeizbicki/hlearn#covertree}.}
+Our implementation was written in Haskell and compiled with \texttt{ghc 7.8.4} also with full optimizations.\footnote{Our code can be downloaded at \url{http://github.com/mikeizbicki/hlearn\#covertree}.}
 % cshelton1: I removed this footnote.  I don't know what we are really trying to say (even the 5-10% garbage collection doesn't mean much
 %   perhaps the C++ implementation also spent 5-10% of the time reclaiming memory.  I would just let it stand as is.
 %\footnote{
@@ -1720,8 +2298,8 @@ On all of the data, the total construction and query cost are $29$\% that of the
 
 \begin{figure}[t]
 \centering
-\fixme{image}
 %\resizebox{\columnwidth}{2in}{\input{img/protein}}
+{\input{img/protein}}
 
 %\vspace{0.2in}
 
