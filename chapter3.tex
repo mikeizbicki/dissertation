@@ -989,7 +989,7 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
     %then the run time is $O(\cdoub^4\log n)$.
     %If $\varepsilon > 0$,
     %then $\findnnorig(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\cdoub^4\log\aspect{} + (1/\varepsilon)^{\log \cdoub})$.
-    For any $\varepsilon$, $\findnnorig(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\chole^4\log\aspect{})$.
+    For any $\varepsilon\ge0$, $\findnnorig(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\chole^4\log\aspect{})$.
     In particular, $\findnnorig$ finds exact nearest neighbors in this time.
 \end{theorem}
 
@@ -1250,6 +1250,8 @@ we can perform a ``dual tree'' traversal of the datasets.
     \caption{$\dualnn$(set of cover trees $P$, set of cover trees $R$, tolerance $\varepsilon$)}
 \vspace{0.1in}
 finds a $\eann$ in $P$ for each node $r\in R$
+
+precondition: forall $p\in P$ and $r \in R$, $\level p = \level r$
 \begin{algorithmic}[1]
     \State let $Q = \{ q: q \in \children p, p\in P \}$
     \For {$r \in R$}
@@ -1268,6 +1270,15 @@ finds a $\eann$ in $P$ for each node $r\in R$
     \EndFor
 \end{algorithmic}
 \end{algorithm}
+
+\begin{theorem}
+    For all $\varepsilon \ge 0$,
+    the runtime of $\dualnn(\{p\}, \{r\}, \varepsilon)$ is $O()$.
+\end{theorem}
+\begin{proof}
+    First we bound the total number of recursive calls to $\dualnn$,
+    then we bound the time spent in each call.
+\end{proof}
 
 \begin{theorem}
     $\dualnn(\{p\},\{r\},\varepsilon)$ finds a $\eann$ in $\data{p}$ for each $s\in\data{r}$.
@@ -1445,6 +1456,7 @@ It handles the case when the inserted data point is relatively far away,
 then calls $\ctinsertloop$ if the data point is close and a recursive descent is required.
 We now prove the correctness and runtime of insertion.
 
+%\begin{figure}[t]
 \begin{algorithm}[t]
     \caption{$\ctinsert$(cover tree $p$, data point $x$)}
     \label{alg:ctinsert}
@@ -1489,6 +1501,7 @@ We now prove the correctness and runtime of insertion.
     \EndIf
 \end{algorithmic}
 \end{algorithm}
+%\end{figure}
 
 \begin{theorem}
     If $p$ is a valid cover tree, then $\ctinsert(p,x)$ inserts $x$ into $p$.
@@ -1585,685 +1598,236 @@ We now prove the correctness and runtime of insertion.
     \State \Return $(P',R')$
 \end{pseudocode}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\ignore{
-%\begin{algorithm}[H]
-%\caption{Single point insertion}
-%\label{alg:insert}
-
-%\vspace{0.1in}
-\noindent
-{\bfseries function} \ctinsert(cover tree $p$, data point $x$)
-\begin{algorithmic}[1]
-    \State let $Q = \{ q : q \in \children{p}, p\in P\}$
-    \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
-    \algstore{insert}
-\end{algorithmic}
-
-    \noindent
-    %\hspace{-0.3in}
-\begin{algorithmic}[1]
-    \algrestore{insert}
-    \If {$\dist{p}{x} > \covdist{p}$}
-        \State \Return node(data=$x$,level=$\ceil{\log_2 \dist{p}{x}}$,children=$\{p\}$)
-    \Else
-        \If {$\dist{\hat q}{x} \ge \covdist{\hat q}$}
-            \State let $\hat p = \argmin_{p\in P} \dist{p}{x}$
-            \State let $\hat p' = \hat p$ with $x$ added as a child
-            \State \Return $\big(P\setminus\{\hat p\}\big) \cup \{\hat p'\}$
-        \Else
-            \State let $Q_x = \{q : q\in Q, \dist{q}{x} \le \covdist{q}\}$
-            \State let $Q' = \ctinsertloop(Q_x, x)$
-            \State let $q$   be the unique element of $Q  \setminus(Q\cap Q_x)$
-            \State let $q_x$ be the unique element of $Q_x\setminus(Q\cap Q_x)$
-            \State let $p_q$ be the element of $P$ with $q$ as its child
-            \State let $p_{q_x}$ be the node $p_q$ with child $q$ replaced by $q_x$
-            \State \Return $\big(P\setminus\{p_q\}\big) \cup \{p_{q_x}\}$
-        \EndIf
-    \EndIf
-\end{algorithmic}
-%\end{algorithm}
-
-
-\begin{algorithm}[H]
-\caption{Single point insertion}
-\label{alg:insert}
-    \vspace{0.1in}
-{\bfseries function} \ctinsert(cover tree $p$, data point $x$)
-
-\begin{algorithmic}[1]
-    \If {$\dist{p}{x} > \covdist{p}$}
-        \State \Return node(data=$x$,level=$\ceil{\log_2 \dist{p}{x}}$,children=$\{p\}$)
-    \Else
-        \State \Return $\ctinsertloop(\children{p}, x)$
-    \EndIf
-\end{algorithmic}
-
-    %\vspace{0.1in}
-{\bfseries function} \ctinsertloop(set of cover trees $P$, data point $x$)
-
-\begin{algorithmic}[1]
-    \State let $Q = \{ q : q \in \children{p}, p\in P\}$
-    \State let $\hat q = \argmin_{q\in Q} \dist{q}{x}$
-    \If {$\dist{\hat q}{x} \ge \covdist{\hat q}$}
-        \State let $\hat p = \argmin_{p\in P} \dist{p}{x}$
-        \State let $\hat p' = \hat p$ with $x$ added as a child
-        \State \Return $\big(P\setminus\{\hat p\}\big) \cup \{\hat p'\}$
-    \Else
-        \State let $Q_x = \{q : q\in Q, \dist{q}{x} \le \covdist{q}\}$
-        \State let $Q' = \ctinsertloop(Q_x, x)$
-        \State let $q$   be the unique element of $Q  \setminus(Q\cap Q_x)$
-        \State let $q_x$ be the unique element of $Q_x\setminus(Q\cap Q_x)$
-        \State let $p_q$ be the element of $P$ with $q$ as its child
-        \State let $p_{q_x}$ be the node $p_q$ with child $q$ replaced by $q_x$
-        \State \Return $\big(P\setminus\{p_q\}\big) \cup \{p_{q_x}\}$
-    \EndIf
-\end{algorithmic}
-\end{algorithm}
-
-\begin{algorithm}[H]
-%\caption{Simplified cover tree insertion}
-\label{alg:insert}
-
-    \vspace{0.1in}
-{\bfseries function} \ctinsert(cover tree $p$, data point $x$)
-
-returns a new cover tree $p'$ that contains $x$ and all the points in $p$
-
-\begin{algorithmic}[1]
-    \If {$\dist p x > \covdist p$}
-        \State create a new node $p'$ from data point $x$
-        \State set $\level{p'}$ to  $\ceil{\log_2 d(p,p')}$
-        \State set $\children{p'}$ to $\{p\}$
-        \State\Return $p'$
-    \Else
-        \State let $q = \argmin_{q\in\children{p}} \dist{q}{x}$.
-        \If {$\dist q x > \covdist p/2$}
-            \State let $p' = p$ with $x$ added as a child
-            \State\Return $p'$ 
-        \Else
-            \State let $q' = \ctinsert(q,x)$
-            \State let $p' = p$ with child $q$ replaced by $q'$
-            %\State set $\level{p'}$ to $\ceil{\log_2\argmax_{q\in\children{p'}} d(p',q)}$
-            \State \Return $p'$
-        \EndIf
-        %\For {$q \in \children{p}$ sorted in ascending order by $\dist{q}{x}$}
-            %\If {$\dist q x \le \covdist p/2$}
-                %\State let $q' = \ctinsert(q,x)$
-                %\State let $p' = p$ with child $q$ replaced by $q'$
-                %\State set $\level{p'}$ to $\ceil{\log_2\argmax_{q\in\children{p'}} d(p',q)}$
-                %\State \Return $p'$
-            %\EndIf
-        %\EndFor
-        %\State let $p' = p$ with $x$ added as a child
-        %\State\Return $p'$ 
-    \EndIf
-\end{algorithmic}
-\end{algorithm}
-
-\begin{theorem}
-If $p$ is a valid cover tree, then $\ctinsert(p,x)$ is a valid cover tree.
-\end{theorem}
-
-\begin{proof}
-    There are three cases, and we consider each in turn.
-    When the first if statement is satisfied, 
-    the covering invariant prevents $x$ from being added as a child of $p$.
-    So we create a new root node $p'$ above $p$.
-    The level of $p'$ is set in line 3 as low as possible to satisfy both the leveling and covering invariants.
-    (The level of $p'$ may in general be arbitrarily higher than the level of $p$.)
-    The separating invariant is satisfied because $p'$ has only one child.
-    Note that every time this if statement triggers,
-    the $\mkfunction{covdist}$ of the root node increases by a factor of two.
-    Thus when we insert a sequence of points with bounded diameter, 
-    eventually the $\mkfunction{covdist}$ will be large enough that this if statement will no longer trigger and points will be forced to be inserted as a children.
-
-    When the first if statement is not satisfied, 
-    $x$ must be inserted underneath $p$.
-    The if statement on line 8 checks if $x$ can be added directly as a child to $p$.
-    Adding new children does not affect either the leveling or covering invariants,
-    and the condition ensures that the separating invariant remains satisfied.
-
-    If $x$ cannot be added as a child, 
-    then it is added to the subtree rooted at $q$ in the else clause beginning on line 11.
-    Recall that the leveling invariant allows the children of $p$ to have arbitrarily small level.
-    So there are two cases we must consider.
-    (Case 1:) When $\level{q}=\level{p}-1$, 
-    the recursive call to $\ctinsert$ on line 9 will return a cover tree rooted at $q$.
-    (The if statement on line 1 will not be triggered in the recursion).
-    So the leveling, covering, and separating invariants of $p$ all remain satisfied.
-    (Case 2:) When $\level{q}<\level{p}-1$, 
-    the recursive call to $\ctinsert$ will return a cover tree with a root node at $x$ instead of $q$.
-    (The if statement on line 1 will be triggered in the recursion).
-    %The leveling invariant of $p$ may be affected if $q$ was the child of maximum distance to $p$.
-    %In particular, $\level{p}$ may need to decrease in order to satisfy the leveling invariant,
-    %and line 11 accounts for this possibility.
-    The covering invariant of $p$ remains satisfied due to the if statement on line 1.
-    %The separating invariant is subtle and depends on the order that children are considered in the for loop.
-    %In particular, let $r\le q$ be a 
-\end{proof}
-
-\begin{theorem}
-    \label{theorem:ctinsert1}
-    The runtime of $\ctinsert$ is $O(\cdoub^2\log\aspect{X})$.
-\end{theorem}
-\begin{proof}
-    If $\dist{p}{x} > \covdist{p}$, then the running time is constant.
-    Otherwise, the algorithm loops over all the children of $p$ and recurses on at most one child.
-    There are at most $\cdoub^2$ children (Lemma \ref{lemma:children}),
-    and the height of the tree is at most $\log_2\aspect{X}$ (Lemma \ref{lemma:height}).
-\end{proof}
-
-\begin{theorem}
-    \label{theorem:ctinsert2}
-    When the data is drawn i.i.d.\ from a well behaved distribution,
-    then the expected runtime of $\ctinsert$ is $O(\cdoub^2\log n)$.
-\end{theorem}
-\begin{proof}
-    Apply Lemma \ref{lemma:Easpect} to Theorem \ref{theorem:ctinsert1}.
-\end{proof}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{algorithm}[H]
-    %\caption{Merging cover trees}
-    \label{alg:merge}
-    \vspace{0.1in}
-    {\bfseries function} \ctmerge(cover tree $p$, set of cover trees $R$)
-
-\begin{algorithmic}[1]
-    \For {$r \in R$}
-        \If {$\max_{q\in\children{p}} \dist{r}{q} > \covdist{p}/2$}
-            \State add $r$ as a child of $p$
-            \State remove $r$ from $R$
-        \EndIf
-    \EndFor
-    \For {$q \in \children{p}$}
-        \State let $R_q = \{ r : r\in R, \dist{r}{q} \le \covdist{p}/2\}$
-        \State let $q' = \ctmerge(q,R_q)$
-        \State replace $q$ with $q'$ as a child of $p$
-    \EndFor
-\end{algorithmic}
-\end{algorithm}
-%\State let $\ell = \max_{r\in R} \level r$ 
-%\If {$\level p > \ell$}
-    %\State let $R_{near} = \{ r : r\in R, \min_{q\in\children{p}}\dist{q}{r} \le \covdist p/2\}$.
-    %\State let $R_{far} = R-R_{near}$
-%\Else
-    %\State let $R=\{\}$
-    %\For {$r\in R$}
-        %\If {$\level{r}=\ell$}
-            %\State create node $r'$ with same data point as $r$ but level $-\infty$
-            %\State $R' \leftarrow R' \cup \{r'\} \cup \children{r}$
-        %\Else
-            %\State $R' \leftarrow R' \cup \{r\}$
-        %\EndIf
-    %\EndFor
-    %\State $\ctmerge(p,R')$
-%\EndIf
-
-%%%%%%%%%%%%%%%%%%%%
-
-\newpage
-\begin{algorithm}[H]
-    %\caption{Merging cover trees}
-    \label{alg:merge}
-
-\vspace{0.1in}
-{\bfseries function} $\ctmerge$(cover tree $p$, cover tree $r$)
-\begin{algorithmic}[1]
-    \State $(P,R) \leftarrow \ctmergeloop(\children{p},r)$
-    \State $p' \leftarrow$
-    \While {$R \ne \{\}$}
-        \State
-    \EndWhile
-    \State \Return $p'$
-\end{algorithmic}
-
-
-\vspace{0.1in}
-{\bfseries function} $\ctmergeloop$(set of cover trees $P$, cover tree $r$)
-
-%requires $\level{p} = \level{r}$
-
-\begin{algorithmic}[1]
-    \State $P' \leftarrow P$, $R' \leftarrow \{\}$
-    \State let $\hat p_r = \argmax_{p \in P} \dist{p}{r}$
-    \If {$\dist{\hat p_r}{r} \ge 2\cdot\covdist{p_r} + \maxdist{r}$}
-        \State $R' \leftarrow \{r\}$
-    \Else
-        \For {$s \in \children r$}
-            %\State let $Q = \{q : q \in \children p, p \in P \}$
-            %\State let $\hat q_s = \argmax_{q\in Q} \dist{q}{s}$
-            %\State let $\hat p_s = \argmax_{p\in P} \dist{p}{s}$
-
-            %\State let $Q_s = \{q : q \in Q, \dist{q}{s} \le 2\cdot\covdist{q} + \maxdist{s} \}$
-            \State let $Q_s = \{q : q \in \children{p}, p\in P', \dist{q}{s} \le 2\cdot\covdist{q} + \maxdist{s} \}$
-            \State let $(Q_s', S') = \ctmergeloop(Q_s,s)$
-            \State \fixme{update $P'$ based on $Q_s'$}
-            \While {$S' \ne \{\}$}
-                \State select any $s' \in S'$
-                %\State let $\hat q_{s'} = \argmax_{q\in Q} \dist{q}{s'}$
-                \State let $\hat p_{s'} = \argmax_{p\in P} \dist{p}{s'}$
-                \If {$\dist{\hat p_{s'}}{s'} \le \covdist{\hat p_{s'}}$}
-                    %\State \fixme{add $s'$ as a child of $\hat p_{s'}$}
-                    \State let $\hat p'_{s'}$ be $\hat p_{s'}$ with $s'$ added as a child
-                    \State $P' \leftarrow \big( P' \setminus \{\hat p_s\} \big) \cup \{\hat p'_{s'}\}$
-                \Else
-                    \State create node $r'$ such that:
-                    \State ~~~~~$dp(r') = dp(s')$
-                    \State ~~~~~$\level{r'}=\level{s'}+1$
-                    \State ~~~~~$\children{r'} = \{ s : s\in S', \dist{s}{r'} \le \covdist{r'} \}$
-                    \State $S' \leftarrow S'\setminus\children{r'}$
-                    \State $R' \leftarrow R'\cup\{r'\}$
-                \EndIf
-            \EndWhile
-        \EndFor
-    \EndIf
-    \State \Return $(P',R')$
-\end{algorithmic}
-\end{algorithm}
-
-\begin{lemma}
-    Let $P$ be a set of cover trees of level $i$ with minimum distance $2^i$, 
-    and $r$ be a cover tree of level $i$.
-    Then the sets $P'$ and $R'$ returned by $\ctmergeloop(P,r)$ satisfy:
-    \begin{enumerate}
-        \item every element $p' \in P'$ and $r'\in R'$ are valid cover trees with level $i$,
-        \item for all $j<i$, $\cup_{p' \in P'} \descendants {p'}$
-        \item 
-    \end{enumerate}
-\end{lemma}
-
-\begin{lemma}
-    The functions $\ctmerge$ and $\ctmergeloop$ obey the invariant that when $\ctmergeloop$ is called, $|P| \le \cdoub^3$.
-\end{lemma}
-
-%%%%%%%%%%%%%%%%%%%%
-
-\newpage
-\begin{algorithm}[H]
-    %\caption{Merging cover trees}
-    \label{alg:merge}
-    \vspace{0.1in}
-    {\bfseries function} \ctmerge(set of cover trees $P$, cover tree $r$)
-
-    requires $\level{p} = \level{r}$
-
-\begin{algorithmic}[1]
-    \State $S \leftarrow \children{r}$
-    \State $S_\textit{far} \leftarrow \{\}$
-    \State $P' \leftarrow P$
-    \For {$s\in S$}
-        \State $Q \leftarrow \{ q : q \in \children{p}, p \in P' \}$
-        \State let $\hat p = \argmin_{p\in P} \dist{p}{s}$
-        \State let $\hat q = \argmin_{q\in Q} \dist{q}{s}$
-        \If {$\dist{\hat p}{s} \ge 2\cdot\covdist{\hat p} + \maxdist{s}$}
-            \State $S_\textit{far} \leftarrow S_\textit{far} \cup \{s\}$
-        \ElsIf {$\dist{\hat p}{s} \ge \covdist{\hat p}$}
-            \State let $Q_s = \{q : q\in Q, \dist{q}{s} \le 2\cdot\covdist{q}+\maxdist{s}\}$
-            \State $(P',T_\textit{far}') \leftarrow \mergeinsert(P',\{\},Q_s,s)$
-            \While {$T_\textit{far}' \ne \{\}$}
-                \State let $t$ be any node in $T_\textit{far}'$
-                \State construct node $s'$ with $\level{s'} = \level{t}+1$
-                \State ~~~~~set data point to $t$
-                \State ~~~~~set children equal $\{ t : t \in T'_\textit{far}, \dist{t}{s'} \le \covdist{s'}$
-                \State $S'_\textit{far} \leftarrow S'_\textit{far} \cup s'$
-            \EndWhile
-            %\State $T'\leftarrow \{\}$
-            %\For {$t \in \children{s}$}
-                %%\State let $\hat q_t = \argmin_{q\in Q} \dist{q}{t}$
-                %\State let $Q_t = \{q : q\in Q, \dist{q}{t} \le 2\cdot\covdist{q}+\maxdist{t}\}$
-                %\State $(Q_t',R_\textit{far}') \leftarrow \ctmerge(P'Q_t,t)$
-            %\EndFor
-        \ElsIf {$\dist{\hat q}{s} \ge \covdist{\hat p}/2$}
-            \State let $\hat q'$ be the node $\hat q$ with $s$ added as a child
-            \State let $p_{\hat q}$ be the element of $P'$ with $\hat q$ as a child
-            \State let $p_{\hat q}'$ be the node $p_{\hat q}$ with child $\hat q$ replaced with $\hat q'$
-            \State $P' \leftarrow \big(P' \setminus \{p_{\hat q}\}\big) \cup \{ p_{\hat q}'\}$
-        \Else
-            \State let $Q_s = \{ q : q \in Q, \dist{q}{s} \le 2\cdot\covdist{q} \}$
-            \State $(P',S_\textit{far}') \leftarrow \mergeinsert(P',S_\textit{far}',Q_s,s)$
-            %\State $(Q_s', s') \leftarrow \ctmerge(Q_s,s)$
-            %\State let $q _s$  be the single element of $Q _s \setminus (Q_s \cap Q_s')$
-            %\State let $q'_s$ be the single element of $Q'_s \setminus (Q_s \cap Q_s')$
-            %\State let $p _{q_s}$ be the element of $P'$ with $q_s$ as a child
-            %\State let $p'_{q_s}$ be the node $p_{q_s}$ with child $q_s$ replaced with $q'_s$
-            %\State $P' \leftarrow \big(P' \setminus \{p_{q_s}\}\big) \cup \{p'_{q_s}\}$
-            %\State $S_\textit{far} \leftarrow S_\textit{far} \cup s'$
-        \EndIf
-    \EndFor
-    \State \Return $(P',S')$
-\end{algorithmic}
-
-    \vspace{0.1in}
-    {\bfseries function} $\mkprocedure{merge\_insert}$(set of cover trees $P$, set of cover trees $Q$, cover tree $r$)
-\begin{algorithmic}[1]
-    \State $(Q_s', s') \leftarrow \ctmerge(Q_s,s)$
-    \State let $q _s$  be the single element of $Q _s \setminus (Q_s \cap Q_s')$
-    \State let $q'_s$ be the single element of $Q'_s \setminus (Q_s \cap Q_s')$
-    \State let $p _{q_s}$ be the element of $P'$ with $q_s$ as a child
-    \State let $p'_{q_s}$ be the node $p_{q_s}$ with child $q_s$ replaced with $q'_s$
-    \State let $P' = \big(P \setminus \{p_{q_s}\}\big) \cup \{p'_{q_s}\}$
-    %\State $P' \leftarrow \big(P' \setminus \{p_{q_s}\}\big) \cup \{p'_{q_s}\}$
-    %\State let $S_\textit{far} \leftarrow S_\textit{far} \cup s'$
-    \State \Return $(P',s')$
-\end{algorithmic}
-\end{algorithm}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{algorithm}[H]
-    %\caption{Simplified cover tree nearest neighbor query}
-    \label{alg:query}
-
-    \vspace{0.1in}
-    {\bfseries function} \findnn(set of cover trees $P$, query  point $x$, nearest neighbor so far $y$, allowable tolerance $\varepsilon$)
-
-\begin{algorithmic}[1]
-    \If {$P = \{\}$}
-        \State\Return $y$
-    \Else
-        \For {$p\in P$}
-            \If {$d(p,x) < d(y,x)$}
-                \State $y \leftarrow p$
-            \EndIf
-        \EndFor
-        \State $P' \leftarrow \{\}$
-        \For {$p\in P$}
-            \For {$q \in \children p$}
-                \If {$\dist{x}{q} \le \dist{x}{y}/\varepsilon + \maxdist{q}$}
-                    \State $P' \leftarrow P'\cup\{q\}$
-                \EndIf
-            \EndFor
-        \EndFor
-        %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{y} > \dist{x}{q}/\varepsilon - \maxdist{q} \}$
-        %\State let $P' = \{ q : q\in\children{p}, p\in P, \dist{x}{q} \le \varepsilon\cdot\dist{x}{y}+\maxdist{q}\}$
-        \State\Return $\findnn(P',x,y,\varepsilon)$
-    \EndIf
-\end{algorithmic}
-\end{algorithm}
-
-\begin{definition}
-    Let $\set X$ be a metric space, $X\subset\set X$, and $x$ be in $\set X$ but not $X$.
-    Then the nearest neighbor $y^*\in X$ is defined as $y^*=\argmin_{y\in X} \dist{x}{y}$.
-    An $\varepsilon$-nearest neighbor (for $\varepsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \varepsilon \cdot\dist{x}{y^*}$.
-\end{definition}
-
-\begin{theorem}
-    The return value of $\findnn(\{p\},x,p,\varepsilon)$ is an $\varepsilon$-approximate nearest neighbor of $x$.
-\end{theorem}
-\begin{proof}
-    The algorithm maintains the invariant that either $y$ is an $\varepsilon$-ann,
-    or $P$ contains a tree that contains an $\varepsilon$-ann.
-    Since the algorithm only terminates when $P$ is empty,
-    the invariant ensures that the returned value is an $\varepsilon$-ann.
-
-    If $y$ is already an $\varepsilon$-ann,
-    then the algorithm must return an $\varepsilon$-ann because it will only ever update $y$ to be closer to $x$.
-    Assume $y$ is not an $\varepsilon$-ann.
-    Then if the root of some subtree in $P$ is an $\varepsilon$-ann,
-    the for loop on lines 4-6 will update $y$ to be an $\varepsilon$-ann.
-    Otherwise, there must exist an $\varepsilon$-ann in some child $q$ of some subtree $p\in P$.
-    Let $\hat y$ denote the $\varepsilon$-ann.
-    We have that
-    \begin{equation}
-        \varepsilon \cdot \dist{x}{y^*}
-        \le \dist{x}{\hat y} 
-        \le \dist{x}{y} 
-        .
-    \end{equation}
-    Then by the triangle inequality, we have
-    \begin{equation}
-        \label{eq:findnn_condition}
-        \dist{x}{q} 
-        \le \dist{x}{\hat y} + \dist{\hat y}{q}
-        \le \dist{x}{y}/\varepsilon + \maxdist{q}
-        .
-    \end{equation}
-    The if statement in line 10 ensures that all nodes satisfying condition \eqref{eq:findnn_condition} will be added to $P_i$,
-    maintaining the invariant.
-\end{proof}
-
-%%%%%%%%%%%%%%%%%%%%
-
-\begin{algorithm}[H]
-    %\caption{Simplified cover tree nearest neighbor query}
-    \label{alg:query}
-
-    \vspace{0.1in}
-    {\bfseries function} \findnn(cover tree $p$, query  point $x$, tolerance $\varepsilon$)
-
-\begin{algorithmic}[1]
-    %\State let $i=0$, $P_i = \{p\}$, $y=p$
-    \State $y \leftarrow p$
-    \State $i\leftarrow0$
-    \State $P_0 \leftarrow \{p\}$
-    \While {$P_i \ne \{\}$}
-        \For {$p\in P_{i}$}
-            \If {$\dist{p}{x} < \dist{y}{x}$}
-                \State $y \leftarrow p$
-            \EndIf
-        \EndFor
-        \State $P_{i+1}\leftarrow \{\}$
-        \For {$p\in P_{i}$}
-            %\If {$\dist{p}{x} < \dist{y}{x}$}
-                %\State $y \leftarrow p$
-            %\EndIf
-            \For {$q\in\children{p}$}
-                \If {$\dist{x}{q} \le \dist{x}{y}/\varepsilon+\maxdist{q}$}
-                    \State $P_i \leftarrow P_i\cup\{q\}$
-                \EndIf
-            \EndFor
-        \EndFor
-        \State $i\leftarrow i+1$
-    \EndWhile 
-    \State \Return y
-\end{algorithmic}
-\end{algorithm}
-
-\begin{theorem}
-    The runtime of $\findnn$ with $\varepsilon \ge 2$ is $O(\cdoub^2\log\aspect{})$.
-\end{theorem}
-\begin{proof}
-    Since the algorithm contains three nested loops, 
-    the total runtime is bounded by the product of the maximum iterations of each loop.
-    The innermost for loop (line 9) executes once per child,
-    which by Lemma \ref{lemma:children} is $O(\cdoub^2)$.
-    The outermost while loop (line 4) executes at most once per level of the tree.
-    To see this, notice that $P_i$ contains only nodes that are $i$ edges away from $p$,
-    and so $P_{\height p+1}$ is guaranteed to be the empty set.
-    By Lemma \ref{lemma:height}, the height of $p$ is $O(\log\aspect{})$.
-    The middle for loop (line 6) executes once for each node in $P_i$.
-    To bound the size of $P_i$, first notice that by the global separating invariant,
-    the distance between each $q_1$ and $q_2$ in $P_i$ must be at least $2^i$. 
-    By our choice of $\varepsilon$, we have that all of the $q$ in $P_i$ satisfy
-    \begin{equation}
-        \dist{x}{q} 
-        \le \dist{x}{y}/\varepsilon + \maxdist{q}
-        \le \dist{x}{q}/2 + 2^i
-        \le 2^{i+1}
-        .
-    \end{equation}
-    Let $\delta=2^i$.
-    Then $P_i$ is a $\delta$-packing of $B(x,2\delta)$.
-    \begin{equation}
-        |P_i|
-        \le M_\delta(B(x,2\delta))
-        \le N_\delta/2(B(x,2\delta))
-        \le \cdoub^2
-        .
-    \end{equation}
-\end{proof}
-
-\begin{theorem}
-    The runtime of $\findnn$ with $\varepsilon=1$ 
-    (i.e. $\findnn$ must return the exact nearest neighbor),
-    is $O(\cdoub^2 ...)$.
-\end{theorem}
-
-%%%%%%%%%%%%%%%%%%%%
-
-\begin{algorithm}[H]
-    %\caption{Simplified cover tree nearest neighbor query}
-    \label{alg:query}
-
-    \vspace{0.1in}
-    {\bfseries function} \findnn(cover tree $p$, query  point $x$, nearest neighbor so far $y$)
-
-\begin{algorithmic}[1]
-    \If {$d(p,x) < d(y,x)$}
-        \State $y \leftarrow p$
-    \EndIf
-    %\For {each child $q$ of $p$ sorted by distance to $x$}
-    \For {$q\in\children p$ sorted in ascending order by distance to $x$}
-        \If {$d(x,y) > d(x,q) - \maxdist{q}$} 
-            \State $y \leftarrow \findnn(q,x,y)$
-        \EndIf
-    \EndFor
-    \State\Return $y$
-\end{algorithmic}
-\end{algorithm}
-
-%%%%%%%%%%%%%%%%%%%%
-
-\begin{algorithm}[H]
-    %\caption{Simplified cover tree nearest neighbor query}
-    \label{alg:dualnn}
-
-    \vspace{0.1in}
-    {\bfseries function} \dualnn(set of cover trees $P$, set of cover trees $R$, tolerance $\varepsilon$)
-
-    finds all the nearest neighbors of $P$ in $R$
-
-\begin{algorithmic}[1]
-    \If {$\level P \ge \level R$}
-        %\State $P' \leftarrow \{\}$
-        \For {$p\in P$}
-            \State $\dualnn(\children{p},R,\varepsilon)$
-            %\If {$\level p = \level P$}
-                %\State $P' \leftarrow P' \cup \children{p}$
-                %\For {$r\in R$}
-                    %\If {$nn[p] \le$}
-                        %\State
-                    %\EndIf
-                %\EndFor
-            %\Else
-                %\State $P' \leftarrow P' \cup \{p\}$
-            %\EndIf
-        \EndFor
-        %\State $\dualnn(P',R,\varepsilon)$
-    \Else
-        \State $R' \leftarrow \{\}$
-        \For {$r\in R$}
-            %\If {$\level r = \level R$}
-                %\State $R' \leftarrow R' \cup \children{r}$
-                \For {$p\in P$}
-                    \If {$\dist{r}{p} \le \dist{nn[p]}{p}$}
-                        \State $nn[p] \leftarrow r$
-                    \EndIf
-                    \If {$\maxdist{p} \le \dist{r}{p}/\varepsilon+\maxdist{r}$}
-                        \State $R' \leftarrow R' \cup \{r\}$
-                    \EndIf
-                \EndFor
-            %\Else
-                %\State $R' \leftarrow R' \cup \{r\}$
-            %\EndIf
-        \EndFor
-        \State $\dualnn(P,R',\varepsilon)$
-    \EndIf
-\end{algorithmic}
-\end{algorithm}
-
-\begin{theorem}
-    Let $p^*$ and $r^*$ be the root of two cover trees.
-    After running $\dualnn(\{p^*\},\{r^*\},\varepsilon)$,
-    $nn[q]$ contains an $\varepsilon$-approximate nearest neighbor of $q$ in $r$ for all $q$ in $p$.
-\end{theorem}
-
-\begin{proof}
-    We will show that for every node $p$ in $p^*$,
-    $\dualnn$ will be called with $p\in P$ and some $\varepsilon$-ann in $R$.
-    When this happens, the if statement on line 8 will ensure that $nn[p]$ gets updated to a $\varepsilon$-ann.
-\end{proof}
-
-\begin{theorem}
-    Let $p$ and $r$ be the root of two cover trees.
-    The runtime of $\dualnn(\{p\},\{r\},\varepsilon)$ for all $\varepsilon\ge2$ is $O(\cdoub^4\log\aspect{})$.
-\end{theorem}
-\begin{proof}
-\end{proof}
-
-%%%%%%%%%%%%%%%%%%%%
-
-\begin{algorithm}[H]
-    %\caption{Simplified cover tree nearest neighbor query}
-    \label{alg:dualnn}
-
-    \vspace{0.1in}
-    {\bfseries function} \dualnn(vector of set of cover trees $V$, return value $r$)
-
-\begin{algorithmic}[1]
-    %\State let $P=\argmax_{P\in\set P} \level{P}$
-    \State let $m$ be the size of $V$
-    \State $i^* \leftarrow \argmax_{i\in[m]} \level{V[i]}$
-    \State $P \leftarrow V[i^*]$
-    \State $P' \leftarrow \{\}$
-    \State $r' \leftarrow r$
-    \For {$p\in P$}
-        \If {$\level p = \level P$}
-            %\State $P' \leftarrow P' \cup \children{p}$
-            \For {$q \in \children p$}
-                \State $r' \leftarrow \mkfunction{updateReturnValue}(r)$
-                \If {\textbf{not} $\mkfunction{prune}(q)$}
-                    \State $P' \leftarrow P' \cup \{q\}$
-                \EndIf
-            \EndFor
-        \Else
-            \State $P' \leftarrow P' \cup \{p\}$
-        \EndIf
-    \EndFor
-    %\State $\set P' \leftarrow \set P - \{P\} \cup\{P'\}$
-    \State $V[i^*] \leftarrow P'$
-    \State $\dualnn(\set P')$
-\end{algorithmic}
-\end{algorithm}
-
-%%%%%%%%%%%%%%%%%%%%
-
-\newpage
-\begin{algorithm}[H]
-    %\caption{Merging cover trees}
-    \label{alg:merge}
-    \vspace{0.1in}
-    {\bfseries function} \ctmerge(set of cover trees $P$, set of cover trees $R$)
-
-\begin{algorithmic}[1]
-    \State $R' \leftarrow R$
-    \For {$p\in P$}
-        \State $R_p \leftarrow \{\}$
-    \EndFor
-    \For {$r\in R'$}
-        \State $p \leftarrow \argmin_{p\in P} \dist{p}{r}$
-        \State $R_p \leftarrow R_p \cup \{r\}$
-    \EndFor
-    \For {$p \in P$}
-        \State $p' \leftarrow p$
-        \For {$r \in R_p$}
-            \State $a \leftarrow \argmax_{q \in\children{p'}} \dist{q}{r}$
-            \If {$\covdist{p}/2 \le a$}
-                \State $p' \leftarrow p'$ with $r$ added as a child
-            \EndIf
-        \EndFor
-    \EndFor
-\end{algorithmic}
-\end{algorithm}
-}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Analysis}
+\section{Experiments}
+\label{sec:experiments}
+
+%In this section we validate our improvements empirically.
+We now validate our improvements empirically.
+Our first experiments use the Euclidean distance on a standard benchmark suite (described in Table \ref{tab:datasets}).
+%First, we use a standard benchmark suite described in Table \ref{tab:datasets} and the Euclidean distance.
+%We compare the number of distance comparisons used by the three cover tree variants, and we compare our cover tree implementation to previous implementations of the original cover tree.
+Our last experiments use non-Euclidean metrics on data from bioinformatics and computer vision.
+In each experiment, we use the ``all nearest neighbors'' experimental setup.
+That is, we first construct the cover trees on the dataset.
+Then, for each point in the dataset, we find its nearest neighbor.
+This is a standard technique for measuring the efficiency of nearest neighbor algorithms.
+
+\subsection{Tree-type comparison}
+
+Our first experiment compares the performance of the three types of cover trees: original, simplified, and nearest ancestor.
+We measure the number of distance comparisons required to build the tree on a dataset in Figure \ref{fig:numdist}(a)
+and the number of distance comparisons required to find each data point's nearest neighbor in Figure \ref{fig:numdist}(b) using Algorithm \ref{alg:query}.
+Distance comparisons are a good proxy measure of runtime performance because the majority of the algorithm's runtime is spent computing distances, and it ignores the possible unwanted confounding variable of varying optimization efforts.
+As expected, the simplified tree typically outperforms the original tree, and the nearest ancestor tree typically outperforms the simplified tree.
+We reiterate that this reduced need for distance comparisons translates over to all other queries provided by the space tree framework \cite{Curtin2013}.
+
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrr}
+%\hline
+dataset & num data points & num dimensions \\
+\hline
+%\hline
+yearpredict  & 515345& 90   \\
+twitter      & 583250& 78   \\
+tinyImages   & 100000& 384  \\
+mnist        & 70000 & 784  \\
+corel        & 68040 & 32   \\
+covtype      & 581012& 55   \\
+artificial40 & 10000 & 40   \\
+%calhousing   & 20640 & 8    \\
+faces        & 10304 & 20   \\
+%\hline
+\end{tabular}
+\caption{
+    All MLPack benchmark datasets with at least 20 dimensions and 10000
+points, arranged in descending order by runtime of all nearest neighbor search.
+    }
+\label{tab:datasets}
+\end{table}
+
+\subsection{Implementation comparison}
+
+We next compare our implementation against two good cover tree implementations currently in widespread use:
+the reference implementation used in the original paper \cite{beygelzimer2006cover}
+and MLPack's implementation \cite{curtin2013mlpack}.
+Both of these programs were written in C++ and compiled using \texttt{g++ 4.4.7} with full optimizations.
+Our implementation was written in Haskell and compiled with \texttt{ghc 7.8.4} also with full optimizations.\footnote{Our code can be downloaded at \url{http://github.com/mikeizbicki/hlearn#covertree}.}
+% cshelton1: I removed this footnote.  I don't know what we are really trying to say (even the 5-10% garbage collection doesn't mean much
+%   perhaps the C++ implementation also spent 5-10% of the time reclaiming memory.  I would just let it stand as is.
+%\footnote{
+%Haskell has two disadvantages for performance sensitive numeric computing.
+%First, it is a garbage collected language.
+%In our tests, the garbage collector typically required between 5 to 10 percent of our program's run time.
+%Second, Haskell only efficiently supports persistent data structures, and our cover tree is implemented persistently.
+%That is, we never change the value of a variable after creation; and all previous states of the program are continuously accessible in memory.
+%It is impossible to guess how persistence might affect the run time of our cover tree.
+%%We implemented the cover tree in Haskell partly out of a desire to show that the language is capable of state-of-the-art performance on numerically intensive algorithms.
+%}
+All tests were run on an Amazon Web Services \texttt{c3.8x-large} instance with 60 GB of RAM and 32 Intel Xeon E5-2680 CPU cores clocked at 2.80GHz.
+Half of those cores are hyperthreads, so for simplicity we only parallelize out to 16 cores.
+
+Since the reference implementation and MLPack only come with the Euclidean distance built-in, we only use that metric when comparing the three implementations.
+Figure \ref{fig:cache} shows the cache performance of all three libraries.
+Figure \ref{fig:parallel} shows the runtime of all three libraries.
+Our implementation's cache performance and parallelization speedup is shown on the nearest ancestor cover tree.
+Neither the original implementation nor MLPack support parallelization.
+
+\subsection{Graph kernels and protein function}
+
+An important problem in bioinformatics is to predict the function of a protein based on its 3d structure.
+State of the art solutions model the protein's 3d structure as a graph and use support vector machines (with a graph kernel) for prediction.
+Computing graph kernels is relatively expensive, however, so research has focused on making the graph kernel computation faster \citep{Vishwanathan2010,Shervashidze2011}.
+Such research makes graph kernels scale to \emph{larger graphs}, but does not help in the case where there are \emph{more graphs}.
+Our contribution is to use cover trees to reduce the number of required kernel computations, letting us scale to more graphs.
+The largest dataset in previous research contained about 1200 proteins.
+With our cover tree, we perform nearest neighbor queries on all one hundred thousand proteins currently registered in the Protein Data Bank \citep{Berman2000}.
+
+We use the random walk graph kernel in our experiment.
+It performs well on protein classification and is conceptually simple.
+%The random walk kernel between graphs $A$ and $B$ is defined as:
+%$$
+%k(A,B) = \sum_{i=1}^\infty \lambda_i (p_A \otimes p_B)^\intercal (A \otimes B)^i (q_A \otimes q_B)
+%$$
+%where: the scalar $\lambda_i$ controls the relative importance of walks of length $i$;
+%the variables $A$ and $B$ are overloaded to also denote the adjacency matrix of the corresponding graph;
+%the dimensions of $A$ and $B$ are $n \times n$ and $m \times m$ respectively;
+%the vectors $p_A$, $q_A$, $p_B$ and $q_B$ have lengths $n$, $n$, $m$, and $m$ and all sum to 1;
+%the $j$th element of $p_A$ corresponds to the probability of starting  the random walk at node $j$ in graph $A$;
+%the entries of $q$ similarly represent the probability of stopping at each node.
+See \citet{Vishwanathan2010} for more details.
+A naive computation of this kernel takes time $O(v^6)$, where $v$ is the number of vertices in the graph.
+\citet{Vishwanathan2010} present faster methods that take time only $O(v^3)$.
+While considerably faster, it is still a relatively expensive distance computation.
+%For use with the cover tree, we convert the random walk graph kernel into a distance metric using the standard formula:
+%$$
+%d(A,B) = \sqrt{k(A,A) + k(B,B) -2k(A,B)}
+%$$
+
+The Protein Data Bank \cite{Berman2000} contains information on the 3d primary structure of approximately one hundred thousand proteins.
+To perform our experiment, we follow a procedure similar to that used by the PROTEIN dataset used in the experiments in \citet{Vishwanathan2010}.
+This procedure constructs secondary structure graphs from the primary structures in the Protein Data Bank
+using the tool VLPG \citep{Schfer2012}.
+The Protein Data Bank stores the 3d structure of the atoms in the protein in a PDB file.
+From this PDB file, we calculate the protein's secondary structure using the DSSP tool \citep{Joosten11}.
+Then, the tool VLPG \citep{Schfer2012} generates graphs from the resulting secondary structure.
+Some PDB files contain information for multiple graphs, and some do not contain enough information to construct a graph.
+In total, our dataset consists of 250,000 graphs, and a typical graph has between 5-120 nodes and 0.1-3 edges per node.
+Figure \ref{fig:bio} shows the scaling behavior of all three cover trees on this dataset.
+On all of the data, the total construction and query cost are $29$\% that of the original cover tree.
+
+\begin{figure}[t]
+\centering
+\fixme{image}
+%\resizebox{\columnwidth}{2in}{\input{img/protein}}
+
+%\vspace{0.2in}
+
+\begin{tikzpicture}
+\small
+%\draw (-3.7,0.5) to (4.4,0.5) to (4.4,-2) to (-3.7,-2) to (-3.7,0.5);
+\node at (-2,0) {original c.t.};
+\draw[red,dotted] (0,0) to (1.8,0);
+\draw[red] (2.3,0) to (4.1,0);
+
+\node at (-2,-0.35) {simplified c.t.};
+\draw[darkgreen,dotted,line width=1pt] (0,-0.35) to (1.8,-0.35);
+\draw[darkgreen,line width=1pt] (2.3,-0.35) to (4.1,-0.35);
+
+\node at (-2,-0.7) {nearest ancestor c.t.};
+\draw[blue,dotted,line width=2pt] (0,-0.7) to (1.8,-0.7);
+\draw[blue,line width=2pt] (2.3,-0.7) to (4.1,-0.7);
+
+\node[align=center] at (0.9,-1.2) { construction \\ only };
+\node[align=center] at (3.2,-1.2) {construction \\ and query };
+\end{tikzpicture}
+%\includegraphics[width=9cm,height=6cm]{img/protein}
+\caption{
+%Number of distance comparisons versus the number of proteins, for finding all nearest neighbors.
+The effect on runtime as we increase the number of data points on the bionformatics data.
+The relationship is roughly linear, indicating protein graphs have a relatively low intrinsic dimensionality. % and work well with cover trees.
+%On our protein graph dataset, the number of distance comparisons scales roughly linearly with the number of graphs.
+%This indicates that protein graphs have a relatively low intrinsic dimensionality and are particularly well suited for use with cover trees.
+As expected, the nearest ancestor cover tree performs the best.
+    %This figure shows how performance on our protein data scales according to the size of the dataset.
+%The thin red line (
+%\begin{tikzpicture}
+%\draw[color=red,line width=0.5pt] (0,0) -- (0.5,0);
+%\node (0,0.1) {};
+%\end{tikzpicture}
+%) is the original cover tree;
+%the medium green line (
+%\begin{tikzpicture}
+%\draw[color=green,line width=1pt] (0,0) -- (0.5,0);
+%\node (0,0.1) {};
+%\end{tikzpicture}
+%) is the simplified cover tree;
+%the thick blue line (
+%\begin{tikzpicture}
+%\draw[color=blue,line width=2pt] (0,0) -- (0.5,0);
+%\node (0,0.1) {};
+%\end{tikzpicture}
+%) is the ancestor cover tree.
+%Dashed lines indicate tree construction time and solid lines indicate total time for both construction and querying
+    }
+\label{fig:bio}
+\end{figure}
+
+\subsection{Earth mover's distance}
+
+%The Earth Mover's Distance (EMD) is a distance metric between histograms.
+%It was developed specifically for image classification problems \cite{Rubner1998}.
+The Earth Mover's Distance (EMD) is a distance metric between histograms designed for image classification \cite{Rubner1998}.
+In our tests, we convert images into three dimensional histograms of the pixel values in LabCIE color space.
+LabCIE is a color space represents colors in three dimensions.
+It is similar to the more familiar RGB and CMYK color spaces,
+but the distances between colors more accurately match what humans perceive color distances to be.
+We construct the histogram such that each dimension has 8 equally spaced intervals, for a total of 512 bins.
+We then create a ``signature'' of the histogram by recording only the 20 largest of the 512 bins.
+
+Previous research on speeding up EMD focused on computing EMD distances faster.
+The EMD takes a base distance as a parameter.
+For an arbitrary base distance, EMD requires $O(b^3\log b)$ time where $b$ is the size of the histogram signature.
+Faster algorithms exist for specific base metrics.
+For example, with an $L_1$ base metric the EMD can be computed in time $O(b^2)$ \cite{Ling07}; and if the base metric is a so-called ``thresholded metric,'' we can get an order of magnitude constant factor speed up \cite{Pele2009}.
+We specifically chose the LabCIE color space because there is no known faster EMD algorithm.
+It will stress-test our cover tree implementation.
+
+In this experiment, we use the Yahoo! Flickr Creative Commons dataset.
+The dataset contains 1.5 million images in its training set,
+and we construct simplified and nearest ancestor cover trees in parallel on this data.
+Construction times are shown in Table \ref{tab:emd}.
+Using the cheap L2 distance with smaller datasets, tree construction happens quickly and so parallelization is less important.
+But with an expensive distance on this larger dataset, parallel construction makes a big difference.
+
+\begin{table}
+\centering
+\resizebox{\columnwidth}{!}{
+\begin{tabular}{ccccc}
+%\hline
+\multirow{3}{*}{\parbox{1cm}{\centering number of cores}}
+ & \multicolumn{2}{c}{simplified tree} & \multicolumn{2}{c}{nearest ancestor tree} \\
+& \multicolumn{2}{c}{construction} & \multicolumn{2}{c}{construction} \\ %\cline{2-5}
+& time & speedup & time & speedup \\
+\hline
+%\hline
+1  & 70.7 min & 1.0 & 210.9 min& 1.0\\
+2  & 36.6 min & 1.9 & 94.2 min & 2.2\\
+4  & 18.5 min & 3.8 & 48.5 min & 4.3\\
+8  & 10.2 min & 6.9 & 25.3 min & 8.3\\
+16 & 6.7 min & 10.5 & 12.0 min & 17.6\\
+%\hline
+\end{tabular}
+}
+\caption{
+    Parallel cover tree construction using the earth movers distance.
+    On this large dataset with an expensive metric, we see better parallel speedup than on the datasets with the cheaper L2 metric.
+The nearest ancestor cover tree gets super-linear parallel speedup because we are merging with Algorithm \ref{alg:merge}, which does not attempt to rebalance.
+}
+\label{tab:emd}
+\end{table}
+
 
 \end{document}
