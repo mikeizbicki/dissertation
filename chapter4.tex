@@ -22,6 +22,8 @@
 \newcommand{\cdoubstar}{c_{\textnormal{doub}^*}}
 \newcommand{\chole}{c_\textnormal{hole}}
 
+\newcommand{\poly}[1]{\text{poly}(#1)}
+
 \newcommand{\p}{\ensuremath p}
 \newcommand{\q}{\ensuremath q}
 %\newcommand{\varfont}[1]{\ensuremath{\textup{\text{{#1}}}}}
@@ -136,189 +138,6 @@
     Any subset of a metric space is also a metric space.
 \end{example}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection{Methods for faster nearest neighbors}
-
-There are three main techniques for faster nearest neighbor queries:
-compression,
-embeddings,
-and data structures.
-
-
-MLPACK \cite{curtin2013mlpack}.
-The most recent work is the Fast Library for Approximate Nearest Neighbor (FLANN) \cite{muja2014scalable}.
-FLANN uses the randomized kd-forest and the priority search $k$-means tree.
-
-\cite{cheeseman1991really} phase transitions for NP-hard problems.
-
-\cite{chavez2001searching} survey on searching in metric spaces.
-
-%%%%%%%%%%%%%%%%%%%%
-
-\subsubsection{$k$-nearest neighbor theory}
-
-%%%%%%%%%%%%%%%%%%%%
-
-\subsubsection{Sample compression}
-
-The method of compression was introduced by \citet{hart1968condensed},
-and is arguably the simplest method for speeding up $k$-nearest neighbor classification.
-Given a data set $X$, compression selects a subset $X'$ of $X$ satisfying two properties:
-First, $|X'|$ should be much smaller than $|X|$.
-This ensures that nearest neighbor queries in $X'$ take much less time than queries in $X$.
-Second, given any query point $y$, 
-the nearest neighbor of $y$ in $X$ and $X'$ should have the same class label. 
-Finding an optimal subset $X'$ is known to be NP-hard \citep{zukhba2010np}.
-\citet{hart1968condensed} gave a heuristic that runs in time $O(n^3)$,
-and \cite{angiulli2005fast} provides an improved heuristic that runs in time $O(n^2)$.
-Unfortunately, neither of these heuristics provides any guarantee that the nearest neighbors in $X'$ are likely to have the same class label as the nearest neighbor in $X$.
-\cite{gottlieb2014near} introduced the first sample compression scheme providing such a guarantee.
-They also showed that no compression scheme can perform significantly better than theirs unless P=NP.
-Their algorithm works in arbitrary metric spaces,
-and has an impressive $O(n)$ runtime.
-Sample compression can be easily combined with other techniques to further speed up nearest neighbor queries on the set $X'$.
-
-%%%%%%%%%%%%%%%%%%%%
-
-\subsubsection{Embeddings and locality sensitive hashing}
-
-%Embeddings and locality sensitive hashing (LHS) are related techniques for approximate nearest neighbor queries.
-Many techniques exist to embed high dimensional data into low dimensional spaces.
-If the embedding has low distortion 
-(i.e., distances in the low dimensional space are close to distances in the high dimensional space),
-then exact nearest neighbor queries in the low dimensional space serve as approximate queries in the high dimensional space.
-
-In Euclidean space, there are two main families of embeddings:
-random projections and locality sensitive hashing.
-Random projections are based on the Johnson-Lindenstrauss lemma,
-which states that $n$ data points can be embedded into a low dimensional space with $O(\log n)$ distortion with high probability \citep{johnson1984extensions}.
-Research on random projections has focused on simplifying the proof of the Johnson-Lindenstrauss lemma \citep{dasgupta2003elementary,baraniuk2008simple} or reducing the computation time needed to generate and apply the embedding \citep{achlioptas2001database}.
-\cite{johnson2009johnson} showed that the method of random projections essentially only works in $L_2$ spaces, 
-and in particular that similar techniques cannot work in arbitrary metric spaces.
-%When the low dimensional space consists of a series of ``buckets,''
-%the embedding can be thought of as a ``hash function'' and the technique is called locality sensitive hashing (LSH).
-When the projection depends on the data (and so is not purely random as above), 
-then the technique is sometimes called locality sensitive hashing (LSH).
-The term LSH was introduced by \citet{indyk1998approximate} and \citet{gionis1999similarity} for Euclidean spaces. 
-The idea has been extended to metric spaces by \citet{tellez2010locality} and \citet{novak2010locality} and further extended to spaces not obeying the triangle inequality by \cite{mu2010non}.
-While most LSH techniques for Euclidean spaces have good theoretical properties,
-the more general techniques in metric and non-metric spaces do not.
-\cite{wang2014hashing} and \cite{wang2016learning} provide good surveys on LSH but focus mainly on the case of $L_p$ spaces.
-
-It is popular to embed general metric spaces into $L_p$ spaces.
-Then standard techniques for $L_p$ spaces like $k$d-trees can be used to quickly find the nearest neighbor.
-\cite{bartal2003metric} shows that for every $\varepsilon>0$,
-every finite metric space of size $n$ has a subset of size $n^{1-\varepsilon}$ that can be embedded in Hilbert space with $O\left(\frac{\log(1/\varepsilon)}{\varepsilon}\right)$ distortion independent of the dimension.
-This result does not have immediate algorithmic applications, however, 
-as only a subset of the data set can be embedded.
-Embedding techniques that support the entire data set typically rely on the data's doubling dimension.
-For example, \cite{krauthgamer2004measured} shows that any finite metric with $n$ data points can be embedded into Hilbert space with $O(\sqrt{\log\cdoub\log n})$ distortion.
-\cite{chan2010ultra} provide what they call an ``ultra-low'' dimensional embedding:
-they show that every $n$ point metric can be embedded into $O(\log\log n)$ dimensional Euclidean space with $o(\log n)$ distortion.
-They also show that any $n$ point metric embeds into $\R^d$ with distortion $O(\log n\sqrt{\doubdim/d})$.
-It is unfortunately not possible to embed metric spaces into $L_1$ or $L_2$ spaces with arbitrarily small distortion;
-however, \cite{neiman2016low} shows how to embed finite metrics into $L_\infty$ with arbitrary small distortion.
-%\cite{abraham2014volume} shows finite embeddings that preserve both distance and volume.
-%\cite{bartal2015impossibility} shows that $L_p, p>2$ spaces cannot be embedded.
-
-Every metric space embeds into an ultrametric space with distortion $O(1/\sqrt \varepsilon)$ \citep{abraham2007embedding}.
-\cite{charikar1998approximating} creates tree metrics from finite metric spaces;
-uses this result to create approximation algorithms for several NP-hard problems.
-
-Embedding techniques are widely used in practice because they are easy to implement and work well in real world data.
-Somewhat surprisingly, however, they are provable non-optimal.
-In Euclidean space, \cite{andoni2014beyond} proposed a data structure that provably does better than LHS lower bounds.
-Good references inside.
-
-%%%%%%%%%%%%%%%%%%%%
-
-\subsubsection{Data structures}
-Data structures for nearest neighbor queries in metric spaces can be divided into three distinct families. 
-Papers from each of these families tend not to cite papers from the other families.
-
-\cite{clarkson2006nearest} reviews metric space properties and data structures.
-\cite{czumaj2010sublinear} is a survey of sublinear time algorithms in metric spaces.
-
-The simplest and oldest of these structures is the \emph{ball tree} \citep{omohundro1989}.
-The ball tree is a type of binary search tree that divides data points into subtrees using a number of possible heuristic rules.
-Although attractive for its simplicity, 
-ball trees provide only the trivial runtime guarantee that queries will take time $O(n)$.
-In practice, a good choice of heuristic can greatly speed up some queries,
-and a number of heuristics have been developed.
-See \cite{zezula2006similarity} and \cite{mao2016pivot} for surveys.
-Despite the lack of guarantees,
-ball trees continue to be used in practice.
-For example, they are the only method for fast nearest neighbor queries in metric spaces provided in Python's popular \texttt{scikit-learn} library \citep{scikit-learn}.
-%\cite{malkov2014approximate} proposes a data structure for approximate nearest neighbor search using the metric's Daulanay graph (which is the dual graph of the Veronoi diagram).
-%Seems to have a lot of references on similar approaches though.
-Unfortunately there are no detailed experimental results justifying the use of these heuristic data structures over methods with more theoretical justification.
-
-\cite{clarkson1997nearest} introduced the first data structure to provide theoretical guarantees.
-Clarkson's data structure, called the \emph{M(S,Q)} solved the all-nearest neighbor problem in expected time $O(\cdoub^{O(1)}n(\log n)^2(\log \aspect{})^2)$ using space $O(n\log\aspect{})$.
-The M(S,Q) structure works only in probability
-and requires that query data points have a similar distribution to the data used in construction.
-Clarkson also introduced a novel notion of dimensionality called the $\gamma$-dominator bound.
-This bound is closely related to the doubling constant (see Section \ref{sec:doubling}),
-but somewhat harder to use in practice.
-No subsequent work uses this bound on dimension.
-The next advance came when \citep{karger2002finding} introduced the \emph{metric skip list} and the expansion dimension. 
-This data structure requires $O(n\log n)$ space, 
-can find nearest neighbors in time $O(\cexp^{O(1)}\log n)$,
-and insert new data in time $O(\cexp^{O(1)}\log n \log \log n)$.
-The expansion dimension is not as good a notion of dimensionality as the doubling dimension
-(see Sections \ref{sec:cdoub} and \ref{sec:cexp}).
-
-The \emph{navigating net} was the first data structure to use the doubling dimension.
-It requires quadratic space, 
-polynomial dependency on the doubling constant, 
-and logarithmic dependence on the aspect ratio \citep{krauthgamer2004navigating}.
-The navigating net inspired a flurry of subsequent results.
-\citet{hildrum2004note} modified the navigating net into a randomized data structure requiring only linear space.
-\cite{krauthgamer2005black} further improve on the navigating net by replacing the logarithmic dependence on the aspect ratio with a logarithmic dependence on the number of data points.
-\cite{har2006fast} provides a data structure for approximate nearest neighbors.
-\cite{cole2006searching} provides a data structure for approximate nearest neighbor search with dynamic point sets that does not depend on the aspect ratio.
-
-\citet{beygelzimer2006cover} introduce the \emph{cover tree},
-which also uses only linear space but is fully deterministic.
-The downside of the cover tree is that they analyze their data structure in terms of the less robust expansion constants.
-\cite{ram2009linear} and \cite{curtin2015plug} improve the runtime bounds of cover trees.
-\cite{curtin2013tree} provides a generic framework for solving distance problems.
-\cite{moore2014fast} use cover trees for faster gaussian process posteriors.
-
-
-%%%%%%%%%%%%%%%%%%%%
-\subsubsection{Infinite dimensional metric spaces}
-
-Nearest neighbor asymptotics first given by \citet{cover1967nearest}.
-
-\cite{indyk2007nearest} uses the doubling dimension to create embeddings into low dimensional Euclidean space.
-\cite{connor2010fast} uses the expansion dimension to bound the runtime of neighbor graphs in Euclidean space.
-Ad-hoc spanner data structures are popular in the analysis of algorithms.
-\cite{chan2005hierarchical}, \cite{gottlieb2008optimal}, \cite{gottlieb2014light} and \cite{gottlieb2015light} create data structures called spanners,
-which are embeddings of finite dimensional metric spaces into graph metrics with a low number of edges.
-
-\cite{talwar2004bypassing} creates the randomized split trees data structure,
-but uses it to solve NP-hard problems rather than nearest neighbor queries.
-
-%%%%%%%%%%%%%%%%%%%%
-% Theoretical results
-
-\subsubsection{Theoretical results}
-
-\cite{abraham2015approximate} show that approximate nearest neighbor search can be done efficiently when the underlying metric can be represented as a planar graph.
-This is interesting because these graphs need not have bounded doubling dimension or be embeddable in L2 space.
-I should read this paper closer for the exact results.
-
-\cite{borodin1999lower,barkol2000tighter,panigrahy2008geometric} provides lower bounds and a review of time-space tradeoffs.
-\cite{andoni2008hardness} provides hardness results for $L_\infty$.
-\cite{andoni2016lower} provides hardness results in a much more general setting for $L_p$ metrics.
-It also has a LOT of good references for LSH results positive and negative.
-\cite{p2011unifying} provides a unifying framework for determining lower bounds.
-
-\cite{krauthgamer2005black} provides hardness lower bounds on the performance of any approximate nearest neighbor algorithm. 
-In particular, they show that a metric space admits a $(1+\epsilon)-$ANN solution if and only if $\doubdim = O(\log \log n)$.
-
-\cite{arya2009space} characterizes the space time trade offs for approximate nearest neighbor in Euclidean space.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -864,6 +683,240 @@ An immediate consequence of Lemmas \ref{lemma:Ediam} and \ref{lemma:Ecodiam} is 
     Assume that $\distribution D$ has finite expected distance and $B$-bounded density.
     Then, $\E\aspect{X} \le2B\mu n^3$. 
 \end{lemma}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Review of methods for faster nearest neighbors}
+
+%Given a data set $X$ and a query point $y$,
+%the naive way to find the nearest neighbor of $y$ in $X$ is to calculate the distance between $y$ and each data point in $X$,
+%then take the minimum.
+This section explores three strategies for faster nearest neighbor queries:
+sample compression, embedding, and spacial data structures.
+Sample compression works well when there are many data points
+(called \emph{tall} data sets).
+Embedding works well when the data is high dimensional
+(called \emph{wide} data sets).
+Both techniques are simple and easy to implement, 
+but are only suitable for approximate nearest neighbor queries.
+Spacial data structures work well for both tall and wide data,
+and they support both exact and approximate queries.
+Their downside is that they are typically more complicated to implement.
+
+A recurring theme throughout this section is that the doubling dimension is widely used in approximation bounds and the expansion dimension widely used in exact bounds.
+\cite{krauthgamer2005black} showed that the doubling constant exactly characterizes the difficulty of approximate nearest neighbor queries.
+In particular, they show that a $\eann$ can be found in polylogarithmic time using polynomial space if and only if $\cdoub = O(\log n)$.
+Despite the expansion constant's use in exact nearest neighbor queries,
+no similar result is known.
+This lack motivates our introduction of the hole constant to characterize the difficulty of nearest neighbor queries.
+
+%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Sample compression}
+
+The method of compression was introduced by \citet{hart1968condensed},
+and is arguably the simplest method for speeding up nearest neighbor classification.
+Given a data set $X$, compression selects a subset $X'$ of $X$ satisfying two properties:
+First, $|X'|$ should be much smaller than $|X|$.
+This ensures that nearest neighbor queries in $X'$ take much less time than queries in $X$.
+Second, given any query point $y$, 
+the nearest neighbor of $y$ in $X$ and $X'$ should have the same class label. 
+Finding an optimal subset $X'$ for exact queries is known to be NP-hard \citep{zukhba2010np},
+so a number of heuristics have been developed for approximate queries.
+\citet{hart1968condensed} gave a heuristic that runs in time $O(n^3)$,
+and \cite{angiulli2005fast} provided an improved heuristic that runs in time $O(n^2)$.
+Unfortunately, neither of these heuristics provides any guarantee that the nearest neighbors in $X'$ are likely to have the same class label as the nearest neighbor in $X$.
+\cite{gottlieb2014near} introduced the first sample compression scheme providing an approximation guarantee.
+They also showed that no compression scheme can perform significantly better than theirs unless P=NP.
+Their algorithm works in arbitrary metric spaces,
+and has an impressive $O(\poly{\cdoub}n)$ runtime.
+Sample compression can be easily combined with other techniques to further speed up nearest neighbor queries on the set $X'$.
+
+%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Embeddings and locality sensitive hashing}
+
+High dimensional data can be slow in two ways.
+First, calculating distances in high dimensions takes longer than calculating distances in low dimensions.
+But more importantly, the \emph{curse of dimensionality} causes high dimensional data to be ``less structured'' than low dimensional data.
+In particular, the variation in the distance between data points decreases as the dimensionality increases.
+This causes spacial data structures to become less efficient.
+Embeddings provide a technique to reduce these two effects of high dimensional data.
+%Embeddings and locality sensitive hashing (LHS) are related techniques for approximate nearest neighbor queries.
+%Many techniques exist to embed high dimensional data into low dimensional spaces.
+Specifically, given a data set $X$, an embedding is a function $f : X \to X'$ where the target $X'$ is a lower dimensional space.
+If the embedding $f$ has low distortion 
+(i.e., distances in the low dimensional space are close to distances in the high dimensional space),
+then exact nearest neighbor queries in the low dimensional space serve as approximate queries in the high dimensional space.
+
+%In  space, there are two main families of embeddings:
+%random projections and locality sensitive hashing.
+%There are two main families of embeddings:
+%random and data dependent.
+The target space is typically a low dimensional $L_p$ space.
+After applying the embedding,
+tandard techniques for low dimensional $L_p$ spaces like $k$d-trees can be used to quickly find the nearest neighbor.
+The most celebrated embedding is given by the Johnson-Lindenstrauss (JL) lemma in $L_2$ space.
+The JL lemma states that if $f$ is a random projection from $\R^d \to \R^{O(1)}$, 
+then $f$ embeds any set of $n$ data points with $O(\log n)$ distortion with high probability \citep{johnson1984extensions}.
+Further research has either simplified the proof of the JL lemma \citep{dasgupta2003elementary,baraniuk2008simple} or reduced the computation needed to generate and apply the embedding \citep{achlioptas2001database}.
+%\cite{johnson2009johnson} showed that the method of random projections essentially only works in Hilbert spaces, 
+%and in particular that similar techniques cannot work in arbitrary metric spaces.
+%When the low dimensional space consists of a series of ``buckets,''
+%the embedding can be thought of as a ``hash function'' and the technique is called locality sensitive hashing (LSH).
+\citet{indyk1998approximate} and \citet{gionis1999similarity} introduced the term locality sensitive hashing (LSH) for random projections where the target space is a low dimensional $L_1$ space 
+(sometimes called the Hamming cube). 
+%When the projection depends on the data (and so is not purely random as above), 
+%then the technique is sometimes called locality sensitive hashing (LSH).
+%The advantage of LSH techniques is that they can achieve arbitrarily small distortion.
+%The term LSH was introduced by 
+%Many new techniques have been introduced since then, and
+%The idea has been extended to metric spaces by \citet{tellez2010locality} and \citet{novak2010locality} and further extended to spaces not obeying the triangle inequality by \cite{mu2010non}.
+%While most LSH techniques for Euclidean spaces have good theoretical properties,
+%the more general techniques in metric and non-metric spaces do not.
+\cite{wang2014hashing} and \cite{wang2016learning} provide good surveys on LSH techniques with particular emphasis on embeddings that depend on the data (in contrast to the the JL embedding).
+
+%Embedding in general metric spaces is typically much harder than the Euclidean case.
+%When the host space $X$ is a non-Euclidean metric space,
+%the most popular target spaces $X'$ are low dimensional $L_p$ spaces.
+Low dimensional $L_p$ spaces are also popular targets when the host space is a generic metric space.
+\cite{bourgain1985lipschitz} showed that any $n$-point doubling metric can be embedded into Euclidean space with $O(\poly{\cdoub}\log n)$ distortion.
+\cite{gupta2003bounded} improve on Bourgain's result by showing an embedding with $O(\log\cdoub\log n)$ distortion,
+and \cite{krauthgamer2004measured} further improve this result by showing an embedding with $O(\sqrt{\log\cdoub\log n})$ distortion.
+The best known embeddings into Euclidean space are due to \cite{chan2010ultra}.
+They show that every $n$ point metric can be embedded into $O(\log\cdoub\log\log n)$ dimensional Euclidean space with $O(\log n/\sqrt{\log\log n})$ distortion.
+%They also show that any $n$ point metric embeds into $\R^d$ with distortion $O(\log n\sqrt{\doubdim/d})$.
+It is unfortunately not possible to embed metric spaces into $L_1$ or $L_2$ spaces with arbitrarily small distortion;
+however, \cite{neiman2016low} shows how to embed finite metrics into $L_\infty$ with arbitrary small distortion.
+%\cite{abraham2014volume} shows finite embeddings that preserve both distance and volume.
+%\cite{bartal2015impossibility} shows that $L_p, p>2$ spaces cannot be embedded.
+%\cite{bartal2003metric} show that for every $\varepsilon>0$,
+%every finite metric space of size $n$ has a subset of size $n^{1-\varepsilon}$ that can be embedded in Hilbert space with $O\left(\frac{\log(1/\varepsilon)}{\varepsilon}\right)$ distortion independent of the dimension.
+%This result does not have immediate algorithmic applications, however, 
+%as only a subset of the data set can be embedded.
+%Embedding techniques that support the entire data set typically rely on the data's doubling dimension.
+
+%Tree metrics (also called ultrametrics) are another popular target for embeddings.
+%In a tree metric, the triangle inequality is strengthened to 
+%\begin{equation}
+    %\dist{x}{z} \le \max\big\{\dist{x}{y},\dist{y}{z}\big\}
+    %.
+%\end{equation}
+%This stronger version of the triangle inequality ensures that 
+%Every metric space embeds into an ultrametric space with distortion $O(1/\sqrt \varepsilon)$ \citep{abraham2007embedding}.
+%\cite{charikar1998approximating} creates tree metrics from finite metric spaces;
+%uses this result to create approximation algorithms for several NP-hard problems.
+
+Embedding techniques are widely used in practice because they are easy to implement and work well in real world data.
+Somewhat surprisingly, however, they are provably non-optimal.
+\cite{o2014optimal} provide lower bounds on the quality of LSH embeddings of Euclidean data,
+and \cite{andoni2014beyond} proposed a data structure with performance better than these lower bounds.
+%Good references inside.
+%Similar results are not known
+
+%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Spacial data structures}
+
+Data structures for nearest neighbor queries in metric spaces can be divided into three distinct families. 
+Papers from each of these families tend not to cite papers from the other families.
+
+\cite{clarkson2006nearest} reviews metric space properties and data structures.
+\cite{czumaj2010sublinear} is a survey of sublinear time algorithms in metric spaces.
+
+The simplest and oldest of these structures is the \emph{ball tree} \citep{omohundro1989}.
+The ball tree is a type of binary search tree that divides data points into subtrees using a number of possible heuristic rules.
+Although attractive for its simplicity, 
+ball trees provide only the trivial runtime guarantee that queries will take time $O(n)$.
+In practice, a good choice of heuristic can greatly speed up some queries,
+and a number of heuristics have been developed.
+See \cite{zezula2006similarity} and \cite{mao2016pivot} for surveys.
+Despite the lack of guarantees,
+ball trees continue to be used in practice.
+For example, they are the only method for fast nearest neighbor queries in metric spaces provided in Python's popular \texttt{scikit-learn} library \citep{scikit-learn}.
+%\cite{malkov2014approximate} proposes a data structure for approximate nearest neighbor search using the metric's Daulanay graph (which is the dual graph of the Veronoi diagram).
+%Seems to have a lot of references on similar approaches though.
+Unfortunately there are no detailed experimental results justifying the use of these heuristic data structures over methods with more theoretical justification.
+
+\cite{clarkson1997nearest} introduced the first data structure to provide theoretical guarantees.
+Clarkson's data structure, called the \emph{M(S,Q)} solved the all-nearest neighbor problem in expected time $O(\poly{\cdoub}n(\log n)^2(\log \aspect{})^2)$ using space $O(n\log\aspect{})$.
+The M(S,Q) structure works only in probability
+and requires that query data points have a similar distribution to the data used in construction.
+Clarkson also introduced a novel notion of dimensionality called the $\gamma$-dominator bound.
+This bound is closely related to the doubling constant (see Section \ref{sec:doubling}),
+but somewhat harder to use in practice.
+No subsequent work uses this bound on dimension.
+The next advance came when \citet{karger2002finding} introduced the \emph{metric skip list} and the expansion dimension. 
+This data structure requires $O(n\log n)$ space, 
+can find nearest neighbors in time $O(\poly\cexp\log n)$,
+and insert new data in time $O(\poly\cexp\log n \log \log n)$.
+The expansion dimension is not as good a notion of dimensionality as the doubling dimension
+(see Sections \ref{sec:cdoub} and \ref{sec:cexp}).
+
+The \emph{navigating net} was the first data structure to use the doubling dimension.
+It requires quadratic space, 
+polynomial dependency on the doubling constant, 
+and logarithmic dependence on the aspect ratio \citep{krauthgamer2004navigating}.
+The navigating net inspired a flurry of subsequent results.
+\citet{hildrum2004note} modified the navigating net into a randomized data structure requiring only linear space.
+\cite{krauthgamer2005black} further improve on the navigating net by replacing the logarithmic dependence on the aspect ratio with a logarithmic dependence on the number of data points.
+\cite{har2006fast} provides a data structure for approximate nearest neighbors.
+\cite{cole2006searching} provides a data structure for approximate nearest neighbor search with dynamic point sets that does not depend on the aspect ratio.
+
+\citet{beygelzimer2006cover} introduce the \emph{cover tree},
+which also uses only linear space but is fully deterministic.
+The downside of the cover tree is that they analyze their data structure in terms of the less robust expansion constants.
+\cite{ram2009linear} and \cite{curtin2015plug} improve the runtime bounds of cover trees.
+\cite{curtin2013tree} provides a generic framework for solving distance problems.
+\cite{moore2014fast} use cover trees for faster gaussian process posteriors.
+
+
+%%%%%%%%%%%%%%%%%%%%
+\ignore{
+\subsubsection{Infinite dimensional metric spaces}
+MLPACK \cite{curtin2013mlpack}.
+The most recent work is the Fast Library for Approximate Nearest Neighbor (FLANN) \cite{muja2014scalable}.
+FLANN uses the randomized kd-forest and the priority search $k$-means tree.
+
+\cite{cheeseman1991really} phase transitions for NP-hard problems.
+
+\cite{chavez2001searching} survey on searching in metric spaces.
+
+Nearest neighbor asymptotics first given by \citet{cover1967nearest}.
+
+\cite{indyk2007nearest} uses the doubling dimension to create embeddings into low dimensional Euclidean space.
+\cite{connor2010fast} uses the expansion dimension to bound the runtime of neighbor graphs in Euclidean space.
+Ad-hoc spanner data structures are popular in the analysis of algorithms.
+\cite{chan2005hierarchical}, \cite{gottlieb2008optimal}, \cite{gottlieb2014light} and \cite{gottlieb2015light} create data structures called spanners,
+which are embeddings of finite dimensional metric spaces into graph metrics with a low number of edges.
+
+\cite{talwar2004bypassing} creates the randomized split trees data structure,
+but uses it to solve NP-hard problems rather than nearest neighbor queries.
+
+%%%%%%%%%%%%%%%%%%%%
+% Theoretical results
+
+\subsubsection{Theoretical results}
+
+\cite{krauthgamer2005black} show that the doubling constant exactly characterizes the difficulty of approximate nearest neighbor queries.
+In particular, they show that a $\eann$ can be found in polylogarithmic time using polynomial space if and only if $\cdoub = O(\log n)$.
+
+In Euclidean space, data structures using exponential space are known 
+\cite{arya2009space} characterizes the space time trade offs for approximate nearest neighbor in Euclidean space.
+
+\cite{abraham2015approximate} show that approximate nearest neighbor search can be done efficiently when the underlying metric can be represented as a planar graph.
+If the graph has maximum degree $d$,
+then $\eann$ queries can be answered in time $O(d+1/\varepsilon)$.
+This is interesting because these graphs need not have low doubling dimension or be embeddable in L2 space.
+
+Stronger results are known for specific metric spaces.
+%\cite{borodin1999lower,barkol2000tighter,panigrahy2008geometric} provides lower bounds and a review of time-space tradeoffs.
+\cite{andoni2008hardness} provides hardness results for $L_\infty$.
+\cite{andoni2016lower} provides hardness results in a much more general setting for $L_p$ metrics.
+%It also has a LOT of good references for LSH results positive and negative.
+\cite{p2011unifying} provides a unifying framework for determining lower bounds.
+}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
