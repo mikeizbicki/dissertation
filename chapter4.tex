@@ -80,9 +80,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
-\chapter{Faster Nearest Neighbor Queries with Cover Trees}
+\chapter{The Cover Tree}
 
-\begin{definition}
+This chapter provides both practical and theoretical improvements to the cover tree, 
+a data structure for faster nearest neighbor queries in arbitrary metric spaces.
+The cover tree was introduced by \cite{beygelzimer2006cover} and has seen widespread use in the machine learning community.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Metric spaces and nearest neighbors in machine learning}
+
     A set $\set X$ equipped with a distance function $\distf : \set X \times \set X \to \R$ is a \emph{metric space} if it obeys the following properties:
     \begin{enumerate}
         %\item \emph{Non-negativity}.  For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} \ge 0$.
@@ -90,34 +97,30 @@
         \item \emph{Symmetry}. For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} = \dist{x_2}{x_2}$.
         \item \emph{Triangle inequality}.  For all $x_1,x_2,x_3\in\set X$, $\dist{x_1}{x_2} + \dist{x_2}{x_3}\ge\dist{x_1}{x_3}$.
     \end{enumerate}
-\end{definition}
 
-\begin{table}[H]
-    \small
-    %\newcolumntype{Y}{>{\centering\arraybackslash}p{1in}}
-    %\newcolumntype{Y}{p{0.1in}}
-    %\begin{tabularx}{\textwidth}{lXXY}
-    \centering
-    \begin{tabular}{lccc}
-        \toprule
-        \vspace{-0.25in}
-        &~\hspace{1.2in}~&~\hspace{1.2in}~&~\hspace{1.2in}~\\
-        data structure & space & find nearest neighbor & insertion \\
-        \midrule
-        ball tree \cite{} & $O(n)$ & $O(n)$ & $O(n)$ \\
-        metric skip list \cite{karger2002finding} & $O(n\log n)$ & $\cexp{}^{O(1)}\log n$ & $\cexp^{O(1)}\log n\log\log n$ \\
-        navigating net \cite{} & $O(n)$ \\
-        cover tree \cite{} & $O(n)$ & $O(\cexp^8\log n)$ & $O(\cexp^{12}\log n)$ \\
-        simplified cover tree & $O(n)$ & $O(\cdoub{}\log \aspect{})$ \\
-                              &        & $O(\cdoub{}\log n)$ \\
-        \bottomrule
-    \end{tabular}
-    %\end{tabularx}
-    \caption{
-        Summary of the runtime and space usage of several nearest neighbor data structures.
-        Here $n$ represents the size of the dataset.
-    }
-\end{table}
+%\begin{table}[H]
+    %\small
+    %\centering
+    %\begin{tabular}{lccc}
+        %\toprule
+        %\vspace{-0.25in}
+        %&~\hspace{1.2in}~&~\hspace{1.2in}~&~\hspace{1.2in}~\\
+        %data structure & space & find nearest neighbor & insertion \\
+        %\midrule
+        %ball tree \cite{} & $O(n)$ & $O(n)$ & $O(n)$ \\
+        %metric skip list \cite{karger2002finding} & $O(n\log n)$ & $\cexp{}^{O(1)}\log n$ & $\cexp^{O(1)}\log n\log\log n$ \\
+        %navigating net \cite{} & $O(n)$ \\
+        %cover tree \cite{} & $O(n)$ & $O(\cexp^8\log n)$ & $O(\cexp^{12}\log n)$ \\
+        %simplified cover tree & $O(n)$ & $O(\cdoub{}\log \aspect{})$ \\
+                              %&        & $O(\cdoub{}\log n)$ \\
+        %\bottomrule
+    %\end{tabular}
+    %%\end{tabularx}
+    %\caption{
+        %Summary of the runtime and space usage of several nearest neighbor data structures.
+        %Here $n$ represents the size of the dataset.
+    %}
+%\end{table}
 
 \begin{definition}
     Let $\set X$ be a metric space, $X\subset\set X$, and $x$ be in $\set X$ but not $X$.
@@ -125,19 +128,6 @@
     An $\varepsilon$-nearest neighbor (for $\varepsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \varepsilon \cdot\dist{x}{y^*}$.
 \end{definition}
 \newcommand{\eann}{(1+\varepsilon)\text{-ann}}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Survey of related work}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Metric spaces in machine learning}
-
-\begin{example}
-    Any subset of a metric space is also a metric space.
-\end{example}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
