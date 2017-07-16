@@ -48,11 +48,18 @@
 \usepackage{tabularx}
 \usepackage{booktabs}
 \usepackage{url}
-\usepackage{hyperref}
 \usepackage{subfigure,rotating}
 \usepackage{xspace}
 \usepackage{multirow}
 \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
+
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks   = true, %Colours links instead of ugly boxes
+  urlcolor     = blue, %Colour for external hyperlinks
+  linkcolor    = blue, %Colour of internal links
+  citecolor    = blue  %Colour of citations
+}
 
 %\usepackage{algorithm}
 %\usepackage[noend]{algpseudocode}
@@ -238,7 +245,7 @@
 \chair{Dr. Christian R. Shelton }
 \othermembers{Dr. Stefano Lonardi\\
     Dr. Vagelis Papalexakis\\
-    %Dr. Hamed Mohsenian-Rad    
+    Dr. Hamed Mohsenian-Rad    
 }
 \numberofmembers{4}
 \field{Computer Science}
@@ -267,9 +274,12 @@ To my parents for all the support.
 
 \input{abstract}
 
+\begingroup
+\hypersetup{hidelinks}
 \tableofcontents
 \listoffigures
 \listoftables
+\endgroup
 \end{frontmatter}
 
 % \part{First Part}
@@ -278,7 +288,7 @@ To my parents for all the support.
 \subfile{chapter1} %usually intro
 \subfile{chapter2}
 \subfile{chapter3}
-\input{chapter4}
+\subfile{chapter4}
 \input{conclusions}
 
 
