@@ -1,4 +1,4 @@
-\documentclass[../main.tex]{subfiles}
+\documentclass[thesis.tex]{subfiles}
  
 \newcommand{\set}[1]{\mathcal {#1}}
 \newcommand{\distribution}[1]{\mathcal {#1}}
@@ -23,6 +23,7 @@
 \newcommand{\chole}{c_\textnormal{hole}}
 
 \newcommand{\poly}[1]{\text{poly}(#1)}
+\newcommand{\eann}{(1+\varepsilon)\text{-ann}}
 
 \newcommand{\p}{\ensuremath p}
 \newcommand{\q}{\ensuremath q}
@@ -82,21 +83,45 @@
 \begin{document}
 \chapter{The Cover Tree}
 
-This chapter provides both practical and theoretical improvements to the cover tree, 
-a data structure for faster nearest neighbor queries in arbitrary metric spaces.
-The cover tree was introduced by \cite{beygelzimer2006cover} and has seen widespread use in the machine learning community.
+The cover tree is a data structure for fast nearest neighbor queries in arbitrary metric spaces.
+Cover trees were first introduced by \cite{beygelzimer2006cover},
+and they have seen widespread use in the machine learning community since then.
+This chapter provides both practical and theoretical improvements to the cover tree.
+%and connects the cover tree to the divide and conquer framework described in Chapter 1. 
+
+This chapter is organized into six sections.
+Section \ref{} formally introduces metric spaces and their importance in machine learning.
+Section \ref{} 
+Section \ref{} reviews the existing techniques for faster nearest neighbor queries.
+Section \ref{} formally describes the original cover tree data structure.
+Section \ref{} presents the simplified cover tree heuristic.
+Section \ref{} concludes the chapter with experiments demonstrating the improvements success in practice.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Metric spaces and nearest neighbors in machine learning}
 
-    A set $\set X$ equipped with a distance function $\distf : \set X \times \set X \to \R$ is a \emph{metric space} if it obeys the following properties:
-    \begin{enumerate}
-        %\item \emph{Non-negativity}.  For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} \ge 0$.
-        \item \emph{Indiscernability}.  For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} = 0$ if and only if $x_1=x_2$.
-        \item \emph{Symmetry}. For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} = \dist{x_2}{x_2}$.
-        \item \emph{Triangle inequality}.  For all $x_1,x_2,x_3\in\set X$, $\dist{x_1}{x_2} + \dist{x_2}{x_3}\ge\dist{x_1}{x_3}$.
-    \end{enumerate}
+Metric spaces are a generalization of Euclidean spaces that are often more natural to work with.
+A set $\set X$ equipped with a distance function $\distf : \set X \times \set X \to \R$ is a \emph{metric space} if it obeys the following three properties:
+\begin{enumerate}
+    %\item \emph{Non-negativity}.  For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} \ge 0$.
+    \item \emph{Indiscernability}.  For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} = 0$ if and only if $x_1=x_2$.
+    \item \emph{Symmetry}. For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} = \dist{x_2}{x_2}$.
+    \item \emph{Triangle inequality}.  For all $x_1,x_2,x_3\in\set X$, $\dist{x_1}{x_2} + \dist{x_2}{x_3}\ge\dist{x_1}{x_3}$.
+\end{enumerate}
+In this chapter, we will use the script $\set X$ notation for metric spaces that may be either infinite or finite,
+and the 
+%We will use the script notation $\set X$ for possibly infinite metrics,
+
+Let $\set X$ be a metric space, $X\subset\set X$, and $x$ be in $\set X$ but not $X$.
+Then the \emph{nearest neighbor} $y^*\in X$ is defined as $y^*=\argmin_{y\in X} \dist{x}{y}$.
+An \emph{$\varepsilon$-approximate nearest neighbor} (for $\varepsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \varepsilon \cdot\dist{x}{y^*}$.
+
+\subsection{Metric learning}
+
+\cite{kulis2013metric} and \cite{bellet2013survey} provide tutorials.
+
+\subsection{Infinite metrics}
 
 %\begin{table}[H]
     %\small
@@ -122,23 +147,59 @@ The cover tree was introduced by \cite{beygelzimer2006cover} and has seen widesp
     %}
 %\end{table}
 
-\begin{definition}
-    Let $\set X$ be a metric space, $X\subset\set X$, and $x$ be in $\set X$ but not $X$.
-    Then the nearest neighbor $y^*\in X$ is defined as $y^*=\argmin_{y\in X} \dist{x}{y}$.
-    An $\varepsilon$-nearest neighbor (for $\varepsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \varepsilon \cdot\dist{x}{y^*}$.
-\end{definition}
-\newcommand{\eann}{(1+\varepsilon)\text{-ann}}
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Measuring the size of a metric space}
 
-This section introduces three measures of the ``dimension'' of a metric space:
-the expansion constant $\cexp$, the doubling constant $\cdoub$, and the aspect ratio $\aspect{}$.
-Previous analysis of the cover tree relied only on the expansion constant,
-but the analysis in this thesis will instead use the doubling constant and aspect ratio.
-In this section, we will formally define these constants and present their basic properties.
-In particular, we will see that the doubling constant and aspect ratio are more robust measures of size than the expansion constant.
+The runtime of nearest neighbor queries depends on the dimension of the data,
+and there are many ways to define the dimension of arbitrary metric spaces.
+The expansion and doubling dimensions are the two most popular. 
+The expansion dimension can be used to bound the runtime of either exact or approximate nearest neighbor queries,
+but it is not robust to small changes in the data.
+This lack of robustness can make runtime bounds based on the expansion dimension trivial 
+(i.e.\ linear).
+On the other hand, 
+the doubling dimension can only be used to bound the runtime of approximate nearest neighbor queries,
+but it is more robust than the expansion dimension.
+Therefore bounds using the doubling dimension are stronger than those using the expansion dimension.
+The original runtime bounds for the cover tree were in terms of the expansion dimension,
+but Section \ref{sec:original} improves these bounds to use the doubling dimension.
+This section begins with a detailed discussion of these two dimensions, 
+including important lemmas used in the proofs in Section \ref{sec:original}.
+Then we introduce a novel third dimension called the hole dimension.
+We show in this section that the hole dimension is more robust than the expansion dimension,
+and in Section \ref{sec:original} the hole dimension is used to bound the runtime of exact nearest neighbor queries.
+This section concludes with a discussion of the aspect ratio of a metric space.
+Lemma \ref{lemma:height} in Section \ref{sec:original} shows that the log of the aspect ratio bounds the height of the cover tree.
+In this section, we provide a novel bound showing that under mild regularity conditions the aspect ratio of i.i.d.\ data is $O(n^3)$, 
+and thus the height of the cover tree is $O(\log n)$.
+No existing results were able to show that the cover tree was well-balanced in this way.
+
+%doubling constant $\cdoub$, 
+%the hole constant $\chole$,
+%and the aspect ratio $\aspect{}$.
+%Previous analysis of the cover tree relied only on the expansion constant.
+%As we shall see, the expansion constant is not a robust measure of difficulty for nearest neighbor queries.
+%The doubling constant is significantly more robust,
+%however it is only suitable for measuring the difficulty of approximate nearest neighbor queries.
+%The hole constant is a no
+%The analysis in Section \ref{}instead use the hole constant and aspect ratio.
+%In this section, we will formally define these constants and present their basic properties.
+%In particular, we will see that the doubling constant and aspect ratio are more robust measures of size than the expansion constant.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Expansion dimension}
+
+The expansion dimension is the only notion of dimensionality that has been used for bounding the runtime of exact nearest neighbor queries.
+It was introduced by
+\citet{karger2002finding},
+and was subsequently used in
+\citet{krauthgamer2004navigating},
+\citet{beygelzimer2006cover},
+\citet{ram2009linear},
+and \citet{curtin2015plug}.
+In this section, we define the expansion constant and show that it is not a robust measure of a metric's dimension.
 
 Throughout this section we will work with the metric space $(\set X,d)$.
 The set $\set X$ may be either finite or infinite.
@@ -147,28 +208,17 @@ That is,
 \begin{equation}
     B(x,\delta) = \{ x' : x'\in\set X, \dist{x}{x'} \le \delta \}.
 \end{equation}
-Let $\mu : \{\set X\} \to \R^+$ be a function that gives an abstract notion of the \emph{volume} of its first argument.%
+The expansion dimension of a metric is only valid for metrics that also have a notion of volume,
+which is given by the function $\mu : \{\set X\} \to \R^+$.% 
 \footnote{
     Formally, $\mu$ is a measure and $\{\set X\}$ is a $\sigma$-algebra on $\set X$.
     Since we are primarily interested in the properties of finite sets,
     we will not need to formally use measure theory.
 }
-For example, if $\set X=\R^n$, then $\mu$ could be the standard Euclidean volume,
-and $\mu B(x,\delta) = O(\delta^n)$.
-If $\set X$ is a finite set, then $\mu$ could be the counting measure.
+In finite metric spaces, $\mu X$ is defined to be the number of points in $X$.
+In the Euclidean space $\set X=\R^d$, $\mu$ is defined to be the standard Euclidean volume,
+and in particular $\mu B(x,\delta) = \Theta(\delta^d)$.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Expansion dimension}
-
-The expansion dimension is the most popular notion of dimensionality for bounding the performance of nearest neighbor data structures in metric spaces.
-It was introduced by
-\citet{karger2002finding},
-and has been subsequently used in
-\citet{krauthgamer2004navigating},
-\citet{beygelzimer2006cover},
-\citet{ram2009linear},
-and \citet{curtin2015plug}.
 The \emph{expansion dimension} of a metric space $\set X$ is defined as
 \begin{equation}
     \krdim = \log_2 \cexp
@@ -180,15 +230,24 @@ where $\cexp$ is called the \emph{expansion constant} and defined as
     .
 \end{equation}
 In words, the expansion dimension measures how the volume of a ball changes as you increase the radius.
-The intuition behind why this is a good notion of a metric's dimension is that it agrees with the standard dimension on Euclidean space.
+The intuition behind why this is a good notion of a metric's dimension is that it agrees with the standard dimension in Euclidean space.
 This is shown formally in the following lemma.
 \begin{lemma}
+    \label{lemma:expansionEuclidean}
     Let $\set X=\R^d$ with the standard $L_2$ distance function.
     Then $\krdim\set X=\Theta(d)$.
 \end{lemma}
+\begin{proof}[Proof (sketch)]
+    The volume of a Euclidean ball with radius $\delta$ is $\Theta(\delta^d)$.
+    The expansion constant is the maximum of the ratio $\mu B(x,2\delta) / \mu B (x,\delta)$.
+    In Euclidean space this ratio is independent of $x$ and $\delta$.
+    Letting $\delta=1$ gives the ratio is $\mu B(x,2) / \mu B(x,1) = \Theta(2^d)$.
+    Taking the log gives that $\krdim\set X = \Theta(d)$.
+\end{proof}
+
+\noindent
 Unfortunately, the expansion dimension is known to have many defects which make runtime bounds less useful.
-In particular:
-The algorithmic consequence of these facts is that runtime bounds based on the expansion dimension are often trivial.
+The algorithmic consequence of these defects is that runtime bounds based on the expansion dimension are often trivial.
 
 \begin{example}
     A subset of a metric space may have arbitrarily large expansion dimension compared to the host space.
@@ -202,6 +261,15 @@ The algorithmic consequence of these facts is that runtime bounds based on the e
 
 \subsection{Doubling dimension}
 
+The doubling dimension is more robust than the expansion dimension,
+but cannot be used to provide non-trivial runtime bounds for exact nearest neighbor queries (see Theorem \ref{theorem:exactdoubling} below).
+It has, however, seen widespread application in bounding the runtime of approximate nearest neighbor queries.
+\cite{krauthgamer2005black} showed that the doubling constant is the correct way to measure the difficulty of $\eann$ queries in the following sense:
+a $\eann$ query can be answered in polylogarithmic time using polynomial space if and only if $\cdoub = O(\log n)$.
+No similar result pairing exact nearest neighbor queries to a metric dimension is known.
+
+The doubling dimension is widely used in computer science and mathematics.
+Before formally defining it, we briefly review these many uses. 
 The term doubling dimension was first used by \citet{gupta2003bounded} in their study of low dimensional embeddings for nearest neighbor queries,
 but the main idea was introduced by \citet{assoud1979etude} to study fractals.%
 \footnote{
@@ -209,25 +277,24 @@ but the main idea was introduced by \citet{assoud1979etude} to study fractals.%
     For example, the terms Assoud dimension and Minkowski dimensions are both used in fractal geometry;
     and the terms covering number, packing number, $\varepsilon$-nets, and metric entropy are all used in computer science. 
 }
-The doubling dimension is more robust than the expansion dimension,
-so runtime bounds in terms of the doubling dimension are more useful. 
-Unfortunately, they are harder to prove.
-Theorem \ref{} at the end of this section shows the novel result that there is no efficient data structure for exact nearest neighbor queries even in metrics with low doubling dimension.
-
+%The doubling dimension is more robust than the expansion dimension,
+%so runtime bounds in terms of the doubling dimension are more useful. 
+%Unfortunately, they are harder to prove.
+%Theorem \ref{} at the end of this section shows the novel result that there is no efficient data structure for exact nearest neighbor queries even in metrics with low doubling dimension.
 In the context of machine learning, the doubling dimension has found use both statistically and algorithmically.
 Statistically, the doubling dimension is a standard tool for proving regret bounds.
 For example, \citet{luxburg2004distance} uses the doubling dimension to provide the first large margin bounds for classifiers in metric spaces,
 and Chapter 27 of \cite{shalev2014understanding} shows how to bound the Rademacher complexity of a classifier using the doubling dimension.
-A particularly relevant work in this line is \citet{kontorovich2015bayes},
+A particularly apropos work in this vein is \citet{kontorovich2015bayes},
 which uses the doubling dimension to derive the first Bayes-consistent 1-nearest neighbor algorithm.
 Algorithmically, the doubling dimension is used to develop approximation algorithms.
 Chapter 32 of \cite{toth2017handbook} provides a survey of how the doubling dimension is used to approximate a variety of NP-hard problems.
 In the context of machine learning, \citet{gottlieb2014near} shows the first approximation algorithm for sample compression,
 and
 \citet{gottlieb2014efficient} and \citet{gottlieb2017efficient} both create efficiently realizable approximation algorithms for classification in metric spaces.
-Little recent work on nearest neighbor data structures has used doubling dimension.
-The only examples known to the author are \citet{clarkson1997nearest}\footnote{Clarkson refers to the doubling dimension by an essentially equivalent concept he calls the $\gamma$-dominator bound.} and \citet{krauthgamer2004navigating}.
-Theorem \ref{} at the end of this section may explain why.
+%Little recent work on nearest neighbor data structures has used doubling dimension.
+%The only examples known to the author are \citet{clarkson1997nearest}\footnote{Clarkson refers to the doubling dimension by an essentially equivalent concept he calls the $\gamma$-dominator bound.} and \citet{krauthgamer2004navigating}.
+%Theorem \ref{} at the end of this section may explain why.
 
 
 The doubling dimension is closely related to the ideas of covering and packing numbers,
@@ -235,10 +302,10 @@ so we introduce these ideas first.
 A \emph{$\delta$-covering} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_n\} \subseteq \set X$ such that for all $x\in\set X$, there exists an $x_i$ such that $\dist{x}{x_i} < \delta$.
 The \emph{$\delta$-covering number} $N_\delta(\set X)$ is the cardinality of the smallest $\delta$-covering.
 %The log of the covering number $\log N_\delta(\set X)$ is called the \emph{metric entropy} of $\set X$.
-A \emph{$\delta$-packing} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_M\} \subseteq \set X$ such that $\dist{x_i}{x_j} > \delta$ for all distinct $i,j\in[M]$.
+A \emph{$\delta$-packing} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_M\} \subseteq \set X$ such that $\dist{x_i}{x_j} > \delta$ for all $i \ne j$.
 The \emph{$\delta$-packing number} $M_\delta (\set X)$ is the cardinality of the largest $\delta$-packing.
 The covering number and packing number of a set are closely related.
-We will make heavy use of the following lemma in the analysis of the cover tree.
+We will make heavy use of the following standard lemma in the analysis of the cover tree.
 
 \begin{lemma}
     \label{lemma:coverpacking}
@@ -299,7 +366,8 @@ where $\cdoub$ is called the \emph{doubling constant} and is defined to be
 \end{equation}
 Whereas the expansion dimension measures how the volume of a ball changes as the radius changes,
 the doubling dimension measures how the packing number of a ball changes.
-This minor change fixes many of the problems with the doubling dimension.
+%This minor change makes the doubling dimension more robust.
+%This minor change fixes many of the problems with the doubling dimension.
 %As with the expansion dimension, the doubling dimension is good notion of a metric's dimension because it agrees with the standard dimension on Euclidean space:
 The following lemma shows that the doubling dimension (like the expansion dimension) agrees with the dimension in Euclidean space.
 \begin{lemma}
@@ -307,9 +375,12 @@ The following lemma shows that the doubling dimension (like the expansion dimens
     Let $\set X=\R^d$ with the standard $L_2$ distance function.
     Then $\doubdim\set X=\Theta(d)$.
 \end{lemma}
+\begin{proof}[Proof (sketch)]
+    Follows by direct calculation as in Lemma \ref{lemma:expansionEuclidean}.
+\end{proof}
 \noindent
-The proof of Lemma \ref{lemma:doubleEuclidean} follows by an explicit calculation of the volume of a ball in $\mathbb{R}^d$.
-The proof is not especially interesting, and so is omitted.
+%The proof of Lemma \ref{lemma:doubleEuclidean} follows by an explicit calculation of the volume of a ball in $\mathbb{R}^d$.
+%The proof is not especially interesting, and so is omitted.
 The major advantage of the doubling dimension over the expansion dimension is its robustness,
 as shown in the following two lemmas.
 
@@ -372,32 +443,41 @@ as shown in the following two lemmas.
         %.
     %\end{equation}
 \end{lemma}
-\begin{proof}
-    Fix some ball $B(x,\delta)$.
-    We will show that $B(x,\delta)$ can be covered by $\cexp^4$ balls of radius $\delta$.
-    Let $Y$ be a $\delta$-cover of $B(x,2\delta)$.
-    Then,
-    \begin{equation}
-        B(x,2\delta) 
-        \subseteq 
-        \bigcup\limits_{y\in Y} B(y,\delta) 
-        \subseteq
-        B(x,4\delta)
-        %~~~~~
-        %\text{and}
-        %~~~~~
-    \end{equation}
-    Also, for every $y\in Y$,
-    \begin{equation}
-        |B(x,4\delta)| 
-        \le 
-        |B(y,8\delta)| 
-        \le 
-        \cexp^4 |B(y,\delta/2)|
-        .
-    \end{equation}
-    We also have that $|B(y,\delta/2)|=1$.
-\end{proof}
+%\begin{proof}
+    %Fix some ball $B(x,\delta)$.
+    %We will show that $B(x,\delta)$ can be covered by $\cexp^4$ balls of radius $\delta$.
+    %Let $Y$ be a $\delta$-cover of $B(x,2\delta)$.
+    %Then,
+    %\begin{equation}
+        %B(x,2\delta) 
+        %\subseteq 
+        %\bigcup\limits_{y\in Y} B(y,\delta) 
+        %\subseteq
+        %B(x,4\delta)
+        %%~~~~~
+        %%\text{and}
+        %%~~~~~
+    %\end{equation}
+    %Also, for every $y\in Y$,
+    %\begin{equation}
+        %|B(x,4\delta)| 
+        %\le 
+        %|B(y,8\delta)| 
+        %\le 
+        %\cexp^4 |B(y,\delta/2)|
+        %.
+    %\end{equation}
+    %We also have that $|B(y,\delta/2)|=1$.
+%\end{proof}
+
+\noindent
+This lemma can be used to convert runtime bounds using the doubling dimension into bounds using the expansion dimension.
+We will not need to directly appeal to this lemma in our proofs.
+
+\begin{theorem}
+    \label{theorem:exactdoubling}
+    There exists an $n$-point metric with doubling constant $\cdoub=O(1)$ such that answering exact nearest neighbor queries takes time $O(n)$.
+\end{theorem}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -455,8 +535,8 @@ In notation,
 \end{equation}
 The \emph{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, 
 is the ratio of the diameter to the dispersion.
-Sets with small aspect ratio are called ``fat,''
-and sets with large aspect ratio are called ``skinny.''
+Sets with small aspect ratio are called \emph{fat},
+and sets with large aspect ratio are called \emph{skinny}.
 
 There is little inherent relationship between the aspect ratio and the inherent dimension of a space.
 We emphasize this point with three examples.
@@ -523,7 +603,7 @@ Under mild assumptions, however, we can show that this is unlikely to happen.
 Specifically, let $\set X$ be a metric space, 
 and let $X=\{x_1,...,x_n\}\subset\set X$ be a sample of $n$ i.i.d.\ points from a distribution $\distribution D$ over $\set X$.
 Our goal is to show that the aspect ratio is polynomial in $n$.
-We will later show that the log of the aspect ratio bounds the depth of the cover tree (see Theorem \ref{}),
+We will later show that the log of the aspect ratio bounds the depth of the cover tree (see Lemma \ref{lemma:height}),
 and so the depth of the cover tree will be logarithmic in $n$.
 
 We begin by bounding the diameter of $X$.
@@ -532,9 +612,9 @@ We say the distribution $\distribution D$ has \emph{finite expected distance} if
 Note that this is a mild condition satisfied by most standard distributions on Euclidean space.
 For example, the uniform, Gaussian, exponential, Weibull, and Pareto distributions all have finite expected distance.
 Notice that the Weibull and Pareto distributions have heavy tails.
-One easy to describe distribution which does not satisfy this property is the Cauchy distribution 
-(the distribution of the reciprocal of a Gaussian random variable).
-The following lemma shows that this is a sufficient condition for the diameter to grow polynomial in $n$.
+One standard distribution which does not satisfy this property is the Cauchy distribution 
+(the distribution of the reciprocal of a standard Gaussian random variable).
+The following lemma shows that finite expected distance is a sufficient condition for the diameter to grow polynomial in $n$.
 
 \begin{lemma}
     \label{lemma:Ediam}
@@ -607,8 +687,8 @@ An immediate consequence is that
     \max_{x\in\set X} \prob{\dist{x}{x_i} \le t} \le Bt
     .
 \end{equation}
-Again, all the standard distributions in Euclidean space satisfy this condition.
-The following lemma shows that this condition is sufficient to lower bound the codiameter.
+All the standard distributions in Euclidean space satisfy this condition.
+The following lemma shows that having a $B$-bounded density is sufficient to lower bound the codiameter.
 
 \begin{lemma}
     \label{lemma:Ecodiam}
@@ -665,13 +745,14 @@ The following lemma shows that this condition is sufficient to lower bound the c
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\noindent
 An immediate consequence of Lemmas \ref{lemma:Ediam} and \ref{lemma:Ecodiam} is the following bound on the aspect ratio.
 
 \begin{lemma}
     \label{lemma:Easpect}
     Let $\set X$ and $X$ be defined as above.
     Assume that $\distribution D$ has finite expected distance and $B$-bounded density.
-    Then, $\E\aspect{X} \le2B\mu n^3$. 
+    Then, $\E\aspect{} \le2B\mu n^3$. 
 \end{lemma}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -911,6 +992,7 @@ Stronger results are known for specific metric spaces.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{The Original Cover Tree}
+\label{sec:original}
 
 A \emph{cover tree} is a data structure for efficiently representing a finite metric space.
 Each node in the tree corresponds to exactly one point in the space,
