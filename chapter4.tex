@@ -973,9 +973,6 @@ The downside of the cover tree is that they analyze their data structure in term
 %%%%%%%%%%%%%%%%%%%%
 \ignore{
 \subsubsection{Infinite dimensional metric spaces}
-MLPACK \cite{curtin2013mlpack}.
-The most recent work is the Fast Library for Approximate Nearest Neighbor (FLANN) \cite{muja2014scalable}.
-FLANN uses the randomized kd-forest and the priority search $k$-means tree.
 
 \cite{cheeseman1991really} phase transitions for NP-hard problems.
 
@@ -2251,6 +2248,7 @@ and Figure \ref{fig:numdist}(b) shows that this slowdown is overshadowed by the 
     \caption{\rebalanceHelper(cover trees $p$ and $q$, point $x$)}
 
     \vspace{0.1in}
+    \vspace{0.1in}
 \emph{prerequisites:} $p$ is an ancestor of $q$
 
 \begin{algorithmic}[1]
@@ -2356,10 +2354,11 @@ and this effect is exaggerated when the tree is constructed in parallel.
 %\fixme{I'm pretty sure this algorithm should be $o(c^{O(1)}n)$ (the little o is correct), but I can't think of a proof.}
 
 \begin{algorithm}[t!]
-\caption{Merging cover trees}
+%\caption{Merging cover trees}
+    \caption{ \mkprocedure{merge}(cover tree $p$, cover tree $q$)}
 \label{alg:merge}
 
-{\bfseries function} \mkprocedure{merge}(cover tree $p$, cover tree $q$)
+\vspace{0.1in}
 
 \begin{algorithmic}[1]
 \If {$\level q > \level p$}
@@ -2381,13 +2380,15 @@ and this effect is exaggerated when the tree is constructed in parallel.
 \State\Return $p$
 
 \end{algorithmic}
-
-{\bfseries function} \mkprocedure{mergeHelper}(cover tree $p$, cover tree $q$)
+\end{algorithm}
+\begin{algorithm}
+    \caption{ \mkprocedure{mergeHelper}(cover tree $p$, cover tree $q$)}
 
 %\emph{prerequisite:} $\level{p}=\level{q}$
 
 %\emph{prerequisite:} $d(p,q) \le \covdist p$
-\emph{prereqs:} $\level{p}=\level{q}$, $d(p,q)\le\covdist p$
+    \vspace{0.1in}
+\emph{prerequisite:} $\level{p}=\level{q}$, $d(p,q)\le\covdist p$
 
 
 \begin{algorithmic}[1]
@@ -2435,7 +2436,7 @@ and this effect is exaggerated when the tree is constructed in parallel.
 \subsection{Cache efficiency}
 \label{sec:cache}
 
-One of the biggest sources of overhead in the cover tree is cache misses.
+One of the biggest sources of overhead in modern data structures is cache misses.
 Our last improvement is to make cover trees more cache efficient.
 A simple way to reduce cache misses for tree data structures is to use the \emph{van Emde Boas} tree layout
 \cite{frigo1999}.
@@ -2443,8 +2444,7 @@ This layout arranges nodes in memory according to a depth first traversal of the
 This arrangement creates a \emph{cache oblivious} data structure.
 That is, the programmer does not need any special knowledge about the cache sizes to obtain optimal speedup---the van Embde Boas tree layout works efficiently on any cache architecture.
 This layout has been known for a long time in the data structures community, but it seems unused in machine learning libraries.
-Frigo (1999) provides a detailed tutorial.
-\nocite{frigo1999}
+\citet{frigo1999} provides a detailed tutorial.
 
 Our implementation of the cache oblivious cover tree is \emph{static}.
 That is, we first construct the cover tree, then we call a function \pack~that rearranges the tree in memory.
@@ -2452,6 +2452,63 @@ This means we do not get the reduced cache misses while constructing the tree, b
 The \pack\ function is essentially free to run because it requires only a single traversal through the dataset and no distance computations.
 Figure \ref{fig:cache} shows that the van Emde Boas tree layout reduces cache misses by 5 to 20 percent.
 This results in a reduction of stalled CPU cycles by 2 to 15 percent.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Experiments}
+\label{sec:experiments}
+
+%In this section we validate our improvements empirically.
+We now validate our improvements to the cover tree empirically.
+Our first experiments use the Euclidean distance on a standard benchmark suite (described in Table \ref{tab:datasets}).
+%First, we use a standard benchmark suite described in Table \ref{tab:datasets} and the Euclidean distance.
+%We compare the number of distance comparisons used by the three cover tree variants, and we compare our cover tree implementation to previous implementations of the original cover tree.
+Our last experiments use non-Euclidean metrics on data from bioinformatics and computer vision.
+In each experiment, we use the \defn{all nearest neighbors} experimental setup.
+That is, we first construct the cover trees on the dataset.
+Then, for each point in the dataset, we find its nearest neighbor.
+This is a standard technique for measuring the efficiency of nearest neighbor algorithms.
+
+%%%%%%%%%%%%%%%%%%%%
+
+\begin{table}[t]
+\centering
+\begin{tabular}{lrrr}
+%\hline
+dataset & num data points & num dimensions \\
+\hline
+%\hline
+yearpredict  & 515345& 90   \\
+twitter      & 583250& 78   \\
+tinyImages   & 100000& 384  \\
+mnist        & 70000 & 784  \\
+corel        & 68040 & 32   \\
+covtype      & 581012& 55   \\
+artificial40 & 10000 & 40   \\
+%calhousing   & 20640 & 8    \\
+faces        & 10304 & 20   \\
+%\hline
+\end{tabular}
+\caption{
+    All MLPack benchmark datasets with at least 20 dimensions and 10000
+points, arranged in descending order by runtime of all nearest neighbor search.
+    }
+\label{tab:datasets}
+\end{table}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Cover tree type comparison}
+
+Our first experiment compares the performance of the three types of cover trees: original, simplified, and nearest ancestor.
+We measure the number of distance comparisons required to build the tree on a dataset in Figure \ref{fig:numdist}(a)
+and the number of distance comparisons required to find each data point's nearest neighbor in Figure \ref{fig:numdist}(b). 
+Distance comparisons are a good proxy measure of runtime performance because the majority of the algorithm's runtime is spent computing distances, and it ignores the possible unwanted confounding variable of varying optimization efforts.
+As expected, the simplified tree typically outperforms the original tree, and the nearest ancestor tree typically outperforms the simplified tree.
+We reiterate that this reduced need for distance comparisons translates over to all other queries provided by the space tree framework \cite{Curtin2013}.
+
+%%%%%%%%%%%%%%%%%%%%
 
 \begin{figure*}
 \centering
@@ -2485,6 +2542,38 @@ This results in a reduction of stalled CPU cycles by 2 to 15 percent.
 }
 \label{fig:numdist}
 \end{figure*}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Cover tree implementation comparison}
+
+We next compare our implementation against two good cover tree implementations currently in widespread use:
+the reference implementation used in the original paper \cite{beygelzimer2006cover}
+and MLPack's implementation \cite{curtin2013mlpack}.
+Both of these programs were written in C++ and compiled using \texttt{g++ 4.4.7} with full optimizations.
+Our implementation was written in Haskell and compiled with \texttt{ghc 7.8.4} also with full optimizations.\footnote{Our code can be downloaded at \url{http://github.com/mikeizbicki/hlearn\#covertree}.}
+% cshelton1: I removed this footnote.  I don't know what we are really trying to say (even the 5-10% garbage collection doesn't mean much
+%   perhaps the C++ implementation also spent 5-10% of the time reclaiming memory.  I would just let it stand as is.
+%\footnote{
+%Haskell has two disadvantages for performance sensitive numeric computing.
+%First, it is a garbage collected language.
+%In our tests, the garbage collector typically required between 5 to 10 percent of our program's run time.
+%Second, Haskell only efficiently supports persistent data structures, and our cover tree is implemented persistently.
+%That is, we never change the value of a variable after creation; and all previous states of the program are continuously accessible in memory.
+%It is impossible to guess how persistence might affect the run time of our cover tree.
+%%We implemented the cover tree in Haskell partly out of a desire to show that the language is capable of state-of-the-art performance on numerically intensive algorithms.
+%}
+All tests were run on an Amazon Web Services \texttt{c3.8x-large} instance with 60 GB of RAM and 32 Intel Xeon E5-2680 CPU cores clocked at 2.80GHz.
+Half of those cores are hyperthreads, so for simplicity we only parallelize out to 16 cores.
+
+Since the reference implementation and MLPack only come with the Euclidean distance built-in, we only use that metric when comparing the three implementations.
+Figure \ref{fig:cache} shows the cache performance of all three libraries.
+Figure \ref{fig:parallel} shows the runtime of all three libraries.
+Our implementation's cache performance and parallelization speedup is shown on the nearest ancestor cover tree.
+Neither the original implementation nor MLPack support parallelization.
+
+%%%%%%%%%%%%%%%%%%%%
+
 \begin{figure*}
 \centering
 \subfigure[]{\small
@@ -2528,6 +2617,8 @@ This results in a reduction of stalled CPU cycles by 2 to 15 percent.
 \label{fig:cache}
 \end{figure*}
 
+%%%%%%%%%%%%%%%%%%%%
+
 \begin{figure*}
 \centering
 \subfigure[]{\small
@@ -2558,83 +2649,53 @@ This results in a reduction of stalled CPU cycles by 2 to 15 percent.
 \label{fig:parallel}
 \end{figure*}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Alternative methods for Euclidean nearest neighbors}
 
-\section{Experiments}
-\label{sec:experiments}
+Next we compare our cover tree implementation to non-cover tree based nearest neighbor libraries.
+Specifically, we compare to a $k$d-tree implemented in the Fast Library for Approximate Nearest Neighbor \citep[FLANN; ][]{muja2014scalable},
+a $k$d-tree implemented in Julia \citep{bezanson2017julia},
+the original cover tree implementation \citep{beygelzimer2006cover},
+a $k$d-tree and cover tree implemented in MLPack \citep{curtin2013mlpack},
+a $k$d-tree and ball tree implemented in Python's scikit learn \citep{scikit-learn},
+and a $k$d-tree implemented in R \citep{R}.
+The results are shown in Figures \ref{fig:allexp1} and \ref{allexp2}.
+Without parallelization, our implementation is faster than most of the alternatives on most of the datasets.
+With parallelization it is faster than all of the alternatives on all of the datasets.
 
-%In this section we validate our improvements empirically.
-We now validate our improvements empirically.
-Our first experiments use the Euclidean distance on a standard benchmark suite (described in Table \ref{tab:datasets}).
-%First, we use a standard benchmark suite described in Table \ref{tab:datasets} and the Euclidean distance.
-%We compare the number of distance comparisons used by the three cover tree variants, and we compare our cover tree implementation to previous implementations of the original cover tree.
-Our last experiments use non-Euclidean metrics on data from bioinformatics and computer vision.
-In each experiment, we use the ``all nearest neighbors'' experimental setup.
-That is, we first construct the cover trees on the dataset.
-Then, for each point in the dataset, we find its nearest neighbor.
-This is a standard technique for measuring the efficiency of nearest neighbor algorithms.
-
-\subsection{Tree-type comparison}
-
-Our first experiment compares the performance of the three types of cover trees: original, simplified, and nearest ancestor.
-We measure the number of distance comparisons required to build the tree on a dataset in Figure \ref{fig:numdist}(a)
-and the number of distance comparisons required to find each data point's nearest neighbor in Figure \ref{fig:numdist}(b) using Algorithm \ref{alg:query}.
-Distance comparisons are a good proxy measure of runtime performance because the majority of the algorithm's runtime is spent computing distances, and it ignores the possible unwanted confounding variable of varying optimization efforts.
-As expected, the simplified tree typically outperforms the original tree, and the nearest ancestor tree typically outperforms the simplified tree.
-We reiterate that this reduced need for distance comparisons translates over to all other queries provided by the space tree framework \cite{Curtin2013}.
-
-\begin{table}[t]
-\centering
-\begin{tabular}{lrrr}
-%\hline
-dataset & num data points & num dimensions \\
-\hline
-%\hline
-yearpredict  & 515345& 90   \\
-twitter      & 583250& 78   \\
-tinyImages   & 100000& 384  \\
-mnist        & 70000 & 784  \\
-corel        & 68040 & 32   \\
-covtype      & 581012& 55   \\
-artificial40 & 10000 & 40   \\
-%calhousing   & 20640 & 8    \\
-faces        & 10304 & 20   \\
-%\hline
-\end{tabular}
-\caption{
-    All MLPack benchmark datasets with at least 20 dimensions and 10000
-points, arranged in descending order by runtime of all nearest neighbor search.
+\begin{figure}
+    \begin{tabular}{cc}
+    \includegraphics[width=.45\textwidth]{img-website/mnist}
+    &
+    \includegraphics[width=.45\textwidth]{img-website/tinyImages}
+    \\
+    \includegraphics[width=.45\textwidth]{img-website/twitter}
+    &
+    \includegraphics[width=.45\textwidth]{img-website/yearpredict}
+    \end{tabular}
+    \caption{
+Using only a single processor, 
+our nearest ancestor cover tree performs the fastest on each dataset except for YearPredict.
+%But HLearn can use all the cores on your computer to parallelize the task.
+%Here's how performance scales with the number of CPUs on an AWS EC2 `c3.8xlarge` instance with 16 true cores:
     }
-\label{tab:datasets}
-\end{table}
+    \label{fig:allexp1}
+\end{figure}
 
-\subsection{Implementation comparison}
+\begin{figure}
+    \centering
+    \includegraphics[width=.5\textwidth]{img-website/yearpredict-parallel}
+    \caption{
+        Using multiple processors, 
+        our implementation is now also the fastest on the YearPredict dataset by a wide margin.
+        (FLANN is the only other library supporting parallelism, 
+        but in my tests with this dataset parallelism actually slowed it down for some reason.)
+    }
+    \label{fig:allexp2}
+\end{figure}
 
-We next compare our implementation against two good cover tree implementations currently in widespread use:
-the reference implementation used in the original paper \cite{beygelzimer2006cover}
-and MLPack's implementation \cite{curtin2013mlpack}.
-Both of these programs were written in C++ and compiled using \texttt{g++ 4.4.7} with full optimizations.
-Our implementation was written in Haskell and compiled with \texttt{ghc 7.8.4} also with full optimizations.\footnote{Our code can be downloaded at \url{http://github.com/mikeizbicki/hlearn\#covertree}.}
-% cshelton1: I removed this footnote.  I don't know what we are really trying to say (even the 5-10% garbage collection doesn't mean much
-%   perhaps the C++ implementation also spent 5-10% of the time reclaiming memory.  I would just let it stand as is.
-%\footnote{
-%Haskell has two disadvantages for performance sensitive numeric computing.
-%First, it is a garbage collected language.
-%In our tests, the garbage collector typically required between 5 to 10 percent of our program's run time.
-%Second, Haskell only efficiently supports persistent data structures, and our cover tree is implemented persistently.
-%That is, we never change the value of a variable after creation; and all previous states of the program are continuously accessible in memory.
-%It is impossible to guess how persistence might affect the run time of our cover tree.
-%%We implemented the cover tree in Haskell partly out of a desire to show that the language is capable of state-of-the-art performance on numerically intensive algorithms.
-%}
-All tests were run on an Amazon Web Services \texttt{c3.8x-large} instance with 60 GB of RAM and 32 Intel Xeon E5-2680 CPU cores clocked at 2.80GHz.
-Half of those cores are hyperthreads, so for simplicity we only parallelize out to 16 cores.
-
-Since the reference implementation and MLPack only come with the Euclidean distance built-in, we only use that metric when comparing the three implementations.
-Figure \ref{fig:cache} shows the cache performance of all three libraries.
-Figure \ref{fig:parallel} shows the runtime of all three libraries.
-Our implementation's cache performance and parallelization speedup is shown on the nearest ancestor cover tree.
-Neither the original implementation nor MLPack support parallelization.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Graph kernels and protein function}
 
@@ -2752,7 +2813,7 @@ Previous research on speeding up EMD focused on computing EMD distances faster.
 The EMD takes a base distance as a parameter.
 For an arbitrary base distance, EMD requires $O(b^3\log b)$ time where $b$ is the size of the histogram signature.
 Faster algorithms exist for specific base metrics.
-For example, with an $L_1$ base metric the EMD can be computed in time $O(b^2)$ \cite{Ling07}; and if the base metric is a so-called ``thresholded metric,'' we can get an order of magnitude constant factor speed up \cite{Pele2009}.
+For example, with an $L_1$ base metric the EMD can be computed in time $O(b^2)$ \citep{Ling07}; and if the base metric is a so-called ``thresholded metric,'' we can get an order of magnitude constant factor speed up \citep{Pele2009}.
 We specifically chose the LabCIE color space because there is no known faster EMD algorithm.
 It will stress-test our cover tree implementation.
 

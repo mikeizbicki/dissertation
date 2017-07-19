@@ -1,6 +1,7 @@
 *.aux
 *.auf
 *.log
+*.ps
 *.pdf
 *.pdfsync
 *.bbl
