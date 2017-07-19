@@ -31,7 +31,7 @@
 \newcommand{\mkfunction}[1]{\ifmmode{\textnormal{{#1}}}}
 \newcommand{\level}[1]      {\mkfunction{level}({#1})}
 \newcommand{\parent}[1]     {\mkfunction{parent}({#1})}
-\newcommand{\children}[1]   {\mkfunction{children}({#1})}
+%\newcommand{\children}[1]   {\mkfunction{children}({#1})}
 \newcommand{\covdist}[1]    {\mkfunction{covdist}({#1})}
 \newcommand{\sepdist}[1]    {\mkfunction{sepdist}({#1})}
 \newcommand{\descendants}[1]{\mkfunction{descendants}({#1})}
@@ -44,6 +44,9 @@
 \def\nn{\@ifstar\@nn\@@nn}
 \def\@nn#1{\mkfunction{nn}^*[{#1}]}
 \def\@@nn#1{\mkfunction{nn}[{#1}]}
+\def\children{\@ifstar\@children\@@children}
+\def\@children#1{\mkfunction{children}'({#1})}
+\def\@@children#1{\mkfunction{children}({#1})}
 \makeatother
 
 % FIXME: should these be changed?
@@ -62,10 +65,10 @@
 \newcommand{\ctmerge}{\ensuremath{\textnormal{\ttfamily merge}}}
 \newcommand{\ctinsert}{\ensuremath{\textnormal{\ttfamily insert}}}
 \newcommand{\ctinsertloop}{\ensuremath{\textnormal{\ttfamily insert\_loop}}}
-\newcommand{\ctinsertHelper}{\ensuremath{\text{\ttfamily insert\_}}}
+\newcommand{\ctinsertHelper}{\ensuremath{\textnormal{\text{\ttfamily insert\_loop}}}}
 \newcommand{\rebalance}{\ensuremath{\textnormal{\ttfamily rebalance}}}
-\newcommand{\rebalanceHelper}{\ensuremath{\textnormal{\ttfamily rebalance\_}}}
-\newcommand{\mkvar}[1]{\ensuremath{\textnormal{\emph{{#1}}}}}
+\newcommand{\rebalanceHelper}{\ensuremath{\textnormal{\ttfamily rebalance\_loop}}}
+\newcommand{\mkvar}[1]{\ensuremath{\textnormal{\textit{{#1}}}}}
 \newcommand{\nullvar}{\ensuremath{\textup{\textnormal{\ttfamily null}}}}
 %\newcommand{\datapoint}[1]{\ensuremath{\textup{\textnormal{\ttfamily dp}({#1})}}}
 
@@ -86,42 +89,56 @@
 The cover tree is a data structure for fast nearest neighbor queries in arbitrary metric spaces.
 Cover trees were first introduced by \cite{beygelzimer2006cover},
 and they have seen widespread use in the machine learning community since then.
-This chapter provides both practical and theoretical improvements to the cover tree.
+This chapter provides both theoretical and practical improvements.
 %and connects the cover tree to the divide and conquer framework described in Chapter 1. 
 
 This chapter is organized into six sections.
-Section \ref{} formally introduces metric spaces and their importance in machine learning.
-Section \ref{} 
-Section \ref{} reviews the existing techniques for faster nearest neighbor queries.
-Section \ref{} formally describes the original cover tree data structure.
-Section \ref{} presents the simplified cover tree heuristic.
-Section \ref{} concludes the chapter with experiments demonstrating the improvements success in practice.
+Section \ref{sec:metric} formally introduces metric spaces and their importance in machine learning.
+Section \ref{sec:measure} 
+Section \ref{sec:review} reviews the existing techniques for faster nearest neighbor queries.
+Section \ref{sec:original} formally describes the original cover tree data structure.
+Section \ref{sec:simplified} presents the simplified cover tree heuristic.
+Section \ref{sec:experiments} concludes the chapter with experiments demonstrating the improvements success in practice.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Metric spaces and nearest neighbors in machine learning}
+\section{Definitions and motivation}
+\label{sec:metric}
 
-Metric spaces are a generalization of Euclidean spaces that are often more natural to work with.
-A set $\set X$ equipped with a distance function $\distf : \set X \times \set X \to \R$ is a \emph{metric space} if it obeys the following three properties:
+This section first defines metric spaces and the nearest neighbor problem.
+Then it shows motivating examples of useful metric spaces in machine learning.
+
+A set $\set X$ equipped with a distance function $\distf : \set X \times \set X \to \R$ is a \defn{metric space} if it obeys the following three properties:
 \begin{enumerate}
-    %\item \emph{Non-negativity}.  For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} \ge 0$.
-    \item \emph{Indiscernability}.  For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} = 0$ if and only if $x_1=x_2$.
-    \item \emph{Symmetry}. For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} = \dist{x_2}{x_2}$.
-    \item \emph{Triangle inequality}.  For all $x_1,x_2,x_3\in\set X$, $\dist{x_1}{x_2} + \dist{x_2}{x_3}\ge\dist{x_1}{x_3}$.
+    %\item \defn{Non-negativity}.  For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} \ge 0$.
+    \item \defn{Indiscernability}.  For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} = 0$ if and only if $x_1=x_2$.
+    \item \defn{Symmetry}. For all $x_1,x_2\in\set X$, $\dist{x_1}{x_2} = \dist{x_2}{x_2}$.
+    \item \defn{Triangle inequality}.  For all $x_1,x_2,x_3\in\set X$, $\dist{x_1}{x_2} + \dist{x_2}{x_3}\ge\dist{x_1}{x_3}$.
 \end{enumerate}
-In this chapter, we will use the script $\set X$ notation for metric spaces that may be either infinite or finite,
-and the 
+We will use the script $\set X$ notation for metric spaces that may be either infinite or finite,
+and the plain $X$ for metric spaces that must be finite.
+In particular, $X$ will typically denote a data set sampled from some larger space $\set X$,
+as in the following definition of the nearest neighbor problem.
+%A basic property of metric spaces is that if $\set X$ is a metric space,
+%then any $\set X' \subseteq\set X$ is also a metric space with the same distance function.
+%Therefore, if we have a data set $X$ sampled from some metric space $\set X$,
+%we will refer 
+%Therefore, we will often refer to subsets of metric spaces as metric spaces without loss of generality.
 %We will use the script notation $\set X$ for possibly infinite metrics,
 
 Let $\set X$ be a metric space, $X\subset\set X$, and $x$ be in $\set X$ but not $X$.
-Then the \emph{nearest neighbor} $y^*\in X$ is defined as $y^*=\argmin_{y\in X} \dist{x}{y}$.
-An \emph{$\varepsilon$-approximate nearest neighbor} (for $\varepsilon\ge1$) is a point $\hat y$ satisfying $\dist{x}{\hat y} \le \varepsilon \cdot\dist{x}{y^*}$.
+We call a point $y^*\in X$ a \defn{nearest neighbor} of $x$ if it is contained in $\argmin_{y\in X} \dist{x}{y}$.
+In most cases $y^*$ will be unique 
+(so we will often refer to \textit{the} nearest neighbor of $x$).
+For all $\varepsilon \ge 0$,
+we call a point $\hat y$ a \defn{$(1+\varepsilon)$-approximate nearest neighbor} (\defn{ann}) of $x$ if $\hat y$ satisfies $\dist{x}{\hat y} \le (1+\varepsilon) \cdot\dist{x}{y^*}$.
+In particular, if $\hat y$ is a 1-ann, then $\hat y$ is a nearest neighbor.
 
-\subsection{Metric learning}
+%\subsection{Metric learning}
+
+In nearest neighbor classification,
 
 \cite{kulis2013metric} and \cite{bellet2013survey} provide tutorials.
-
-\subsection{Infinite metrics}
 
 %\begin{table}[H]
     %\small
@@ -150,6 +167,7 @@ An \emph{$\varepsilon$-approximate nearest neighbor} (for $\varepsilon\ge1$) is 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Measuring the size of a metric space}
+\label{sec:measure}
 
 The runtime of nearest neighbor queries depends on the dimension of the data,
 and there are many ways to define the dimension of arbitrary metric spaces.
@@ -163,7 +181,7 @@ the doubling dimension can only be used to bound the runtime of approximate near
 but it is more robust than the expansion dimension.
 Therefore bounds using the doubling dimension are stronger than those using the expansion dimension.
 The original runtime bounds for the cover tree were in terms of the expansion dimension,
-but Section \ref{sec:original} improves these bounds to use the doubling dimension.
+but Section \ref{sec:original} will improve these bounds to use the doubling dimension in the case of approximate nearest neighbor searches.
 This section begins with a detailed discussion of these two dimensions, 
 including important lemmas used in the proofs in Section \ref{sec:original}.
 Then we introduce a novel third dimension called the hole dimension.
@@ -201,9 +219,9 @@ and was subsequently used in
 and \citet{curtin2015plug}.
 In this section, we define the expansion constant and show that it is not a robust measure of a metric's dimension.
 
-Throughout this section we will work with the metric space $(\set X,d)$.
-The set $\set X$ may be either finite or infinite.
-We let $B(x,\delta)$ denote the \emph{ball} centered around $x$ of radius $\delta$. 
+Throughout this section we will work with the metric space $(\set X,d)$
+where the set $\set X$ may be either finite or infinite.
+We let $B(x,\delta)$ denote the \defn{ball} centered around $x$ of radius $\delta$. 
 That is,
 \begin{equation}
     B(x,\delta) = \{ x' : x'\in\set X, \dist{x}{x'} \le \delta \}.
@@ -219,12 +237,12 @@ In finite metric spaces, $\mu X$ is defined to be the number of points in $X$.
 In the Euclidean space $\set X=\R^d$, $\mu$ is defined to be the standard Euclidean volume,
 and in particular $\mu B(x,\delta) = \Theta(\delta^d)$.
 
-The \emph{expansion dimension} of a metric space $\set X$ is defined as
+The \defn{expansion dimension} of a metric space $\set X$ is defined as
 \begin{equation}
     \krdim = \log_2 \cexp
     ,
 \end{equation}
-where $\cexp$ is called the \emph{expansion constant} and defined as
+where $\cexp$ is called the \defn{expansion constant} and defined as
 \begin{equation}
     \cexp = \max_{x\in\set X, \delta\in\R^+} \frac{\mu B(x,2\delta)}{\mu B(x,\delta)}
     .
@@ -299,11 +317,11 @@ and
 
 The doubling dimension is closely related to the ideas of covering and packing numbers,
 so we introduce these ideas first.
-A \emph{$\delta$-covering} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_n\} \subseteq \set X$ such that for all $x\in\set X$, there exists an $x_i$ such that $\dist{x}{x_i} < \delta$.
-The \emph{$\delta$-covering number} $N_\delta(\set X)$ is the cardinality of the smallest $\delta$-covering.
-%The log of the covering number $\log N_\delta(\set X)$ is called the \emph{metric entropy} of $\set X$.
-A \emph{$\delta$-packing} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_M\} \subseteq \set X$ such that $\dist{x_i}{x_j} > \delta$ for all $i \ne j$.
-The \emph{$\delta$-packing number} $M_\delta (\set X)$ is the cardinality of the largest $\delta$-packing.
+A \defn{$\delta$-covering} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_n\} \subseteq \set X$ such that for all $x\in\set X$, there exists an $x_i$ such that $\dist{x}{x_i} < \delta$.
+The \defn{$\delta$-covering number} $N_\delta(\set X)$ is the cardinality of the smallest $\delta$-covering.
+%The log of the covering number $\log N_\delta(\set X)$ is called the \defn{metric entropy} of $\set X$.
+A \defn{$\delta$-packing} of a metric space $\set X$ is a set $\{x_1,x_2,...,x_M\} \subseteq \set X$ such that $\dist{x_i}{x_j} > \delta$ for all $i \ne j$.
+The \defn{$\delta$-packing number} $M_\delta (\set X)$ is the cardinality of the largest $\delta$-packing.
 The covering number and packing number of a set are closely related.
 We will make heavy use of the following standard lemma in the analysis of the cover tree.
 
@@ -354,12 +372,12 @@ We will make heavy use of the following standard lemma in the analysis of the co
     %Then $\minkdim \set X = 0$.
 %\end{example}
 
-The \emph{doubling dimension} of a metric space $\set X$ is defined to be
+The \defn{doubling dimension} of a metric space $\set X$ is defined to be
 \begin{equation}
     \doubdim = \log_2 \cdoub
     ,
 \end{equation}
-where $\cdoub$ is called the \emph{doubling constant} and is defined to be
+where $\cdoub$ is called the \defn{doubling constant} and is defined to be
 \begin{equation}
     \cdoub = \max_{x\in\set X, \radius\in\R^+} N_\radius(B_{\set X}(x,2\radius))
     .
@@ -443,32 +461,32 @@ as shown in the following two lemmas.
         %.
     %\end{equation}
 \end{lemma}
-%\begin{proof}
-    %Fix some ball $B(x,\delta)$.
-    %We will show that $B(x,\delta)$ can be covered by $\cexp^4$ balls of radius $\delta$.
-    %Let $Y$ be a $\delta$-cover of $B(x,2\delta)$.
-    %Then,
-    %\begin{equation}
-        %B(x,2\delta) 
-        %\subseteq 
-        %\bigcup\limits_{y\in Y} B(y,\delta) 
-        %\subseteq
-        %B(x,4\delta)
-        %%~~~~~
-        %%\text{and}
-        %%~~~~~
-    %\end{equation}
-    %Also, for every $y\in Y$,
-    %\begin{equation}
-        %|B(x,4\delta)| 
-        %\le 
-        %|B(y,8\delta)| 
-        %\le 
-        %\cexp^4 |B(y,\delta/2)|
-        %.
-    %\end{equation}
-    %We also have that $|B(y,\delta/2)|=1$.
-%\end{proof}
+\begin{proof}
+    Fix some ball $B(x,\delta)$.
+    We will show that $B(x,\delta)$ can be covered by $\cexp^4$ balls of radius $\delta$.
+    Let $Y$ be a $\delta$-cover of $B(x,2\delta)$.
+    Then,
+    \begin{equation}
+        B(x,2\delta) 
+        \subseteq 
+        \bigcup\limits_{y\in Y} B(y,\delta) 
+        \subseteq
+        B(x,4\delta)
+        %~~~~~
+        %\text{and}
+        %~~~~~
+    \end{equation}
+    Also, for every $y\in Y$,
+    \begin{equation}
+        |B(x,4\delta)| 
+        \le 
+        |B(y,8\delta)| 
+        \le 
+        \cexp^4 |B(y,\delta/2)|
+        .
+    \end{equation}
+    We also have that $|B(y,\delta/2)|=1$.
+\end{proof}
 
 \noindent
 This lemma can be used to convert runtime bounds using the doubling dimension into bounds using the expansion dimension.
@@ -485,7 +503,7 @@ We will not need to directly appeal to this lemma in our proofs.
 
 The hole dimension is a novel measure of a set's dimensionality.
 
-The \emph{hole number} is defined as
+The \defn{hole number} is defined as
 \begin{align}
     \chole
     = 
@@ -498,13 +516,14 @@ The \emph{hole number} is defined as
     B(x,\epsilon+\delta) \setminus B(x,\delta) = \{\}
     .
 \end{align}
-The \emph{hole dimension} is
+The \defn{hole dimension} is
 \begin{align}
     \holedim = \log_2 \chole
     .
 \end{align}
 
 \begin{lemma}
+    \label{lemma:chole}
     For any finite metric space,
     \begin{equation}
         \cdoub \le \chole + 1 \le 
@@ -518,25 +537,26 @@ The \emph{hole dimension} is
 \subsection{Aspect ratio}
 
 We will use the aspect ratio to bound the depth of the cover tree.
-Unlike the covering and expansion constants,
+Unlike the expansion, doubling, and hole constants,
 the aspect ratio should not be thought of as a measure of dimension.
+This is because the aspect ratio is only applicable to finite sets.
 Instead, it should be thought of as a measure of how evenly spread the points in a metric space are.
-The \emph{diameter} of $\set X$ is the maximum distance between any two points.
+The \defn{diameter} of $\set X$ is the maximum distance between any two points.
 In notation,
 \begin{equation}
     \diam {\set X} = \max_{x_1,x_2\in\set X} \dist{x_1}{x_2}
     .
 \end{equation}
-The \emph{codiameter} of $\set X$ is the minimum distance between any two points.
+The \defn{codiameter} of $\set X$ is the minimum distance between any two points.
 In notation,
 \begin{equation}
     \codiam {\set X} = \min_{x_1 \ne x_2\in\set X} \dist{x_1}{x_2}
     .
 \end{equation}
-The \emph{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, 
-is the ratio of the diameter to the dispersion.
-Sets with small aspect ratio are called \emph{fat},
-and sets with large aspect ratio are called \emph{skinny}.
+The \defn{aspect ratio} of $\set X$, denoted by $\aspect{\set X}$, 
+is the ratio of the diameter to the codiameter.
+Sets with small aspect ratio are called \defn{fat},
+and sets with large aspect ratio are called \defn{skinny}.
 
 There is little inherent relationship between the aspect ratio and the inherent dimension of a space.
 We emphasize this point with three examples.
@@ -608,7 +628,7 @@ and so the depth of the cover tree will be logarithmic in $n$.
 
 We begin by bounding the diameter of $X$.
 %In general, it does not make sense to take the expectation with respect to $\distribution D$.
-We say the distribution $\distribution D$ has \emph{finite expected distance} if there exists an $\bar x\in\set X$ such that $\mu=\E\dist{\bar x}{x_i}$ is finite.
+We say the distribution $\distribution D$ has \defn{finite expected distance} if there exists an $\bar x\in\set X$ such that $\mu=\E\dist{\bar x}{x_i}$ is finite.
 Note that this is a mild condition satisfied by most standard distributions on Euclidean space.
 For example, the uniform, Gaussian, exponential, Weibull, and Pareto distributions all have finite expected distance.
 Notice that the Weibull and Pareto distributions have heavy tails.
@@ -680,7 +700,7 @@ The following lemma shows that finite expected distance is a sufficient conditio
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Next we show that the codiameter cannot shrink too fast.
-We say that the distribution $\distribution D$ has \emph{$B$-bounded density} if
+We say that the distribution $\distribution D$ has \defn{$B$-bounded density} if
 for all $x\in\set X$, the density of $\dist{x}{x_i}$ is bounded by $B$.
 An immediate consequence is that 
 \begin{equation}
@@ -752,12 +772,20 @@ An immediate consequence of Lemmas \ref{lemma:Ediam} and \ref{lemma:Ecodiam} is 
     \label{lemma:Easpect}
     Let $\set X$ and $X$ be defined as above.
     Assume that $\distribution D$ has finite expected distance and $B$-bounded density.
-    Then, $\E\aspect{} \le2B\mu n^3$. 
+    Then, $\E\aspect{} \le2B\mu n^3$.
 \end{lemma}
+%\begin{proof}
+    %Combining Lemmas \ref{lemma:Ediam} and \ref{Ecodiam} above gives
+    %\begin{equation}
+        %\E\aspect{} \le 2B\mu n^3.
+    %\end{equation}
+    %Taking the log of both sides and applying Jenson's inequality ($\log\E x \le \E\log x$) on the left gives the stated results.
+%\end{proof}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Review of methods for faster nearest neighbors}
+\label{sec:review}
 
 %Given a data set $X$ and a query point $y$,
 %the naive way to find the nearest neighbor of $y$ in $X$ is to calculate the distance between $y$ and each data point in $X$,
@@ -765,9 +793,9 @@ An immediate consequence of Lemmas \ref{lemma:Ediam} and \ref{lemma:Ecodiam} is 
 This section explores three strategies for faster nearest neighbor queries:
 sample compression, embedding, and spacial data structures.
 Sample compression works well when there are many data points
-(called \emph{tall} data sets).
+(called \defn{tall} data sets).
 Embedding works well when the data is high dimensional
-(called \emph{wide} data sets).
+(called \defn{wide} data sets).
 Both techniques are simple and easy to implement, 
 but are only suitable for approximate nearest neighbor queries.
 Spacial data structures work well for both tall and wide data,
@@ -809,7 +837,7 @@ Sample compression can be easily combined with other techniques to further speed
 
 High dimensional data can be slow in two ways.
 First, calculating distances in high dimensions takes longer than calculating distances in low dimensions.
-But more importantly, the \emph{curse of dimensionality} causes high dimensional data to be ``less structured'' than low dimensional data.
+But more importantly, the \defn{curse of dimensionality} causes high dimensional data to be ``less structured'' than low dimensional data.
 In particular, the variation in the distance between data points decreases as the dimensionality increases.
 This causes spacial data structures to become less efficient.
 Embeddings provide a technique to reduce these two effects of high dimensional data.
@@ -845,7 +873,7 @@ Further research has either simplified the proof of the JL lemma \citep{dasgupta
 %The idea has been extended to metric spaces by \citet{tellez2010locality} and \citet{novak2010locality} and further extended to spaces not obeying the triangle inequality by \cite{mu2010non}.
 %While most LSH techniques for Euclidean spaces have good theoretical properties,
 %the more general techniques in metric and non-metric spaces do not.
-\cite{wang2014hashing} and \cite{wang2016learning} provide good surveys on LSH techniques with particular emphasis on embeddings that depend on the data (in contrast to the the JL embedding).
+\cite{wang2014hashing} and \cite{wang2016learning} provide good surveys on LSH techniques with particular emphasis on embeddings that depend on the data (in contrast to the the JL embedding which does not).
 
 %Embedding in general metric spaces is typically much harder than the Euclidean case.
 %When the host space $X$ is a non-Euclidean metric space,
@@ -895,7 +923,7 @@ Papers from each of these families tend not to cite papers from the other famili
 \cite{clarkson2006nearest} reviews metric space properties and data structures.
 \cite{czumaj2010sublinear} is a survey of sublinear time algorithms in metric spaces.
 
-The simplest and oldest of these structures is the \emph{ball tree} \citep{omohundro1989}.
+The simplest and oldest of these structures is the \defn{ball tree} \citep{omohundro1989}.
 The ball tree is a type of binary search tree that divides data points into subtrees using a number of possible heuristic rules.
 Although attractive for its simplicity, 
 ball trees provide only the trivial runtime guarantee that queries will take time $O(n)$.
@@ -910,21 +938,21 @@ For example, they are the only method for fast nearest neighbor queries in metri
 Unfortunately there are no detailed experimental results justifying the use of these heuristic data structures over methods with more theoretical justification.
 
 \cite{clarkson1997nearest} introduced the first data structure to provide theoretical guarantees.
-Clarkson's data structure, called the \emph{M(S,Q)} solved the all-nearest neighbor problem in expected time $O(\poly{\cdoub}n(\log n)^2(\log \aspect{})^2)$ using space $O(n\log\aspect{})$.
+Clarkson's data structure, called the \defn{M(S,Q)} solved the all-nearest neighbor problem in expected time $O(\poly{\cdoub}n(\log n)^2(\log \aspect{})^2)$ using space $O(n\log\aspect{})$.
 The M(S,Q) structure works only in probability
 and requires that query data points have a similar distribution to the data used in construction.
 Clarkson also introduced a novel notion of dimensionality called the $\gamma$-dominator bound.
 This bound is closely related to the doubling constant (see Section \ref{sec:doubling}),
 but somewhat harder to use in practice.
 No subsequent work uses this bound on dimension.
-The next advance came when \citet{karger2002finding} introduced the \emph{metric skip list} and the expansion dimension. 
+The next advance came when \citet{karger2002finding} introduced the \defn{metric skip list} and the expansion dimension. 
 This data structure requires $O(n\log n)$ space, 
 can find nearest neighbors in time $O(\poly\cexp\log n)$,
 and insert new data in time $O(\poly\cexp\log n \log \log n)$.
 The expansion dimension is not as good a notion of dimensionality as the doubling dimension
 (see Sections \ref{sec:cdoub} and \ref{sec:cexp}).
 
-The \emph{navigating net} was the first data structure to use the doubling dimension.
+The \defn{navigating net} was the first data structure to use the doubling dimension.
 It requires quadratic space, 
 polynomial dependency on the doubling constant, 
 and logarithmic dependence on the aspect ratio \citep{krauthgamer2004navigating}.
@@ -934,7 +962,7 @@ The navigating net inspired a flurry of subsequent results.
 \cite{har2006fast} provides a data structure for approximate nearest neighbors.
 \cite{cole2006searching} provides a data structure for approximate nearest neighbor search with dynamic point sets that does not depend on the aspect ratio.
 
-\citet{beygelzimer2006cover} introduce the \emph{cover tree},
+\citet{beygelzimer2006cover} introduce the \defn{cover tree},
 which also uses only linear space but is fully deterministic.
 The downside of the cover tree is that they analyze their data structure in terms of the less robust expansion constants.
 \cite{ram2009linear} and \cite{curtin2015plug} improve the runtime bounds of cover trees.
@@ -994,30 +1022,49 @@ Stronger results are known for specific metric spaces.
 \section{The Original Cover Tree}
 \label{sec:original}
 
-A \emph{cover tree} is a data structure for efficiently representing a finite metric space.
-Each node in the tree corresponds to exactly one point in the space,
-and the tree obeys the following three invariants.
+The cover tree data structure was first described by \cite{beygelzimer2006cover}.
+The original presentation was in terms of an infinitely large tree,
+only a finite subset of which actually gets implemented.
+In this section we provide an alternative (but equivalent) definition that is more concrete.
+This presentation more closely matches what actually gets implemented in code and serves to highlight the differences between the original cover tree and the simplified cover tree presented in the next section.
+This section includes a novel algorithm for $\eann$ queries in cover trees that improves on the original query algorithm from \cite{beygelzimer2006cover}.
+
+A \defn{cover tree} is a tree data structure where each node in the tree contains a single point in the underlying metric space.
+When needed for disambiguation, $\datapoint p$ will refer to the data point stored at node $p$;
+however, when clear from context we will omit the $\mkfunction{dp}$ function.
+Thus the distance between the two points stored in nodes $p_1$ and $p_2$ in a cover tree can be specified by either $\dist{\datapoint {p_1}}{\datapoint {p_2}}$ or more succinctly as $\dist {p_1}{p_2}$.
+%Given a node $p$ in the tree, we denote the children of $p$ by $\children p$,
+%and $\children*{p}$.
+A valid cover tree must satisfy the following three invariants.
 \begin{enumerate}
-    \item \emph{Leveling invariant}.%
-    \footnote{
-        The original version of the simplified cover tree \citep{izbicki2015faster} had a slightly different leveling invariant.
-        The original version required that the level of a child be exactly one less than the level of the parent.
-        The version used in this thesis is strictly more general and facilitates the runtime analysis of the tree.
-    }
-    Every node $\p$ has an associated integer $\level\p$.
-    For all nodes $\q\in\children\p$, $\level\q < \level\p$.
-    Furthermore, $\level p$ cannot be decreased without violating the covering invariant.
+    %\item \defn{Leveling invariant}.%
+    %\footnote{
+        %The original version of the simplified cover tree \citep{izbicki2015faster} had a slightly different leveling invariant.
+        %The original version required that the level of a child be exactly one less than the level of the parent.
+        %The version used in this thesis is strictly more general and facilitates the runtime analysis of the tree.
+    %}
+    %Every node $\p$ has an associated integer $\level\p$.
+    %For all nodes $\q\in\children\p$, $\level\q < \level\p$.
+    %Furthermore, $\level p$ cannot be decreased without violating the covering invariant.
     %(Note that $\level{p}$ can be negative or arbitrarily large.
     %In particular, it is not the depth of $p$ in the tree.)
-    \item \emph{Covering invariant}.
+    \item \defn{Nesting invariant}.
+        Every node $p$ has an associated integer $\level p$.
+        For all nodes $q\in\children p$, $\level q = \level p - 1$.
+        If $\children p$ is non-empty,
+        then $\children p$ contains a node with the same data point as $p$.
+    \item \defn{Covering invariant}.
     Every node $\p$ has an associated real number $\covdist\p=2^{\level\p}$.
     For all nodes $\q\in\children\p$, $\dist \p \q \le \covdist\p$.%
     \footnote{
-        As in the original cover tree, practical performance is improved on most datasets by redefining $\covdist p = 1.3 ^ {\level p}$.
+        \cite{beygelzimer2006cover} observe that practical performance is improved on most datasets by redefining $\covdist p = 1.3 ^ {\level p}$.
         All of our experiments use this modified definition.
     }
-    \item \emph{Separating invariant}.
-    For all nodes $\q_1,\q_2\in\children\p$, $\dist {\q_1} {\q_2} \ge \covdist\p/2$.
+    \item \defn{Separating invariant}.
+    %For all nodes $\q_1,\q_2\in\children\p$, $\dist {\q_1} {\q_2} \ge \covdist\p/2$.
+        For all nodes $\q_1,\q_2\in\descendants\p$ satisfying $\level {q_1} = \level{q_2}=i$, 
+        $\dist {\q_1} {\q_2} \ge 2^i$.
+        %$\dist {\q_1} {\q_2} \ge \covdist\p/2$.
 \end{enumerate}
 It will be useful to define the function
 \begin{equation}
@@ -1035,7 +1082,7 @@ and its exact value can be cached within the data structure.
 Before we present algorithms for manipulating the cover tree, 
 we present two lemmas that bound the shape of the tree.
 These lemmas are a direct consequence of the cover tree's invariants and motivate the invariants' selection.
-This section can be safely skipped by the reader not interested in the details of the tree's runtime analysis.
+%This section can be safely skipped by the reader not interested in the details of the tree's runtime analysis.
 
 %%%%%%%%%%%%%%%%%%%%
 
@@ -1120,20 +1167,32 @@ This section can be safely skipped by the reader not interested in the details o
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Approximate nearest neighbor query for a single point}
 
-The $\findnn$ function (Algorithm \ref{alg:findnn}) finds an $\eann$ of a data point $x$ in a set of cover trees $P$.
+We present two algorithms for answering $\eann$ queries.
+The first is shown in Algorithm \ref{alg:findnnorig} as the $\findnnorig$ function.
+This algorithm was first presented by \cite{beygelzimer2006cover} in the original cover tree paper.
+Here, we provide an improved runtime analysis.
+Whereas \citet{beygelzimer2006cover} show that exact nearest neighbor queries can be found in time $O(\cexp^{12}\log n)$,
+we show that exact nearest neighbor queries can be found in time $O(\chole^{4}\log n)$.
+Lemma \ref{lemma:chole} showed that $\chole \le \cexp$,
+so this is a major improvement.
+The second algorithm is a novel modification to $\findnnorig$ that improves the runtime and is described in the next subsection. 
+
+The $\findnnorig$ function finds a $\eann$ of a data point $x$ in a set of cover trees $P$.
 The function would typically be called with only a single tree in the input set $P$;
 but in subsequent recursive calls, $P$ may contain many subtrees. 
 On each call,
-$\findnn$ iterates over $Q$ (the children of nodes in $P$),
+$\findnnorig$ iterates over $Q$ (the children of nodes in $P$),
 and constructs a set $Q_x \subseteq Q$ of subtrees that will be recursively searched.
 %If $Q_x$ is empty, then $\hat p$ is guaranteed to be an $\eann$.
 %The important property of $Q_x$ is that it always contains an $\eann$ of $x$
 %(see next paragraph).
 %If $Q_x$ contains only one element, it must be an $\eann$ and the algorithm returns it.
-%Otherwise recursively calling $\findnn(Q_x,x)$ will return an $\eann$.
+%Otherwise recursively calling $\findnnorig(Q_x,x)$ will return an $\eann$.
 We typically have that $|Q_x| <\!\!< |Q|$,
 so only a small portion of the tree is searched.
 We now prove the algorithm's correctness and runtime.
+The correctness proof is essentially the same as that of \cite{beygelzimer2006cover},
+but the runtime proof is novel.
 
 \begin{algorithm}[t]
 \caption{$\findnnorig$(set of cover trees $P$, query  point $x$, tolerance $\varepsilon$)}
@@ -1151,7 +1210,7 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
     \Else
         \State let $Q_x = \{ q : q\in Q, \dist{x}{q} \le \dist{x}{\hat q}+\maxdist{q}\}$
         \label{line:findnnorig:Q_x}
-        \State\Return $\findnn(Q_x,x,\varepsilon)$
+        \State\Return $\findnnorig(Q_x,x,\varepsilon)$
         \label{line:findnnorig:recurse}
     \EndIf
 \end{algorithmic}
@@ -1205,9 +1264,9 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
 \end{proof}
 
 \begin{theorem}
-    \label{theorem:findnn:runtime:approx}
+    \label{theorem:findnnorig:runtime:approx}
     %Let $\varepsilon\ge2$.
-    %Then $\findnn(\{p\},x)$ has run time $O(\cdoub^4\log\aspect{})$.
+    %Then $\findnnorig(\{p\},x)$ has run time $O(\cdoub^4\log\aspect{})$.
     %If the data is generated i.i.d.\ from a well behaved distribution,
     %then the run time is $O(\cdoub^4\log n)$.
     %If $\varepsilon > 0$,
@@ -1218,7 +1277,7 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
 
 \begin{proof}
     The total runtime is bounded by the product of the number of recursive calls and the time spent in each call.
-    The number of recursions is bounded by the height of the tree because $\findnn$ descends one level of the tree with each recursion.
+    The number of recursions is bounded by the height of the tree because $\findnnorig$ descends one level of the tree with each recursion.
     This height is bounded by $O(\log\aspect{})$ in Lemma \ref{lemma:height}.
     The cost of each call is $O(|Q|)$,
     since we perform one distance computation for each node in $Q$.
@@ -1248,12 +1307,13 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
 \end{proof}
 
 \begin{theorem}
+    \label{theorem:findnnorig:runtime:approx2}
     If $\varepsilon > 0$,
     then $\findnnorig(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\cdoub^5\log\aspect{} + (1/\varepsilon)^{\log \cdoub})$.
 \end{theorem}
 
 \begin{proof}
-    As in the proof of Theorem \ref{theorem:findnn:runtime:approx}, 
+    As in the proof of Theorem \ref{theorem:findnnorig:runtime:approx}, 
     the runtime is bounded by $O(|Q_x|\cdoub^2\log\aspect{})$,
     and we need to bound $|Q_x|$.
     With respect to the doubling dimension,
@@ -1324,7 +1384,16 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
 
 %%%%%%%%%%%%%%%%%%%%
 
-%\subsection{Improved approximate nearest neighbor query for a single point}
+\subsection{Improved approximate nearest neighbor query for a single point}
+
+Algorithm \ref{alg:findnn} presents the $\findnn$ function,
+which is a novel improvement to the $\findnnorig$ algorithm.
+The changes are minor and \hl{highlighted in yellow\!}.
+Recall that the set $Q_x$ contains all the points that will be descended on each recursive call.
+The improved function $\findnn$ uses a smaller set $Q_x$, 
+reducing the total runtime of the algorithm. 
+Proving the correctness of $\findnn$ requires an entirely different strategy.
+
 \begin{algorithm}[t]
 \caption{$\findnn$(set of cover trees $P$, query  point $x$, tolerance $\varepsilon$)}
 \label{alg:findnn}
@@ -1391,6 +1460,7 @@ faster than $\findnnorig$
     the distance between $\hat q$ and $x$ is non-increasing.
 \end{proof}
 
+\ignore{
 \begin{theorem}
     \label{theorem:findnn:runtime:approx}
     Let $\varepsilon\ge1$.
@@ -1431,6 +1501,7 @@ faster than $\findnnorig$
         .
     \end{equation}
 \end{proof}
+}
 
 %\begin{theorem}
     %$\findnn(\{p\},x,1)$ has runtime $O(\chole^4\log\aspect{})$.
@@ -1456,6 +1527,7 @@ faster than $\findnnorig$
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\ignore{
 \subsection{Approximate nearest neighbor query for many points}
 
 In many situations, we have two sets of data $X$ and $Y$,
@@ -1579,6 +1651,7 @@ precondition: forall $p\in P$ and $r \in R$, $\level p = \level r$
     Finally, simplifying gives $\dist{s}{\hat q} \le (1+\varepsilon)\dist{s}{y^*_s}$.
     Hence, $\hat q$ is a $\eann$.
 \end{proof}
+}
 
 %%%%%%%%%%%%%%%%%%%%
 
@@ -1665,16 +1738,25 @@ precondition: forall $p\in P$ and $r \in R$, $\level p = \level r$
 
 \subsection{Inserting a single point}
 
+Our insertion algorithm is essentially the same as that of \citet{beygelzimer2006cover},
+but we improve the runtime bounds.
+Whereas they show runtime bounds of $O(\cexp^6\log n)$,
+we show a bound of $O(\cdoub^3\log n)$.
+Notice that our bound for insertion is in terms of the doubling dimension,
+which is the strongest notion of intrinsic dimensionality available for metric spaces.
+In particular, Lemma \ref{lemma:chole} shows that $\cdoub \le \cexp$,
+and Example \ref{} shows that $\cdoub$ can be arbitrarily smaller than $\cexp$.
+
 The algorithm for inserting points is split into two functions.
 The most important is $\ctinsertloop$ (Algorithm \ref{alg:ctinsertloop}).
 Like $\findnn$, $\ctinsertloop$ recursively traverses a set of input trees to find a suitable location for insertion.
 On each iteration,
-a set $Q_x$ is created that contains all the subtrees that may need to be searched.
+a set $Q_x$ is created that contains all the subtrees that will be descended.
 The global separating invariant requires that we traverse several subtrees simultaneously to ensure that the distance between $x$ is not too close to other nodes on the same level in a different subtree.
-(A simple depth first search, for example, would not ensure this property.)
-Interestingly, the maximum size of $Q_x$ is smaller in $\ctinsertloop$ than in $\findnn$,
-so the runtime dependence on $\cdoub$ is somewhat better
-(to the 3rd power instead of the 4th).
+(A simple depth first search (as done in Algorithm \ref{alg:insert} for the simplified cover tree) would not ensure this property.)
+%Interestingly, the maximum size of $Q_x$ is smaller in $\ctinsertloop$ than in $\findnn$,
+%so the runtime dependence on $\cdoub$ is somewhat better
+%(to the 3rd power instead of the 4th).
 $\ctinsertloop$ requires that the inserted data point be ``close enough'' to one of the sub trees to be inserted as a child. 
 This prerequisite will not be satisfied by all data, 
 so $\ctinsert$ (Algorithm \ref{alg:ctinsert}) is the main interface for insertion.
@@ -1785,6 +1867,7 @@ We now prove the correctness and runtime of insertion.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\ignore{
 \subsection{Inserting many points (i.e. merging cover trees)}
 
 \begin{pseudocode}{$\ctmergeloop$(set of cover trees $P$, cover tree $r$)}
@@ -1823,95 +1906,77 @@ We now prove the correctness and runtime of insertion.
     \EndIf
     \State \Return $(P',R')$
 \end{pseudocode}
+}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{The Simplified Cover Tree}
+\label{sec:simplified}
 
-\subsection{$\eann$ query for a single point}
-\begin{algorithm}[t]
-    \caption{Find nearest neighbor}
-    \label{alg:query}
+The \defn{simplified cover tree} was introduced by \citet{izbicki2015faster}.
+It maintains three invariants that are simpler than the invariants of the original cover tree.
+\begin{enumerate}
+    \item \defn{Leveling invariant}.
+    Every node $\p$ has an associated integer $\level\p$.
+    For all nodes $\q\in\children\p$, $\level\q = \level\p - 1$.
+    \item \defn{Covering invariant}.
+    Every node $\p$ has an associated real number $\covdist\p=2^{\level\p}$.
+    For all nodes $\q\in\children\p$, $\dist \p \q \le \covdist\p$.%
+    \item \defn{Local separating invariant}.
+    For all nodes $\q_1,\q_2\in\children\p$, $\dist {\q_1} {\q_2} \ge \covdist\p/2$.
+        %For all nodes $\q_1,\q_2\in\descendants\p$ satisfying $\level {q_1} = \level{q_2}=i$, 
+        %$\dist {\q_1} {\q_2} \ge 2^i$.
+        %$\dist {\q_1} {\q_2} \ge \covdist\p/2$.
+\end{enumerate}
+The covering invariant is the same as in the original cover tree,
+but the leveling and local separating invariants are modified.
 
-{\bfseries function} \findnn(cover tree $p$, query  point $x$, nearest neighbor so far $y$)
-
-\begin{algorithmic}[1]
-    \If {$d(p,x) < d(y,x)$}
-        \State $y \leftarrow p$
-    \EndIf
-    \For {each child $q$ of $p$ sorted by distance to $x$}
-        \If {$d(y,x) > d(y,q) - \maxdist{q}$} %2^{\level q}$}
-            \State $y \leftarrow \findnn(q,x,y)$
-        \EndIf
-    \EndFor
-    \State\Return $y$
-\end{algorithmic}
-\end{algorithm}
-
-\subsection{Inserting a single point}
-\begin{algorithm}[t]
-\caption{Simplified cover tree insertion}
-\label{alg:insert}
-
-{\bfseries function} \ctinsert(cover tree $p$, data point $x$)
-
-\begin{algorithmic}[1]
-    \If {$\dist p x > \covdist p$}
-        \While {$\dist p x > 2\covdist p$}
-            \State Remove any leaf $q$ from $p$
-            \State $p' \leftarrow $ tree with root $q$ and $p$ as only child
-		  \State $p \leftarrow p'$
-        \EndWhile
-        \State\Return tree with $x$ as root and $p$ as only child
-    \EndIf
-    \State\Return \ctinsertHelper($p$,$x$)
-\end{algorithmic}
-
-{\bfseries function} \ctinsertHelper(cover tree $p$, data point $x$)
-
-\emph{prerequisites:} $\dist p x \le \covdist p$
-
-\begin{algorithmic}[1]
-    \For {$q \in \children{p}$}
-        \If {$\dist q x \le \covdist q$}
-            \State $q' \leftarrow \ctinsertHelper(q,x)$
-            \State $p' \leftarrow p$ with child $q$ replaced with $q'$
-            \State \Return $p'$
-        \EndIf
-    \EndFor
-    \State\Return $p$ with $x$ added as a child
-\end{algorithmic}
-\end{algorithm}
-
-Algorithm \ref{alg:insert} shows how to insert into the simplified cover tree.
-It is divided into two cases.
-In the first case, we cannot insert our data point $x$ into the tree without violating the covering invariant.
-So we raise the level of the tree $p$ by taking any leaf node and using that as the new root.
-Because $\maxdist{p} \le 2\covdist{p}$, we are guaranteed that $d(p,x) \le \covdist{x}$, and so we do not violate the covering constraint.
-In the second case, the \ctinsertHelper~function recursively descends the tree.
-On each function call, we search through $\children{p}$ to find a node we can insert into without violating the covering invariant.
-If we find such a node, we recurse; otherwise, we know we can add $x$ to $\children{p}$ without violating the separating invariant.
-In all cases, exactly one node is added per data point, so the resulting tree will have exactly $n$ nodes.
-%\textcolor{red}{
-Since every node can have at most $O(c^4)$ children
-and the depth of the tree is bounded by $O(c^2\log n)$,
-the runtime is $O(c^6 \log n)$.
-%}
-
-The simplified cover tree has the same runtime bounds as the original cover tree,
-but it has an improved constant factor, as it needs only $n$ nodes.
-Fewer nodes reduces both the overhead from traversing the data structure and the number of required distance comparisons.
-The original cover tree's \emph{nesting invariant} dictated these extra nodes.
-In our definitions, the nesting invariant states that
-for every node $p$, if $p$ has any children, then $p$ also has itself as a child (this child need not satisfy the leveling invariant).
-%Thus, for any original cover tree containing $n>1$ data points, the number of nodes in the tree must be strictly greater than $n$.
-The nesting invariant comes from the presentation of the original cover tree as an infinite data structure,
-but it does not play a key role in the cover tree's runtime analysis.
-Therefore, we can discard it and maintain the runtime guarantees.
-
-Figure \ref{fig:nodes} shows the reduction in nodes by using the simplified cover tree on benchmark datasets taken from the MLPack test suite \cite{mlpack2013}.
+The leveling invariant does not require that data points exist at multiple levels of the tree.
+This is in contrast to the nesting invariant that requires all non-leaf nodes to have a child containing the same data point.
+Therefore, the simplified cover tree has fewer nodes,
+which reduces both the overhead from traversing the data structure and the number of required distance comparisons.
+Figure \ref{fig:nodes} shows the reduction in nodes by using the simplified cover tree on benchmark datasets taken from the MLPack test suite \citep{mlpack2013}.
 Section \ref{sec:experiments} contains more details on these datasets,
 and Figure \ref{fig:numdist} in the same section shows how this reduced node count translates into improved query performance.
+
+The local separating invariant only requires that children of the same node be separated from each other.
+This is in contrast to the separating invariant of the original cover tree that requires all nodes at a particular level to be separated even if they do not share a parent.
+As the following subsections show,
+the local separating invariant decreases the complexity of cover tree construction,
+but increases the complexity of nearest neighbor queries.
+Our experiments in Section \ref{sec:experiments} demonstrate that this is a useful tradeoff.
+
+\subsection{Properties of the simplified cover tree}
+The simplified cover tree obeys the following two structural lemmas with the same proofs as the original cover tree.
+\begin{lemma}
+    \label{lemma:simplified:height}
+    Let $p$ be any non-leaf node in a simplified cover tree.
+    Denote by $\height{p}$ the number of edges between $p$ and its most distant leaf.
+    We have that $\height{p} \le \log_2\aspect{X}$.
+\end{lemma}
+\begin{lemma}
+    \label{lemma:simplified:children}
+    For every node $p$ in a simplified cover tree, we have that
+    $|\children\p| \le \cdoub^2$.
+\end{lemma}
+
+\subsection{Approximate nearest neighbor queries}
+Algorithms \ref{alg:findnnorig} and \ref{alg:findnn} from Section \ref{sec:original} correctly answer $\eann$ queries in both the simplified and original cover trees.
+Unfortunately, \citet{izbicki2015faster} incorrectly stated that the simplified cover tree obeys the same runtime bounds as the original cover tree for nearest neighbor queries.
+This is not true in the worst case.  
+The proofs of Theorems \ref{theorem:findnnorig:runtime:approx} and \ref{theorem:findnnorig:runtime:approx2} critically depend on the global nature of the separating invariant to bound the size of $Q_x$ in each recursive call of $\findnnorig$ and $\findnn$.
+It is possible that an amortized or average case analysis could achieve similar run times,
+however the difficulty of such an analysis does not seem worth the effort.
+The experiments in Section \ref{sec:experiments} demonstrate that this theoretical difficulty is not an issue in practice as the simplified cover tree performs nearest neighbor queries faster than the original on real world problems.
+
+%The original cover tree's \emph{nesting invariant} dictated these extra nodes.
+%In our definitions, the nesting invariant states that
+%for every node $p$, if $p$ has any children, then $p$ also has itself as a child (this child need not satisfy the leveling invariant).
+%Thus, for any original cover tree containing $n>1$ data points, the number of nodes in the tree must be strictly greater than $n$.
+%The nesting invariant comes from the presentation of the original cover tree as an infinite data structure,
+%but it does not play a key role in the cover tree's runtime analysis.
+%Therefore, we can discard it and maintain the runtime guarantees.
+
 
 % I think the vertical axis can be reworded to (the shorter)
 %  ratio of nodes in simplified cover tree to original cover tree
@@ -1930,8 +1995,96 @@ and Figure \ref{fig:numdist} in the same section shows how this reduced node cou
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Nearest ancestor cover trees}
+%\subsection{Approximate nearest neighbor queries}
+%\begin{algorithm}[t]
+    %\caption{ \findnn(cover tree $p$, query  point $x$, nearest neighbor so far $y$)}
+    %\label{alg:query}
+%
+    %\vspace{0.1in}
+%\begin{algorithmic}[1]
+    %\If {$d(p,x) < d(y,x)$}
+        %\State $y \leftarrow p$
+    %\EndIf
+    %\For {each child $q$ of $p$ sorted by distance to $x$}
+        %\If {$d(y,x) > d(y,q) - \maxdist{q}$} %2^{\level q}$}
+            %\State $y \leftarrow \findnn(q,x,y)$
+        %\EndIf
+    %\EndFor
+    %\State\Return $y$
+%\end{algorithmic}
+%\end{algorithm}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Inserting a single point}
+
+\begin{algorithm}[t]
+%\caption{Simplified cover tree insertion}
+    \caption{\ctinsert(cover tree $p$, data point $x$)}
+\label{alg:insert}
+
+\begin{algorithmic}[1]
+    \If {$\dist p x > \covdist p$}
+        \While {$\dist p x > 2\covdist p$}
+            \State Remove any leaf $q$ from $p$
+            \State $p' \leftarrow $ tree with root $q$ and $p$ as only child
+		  \State $p \leftarrow p'$
+        \EndWhile
+        \State\Return tree with $x$ as root and $p$ as only child
+    \EndIf
+    \State\Return \ctinsertHelper($p$,$x$)
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[t]
+    \caption{\ctinsertHelper(cover tree $p$, data point $x$)}
+    \label{alg:insertloop}
+    \vspace{0.1in}
+prerequisite: $\dist p x \le \covdist p$
+
+\begin{algorithmic}[1]
+    \For {$q \in \children{p}$}
+        \If {$\dist q x \le \covdist q$}
+            \State $q' \leftarrow \ctinsertHelper(q,x)$
+            \State $p' \leftarrow p$ with child $q$ replaced with $q'$
+            \State \Return $p'$
+        \EndIf
+    \EndFor
+    \State\Return $p$ with $x$ added as a child
+\end{algorithmic}
+\end{algorithm}
+
+Insertion into a simplified cover tree is faster and simpler than the original cover tree.
+Algorithms \ref{alg:insert} and \ref{alg:insertloop} show the procedure.
+It is divided into two cases.
+In the first case, we cannot insert our data point $x$ into the tree without violating the covering invariant.
+So we raise the level of the tree $p$ by taking any leaf node and using that as the new root.
+Because $\maxdist{p} \le 2\covdist{p}$, we are guaranteed that $d(p,x) \le \covdist{x}$, and so we do not violate the covering constraint.
+In the second case, the \ctinsertHelper~function recursively descends the tree.
+On each function call, we search through $\children{p}$ to find a node we can insert into without violating the covering invariant.
+If we find such a node, we recurse; otherwise, we know we can add $x$ to $\children{p}$ without violating the separating invariant.
+In all cases, exactly one node is added per data point, so the resulting tree will have exactly $n$ nodes.
+The following theorem shows that inserting into a simplified cover tree has a better dependence on $\cdoub$ than inserting into the original cover tree ($\cdoub^2$ vs $\cdoub^3$).
+
+\begin{theorem}
+    The runtime of $\ctinsertHelper(p,x)$ is $O(\cdoub^2\log \aspect{})$.
+    For i.i.d.\ data satisfying the regularity conditions of Lemma \ref{lemma:Easpect},
+    the expected runtime is $O(\cdoub^2\log n)$.
+\end{theorem}
+\begin{proof}
+    On each recursive call,
+    the algorithm visits each child node at most once,
+    then either descends a level or terminates.
+    The number of children is bounded by $O(\cdoub^2)$ by Lemma \ref{lemma:children},
+    and the height of the tree is bounded by $O(\log \aspect{})$ by Lemma \ref{lemma:height}.
+    In the i.i.d.\ case, Lemma \ref{lemma:Easpect} states that $\aspect{} = O(n^3)$.
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{The nearest ancestor invariant}
+
+A further advantage of the simplified cover tree is that it is easier to add new invariants that improve performance.
 In this section, we exploit a similarity between simplified cover trees and binary search trees (BSTs).
 Insertion into both trees follows the same procedure:
 Perform a depth first search to find the right location to insert the point.
@@ -1955,7 +2108,11 @@ $$
 d(p,q_1) \le d(p,q_2)
 $$
 %\end{defn}
-In other words, the nearest ancestor cover tree ensures that for every data point, each of its ancestors is the ``best possible'' ancestor for it at that level.
+In other words, the nearest ancestor cover tree ensures that for every data point, each of its ancestors is the ``best possible'' ancestor for it at that level.%
+\footnote{
+The nearest ancestor invariant is incompatible with the global separating invariant of the original cover tree.
+There are data sets that cannot simultaneously satisfy both.
+}
 Figure \ref{fig:nearestancestorexample} shows a motivating one dimensional example.
 
 \begin{figure}
@@ -2038,10 +2195,11 @@ If \rebalanceHelper~was called with $q$ a child of $p$, then the return value of
 any children that could not be directly reinserted must be in the \mkvar{moveset}.
 
 %\textcolor{red}{
-The \rebalanceHelper~function loops over all $O(c^4)$ children of a node, and the maximum depth of the recursion is $O(c^2 \log n)$.
-Therefore the overall runtime is $O(c^6 \log n)$.
+The \rebalanceHelper~function loops over all $O(\cdoub^2)$ children of a node, and the maximum depth of the recursion is $O(\log \aspect{})$.
+Therefore the overall runtime is $O(\cdoub^2 \log \aspect{})$.
 % cshelton1: check the line reference below
-It may be called up to $O(c^4)$ times within \rebalance, so the body of the for loop on line~\ref{rebalanceloop} executes $O(c^{10}\log n)$ times.
+It may be called up to $O(\cdoub^2)$ times within \rebalance, 
+so the body of the for loop on line~\ref{rebalanceloop} executes $O(\cdoub^4\log\aspect{})$ times.
 Unfortunately, we have no bound on the size of \emph{moveset}, except to note that it is usually small in practice.
 On the datasets in our experiments (see Table \ref{tab:datasets}), the value is usually zero or at worst in the single digits.
 %This is a rather unsatisfying theoretical analysis, but empirical performance is good.
@@ -2050,10 +2208,11 @@ Figure \ref{fig:numdist}(a) shows that nearest ancestor cover tree construction 
 and Figure \ref{fig:numdist}(b) shows that this slowdown is overshadowed by the resulting speedup in nearest neighbor queries.
 
 \begin{algorithm}[t!]
-    \caption{Nearest ancestor cover tree insertion}
+    %\caption{Nearest ancestor cover tree insertion}
+    \caption{\ctinsertHelper(cover tree $p$, data point $x$)}
     \label{alg:nearestancestor}
 
-{\bfseries function} \ctinsertHelper(cover tree $p$, data point $x$)
+    \vspace{0.1in}
 
 \begin{algorithmic}[1]
     \For {$q \in \children{p}$ \underline{sorted by distance to $x$}}
@@ -2065,8 +2224,9 @@ and Figure \ref{fig:numdist}(b) shows that this slowdown is overshadowed by the 
     \EndFor
     \State \Return \underline{\mkprocedure{rebalance}($p$, $x$)}
 \end{algorithmic}
-\hrulefill
+\end{algorithm}
 
+\begin{algorithm}[t]
 {\bfseries function} \mkprocedure{rebalance}(cover trees $p$, data point $x$)
 
 \emph{prerequisites:} $x$ can be added as a child of $p$ without violating the covering or separating invariants
@@ -2085,9 +2245,12 @@ and Figure \ref{fig:numdist}(b) shows that this slowdown is overshadowed by the 
     \EndFor
     \State\Return $p'$ with $x'$ added as a child
 \end{algorithmic}
+\end{algorithm}
 
-{\bfseries function} \rebalanceHelper(cover trees $p$ and $q$, point $x$)
+\begin{algorithm}[t]
+    \caption{\rebalanceHelper(cover trees $p$ and $q$, point $x$)}
 
+    \vspace{0.1in}
 \emph{prerequisites:} $p$ is an ancestor of $q$
 
 \begin{algorithmic}[1]
@@ -2141,7 +2304,7 @@ divide the points among the processors;
 then each processor traverses the tree independently.
 More difficult is constructing the tree in parallel.
 Our strategy is to split the data, create one cover tree on each processor, then merge these trees together.
-Previous work on parallelizing cover trees applied only to the GPU \cite{Kumar2010}.
+Previous work on parallelizing cover trees applied only to the GPU \citep{Kumar2010}.
 Our approach is suitable for any shared-memory multiprocessor machine.
 We give a detailed description for merging simplified cover trees and discuss at a high level how to extend this procedure to nearest ancestor cover trees.
 
@@ -2286,7 +2449,7 @@ Frigo (1999) provides a detailed tutorial.
 Our implementation of the cache oblivious cover tree is \emph{static}.
 That is, we first construct the cover tree, then we call a function \pack~that rearranges the tree in memory.
 This means we do not get the reduced cache misses while constructing the tree, but only while querying the tree.
-The \pack\ function is essentially free to run because it requires only a single traversal through the dataset.
+The \pack\ function is essentially free to run because it requires only a single traversal through the dataset and no distance computations.
 Figure \ref{fig:cache} shows that the van Emde Boas tree layout reduces cache misses by 5 to 20 percent.
 This results in a reduction of stalled CPU cycles by 2 to 15 percent.
 
@@ -2602,7 +2765,7 @@ But with an expensive distance on this larger dataset, parallel construction mak
 
 \begin{table}
 \centering
-\resizebox{\columnwidth}{!}{
+%\resizebox{\columnwidth}{!}{
 \begin{tabular}{ccccc}
 %\hline
 \multirow{3}{*}{\parbox{1cm}{\centering number of cores}}
@@ -2618,7 +2781,7 @@ But with an expensive distance on this larger dataset, parallel construction mak
 16 & 6.7 min & 10.5 & 12.0 min & 17.6\\
 %\hline
 \end{tabular}
-}
+%}
 \caption{
     Parallel cover tree construction using the earth movers distance.
     On this large dataset with an expensive metric, we see better parallel speedup than on the datasets with the cheaper L2 metric.
@@ -2627,5 +2790,7 @@ The nearest ancestor cover tree gets super-linear parallel speedup because we ar
 \label{tab:emd}
 \end{table}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\bibliography{bibfile}
 
 \end{document}

@@ -51,6 +51,7 @@
 \usepackage{subfigure,rotating}
 \usepackage{xspace}
 \usepackage{multirow}
+\usepackage{wrapfig}
 \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 
 \usepackage{hyperref}
@@ -86,8 +87,9 @@
 \newcommand{\etal}{\emph{et al.}\xspace}
 \newcommand{\hl}[1]{\colorbox{yellow!50}{#1}}
 
-\let\emph\relax % there's no \RedeclareTextFontCommand
-\DeclareTextFontCommand{\emph}{\bfseries}
+\newcommand{\defn}[1]{{\bfseries #1}}
+%\let\emph\relax % there's no \RedeclareTextFontCommand
+%\DeclareTextFontCommand{\emph}{\bfseries}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -226,8 +228,6 @@
 }
 \newcommand{\kl}{\text{KL}\infdivx}
 
-%\newcommand{\plots}[1]{}
-\newcommand{\plots}[1]{#1}
 \newcommand{\ignore}[1]{}
 \newcommand{\fixme}[1]{\textcolor{red}{\{\textbf{FIXME:} {#1}\}}}
 
@@ -277,7 +277,7 @@ To my parents for all the support.
 \begingroup
 \hypersetup{hidelinks}
 \tableofcontents
-\listoffigures
+%\listoffigures
 \listoftables
 \endgroup
 \end{frontmatter}
