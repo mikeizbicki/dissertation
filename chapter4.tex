@@ -86,19 +86,102 @@
 \begin{document}
 \chapter{The Cover Tree}
 
+\noindent
 The cover tree is a data structure for fast nearest neighbor queries in arbitrary metric spaces.
 Cover trees were first introduced by \cite{beygelzimer2006cover},
 and they have seen widespread use in the machine learning community since then.
-This chapter provides both theoretical and practical improvements.
-%and connects the cover tree to the divide and conquer framework described in Chapter 1. 
+%(See Section \ref{sec:review}.)
+This chapter improves the cover tree's run time both in theory and practice.
+Our first contribution is to improve the cover tree's runtime bounds.
+As an example, 
+the original cover tree was able to find nearest neighbors in time $O(\cexp^{12}\log n)$,
+and we improve this bound to $O(\chole^4\log n)$ for i.i.d.\ data.
+Here $\cexp$ and $\chole$ are measures of the ``intrinsic dimensionality'' of the data.
+We will show that on typical datasets $\cexp \approx \chole$,
+and we will argue that in pathological data sets $\chole$ more accurately represents our intuitive notion of dimensionality.
+We further provide practical improvements to the cover tree's implementation.
+Experiments show that with these improvements,
+the cover tree is the fastest technique available for nearest neighbor queries on many tasks.
+%The original cover tree's runtime bounds were given in terms of the expansion constant of the metric space.
+%We provide a more robust analysis in terms of the doubling constant, 
+%the aspect ratio, 
+%and a new notion of metric dimension called the hole constant.
 
-This chapter is organized into six sections.
-Section \ref{sec:metric} formally introduces metric spaces and their importance in machine learning.
-Section \ref{sec:measure} 
-Section \ref{sec:review} reviews the existing techniques for faster nearest neighbor queries.
+%and connects the cover tree to the divide and conquer framework described in Chapter 1. 
+%On the theoretical side, this chapter improves the analysis of the cover tree's run times.
+%The original analysis was done in terms of the 
+
+Most work on nearest neighbor queries focuses on Euclidean space,
+but a major strength of the cover tree is that it works in the more general setting of metric spaces.
+Section \ref{sec:metric} formally introduces metric spaces and
+their importance in machine learning.
+%Section \ref{sec:metric} formally introduces metric spaces and their importance in machine learning.
+Section \ref{sec:measure} then provides a mathematically detailed discussion of four measures of the ``size'' of a metric space.
+%the expansion dimension,
+%the doubling dimension,
+%the hole dimension,
+%and the aspect ratio.
+These quantities are important to bound the run time of operations on the cover tree.
+We review standard results that demonstrate that the expansion constant $\cexp$ is not robust to small changes in the dataset.
+We then review basic properties of the more robust doubling constant.
+Unfortunately, we show that the doubling constant is not suitable for measuring the difficulty of exact nearest neighbor queries because there exists a data set of size $n$ with doubling dimension 2 that requires $O(n)$ distance computations to find a nearest neighbor.
+We introduce the hole constant $\chole$ as a dimension that partially captures the robustness of the doubling dimension but is suitable for bounding the runtime of exact nearest neighbor queries.
+We also provide new results on the aspect ratio of a data (ratio of largest to smallest distance)
+that will be needed to bound the runtime of the cover tree.
+%We also review properties of the aspect ratio and provide novel bounds on its size.
+%The runtime of nearest neighbor queries is well known to depend on the dimension of the space,
+%but the notion of dimension in a metric space is not as simple as in Euclidean space.
+%Previous analysis of the cover tree was done in terms of the expansion dimension,
+%which is known to be non-robust to small changes in the data set.
+Section \ref{sec:review} then reviews the history of techniques for faster nearest neighbor queries.
+The main theme we emphasize is that the expansion constant is widely used to bound the runtime of exact nearest neighbor queries,
+and the doubling constant is widely used to bound the runtime of approximate nearest neighbor queries.
+
 Section \ref{sec:original} formally describes the original cover tree data structure.
-Section \ref{sec:simplified} presents the simplified cover tree heuristic.
-Section \ref{sec:experiments} concludes the chapter with experiments demonstrating the improvements success in practice.
+We use the mathematical techniques developed in previous sections to provide novel runtime bounds for querying and inserting data points.
+We also provide a novel algorithm for approximate nearest neighbor queries that improves on the algorithm of \cite{beygelzimer2006cover}.
+Section \ref{sec:simplified} then presents the simplified cover tree.
+The simplified cover tree is more awkward to analyze theoretically but has a number of practical advantages.
+In particular:
+(i) the invariants are simpler;
+(ii) there are fewer nodes in the tree resulting in smaller constant factors;
+(iii) we introduce a new invariant that helps maintain tree balance;
+(iv) we show how to make the tree cache efficient;
+and (v) we show how to merge two trees together, resulting in a parallel tree construction algorithm.
+Finally, Section \ref{sec:experiments} concludes with a series of five experiments.
+We use benchmark datasets with the Euclidean distance to show that our simplified cover tree implementation is faster than both existing cover tree implementations and other techniques specialized for Euclidean distance nearest neighbor queries.
+We also compare the simplified and original cover trees on non-Euclidean protein interaction and computer vision problems.
+
+%A key difficulty when generalizing from Euclidean space to metric space is that the notion of dimension is no longer straightforward.
+%The runtime of nearest neighbor queries in Euclidean space is well known to depend on the dimensionality of the data.
+%Section \ref{sec:measure} reviews several competing measures of dimension.
+%Section \ref{sec:review} reviews the existing techniques for faster nearest neighbor queries.
+%Section \ref{sec:original} formally describes the original cover tree data structure.
+%Section \ref{sec:simplified} presents the simplified cover tree heuristic.
+%Section \ref{sec:experiments} concludes the chapter with experiments demonstrating the improvements success in practice.
+
+%\noindent
+%Data structures for fast nearest neighbor queries are a fundamental algorithmic tool.
+%In machine learning, 
+%these spacial data structures are most commonly used to speed up $k$-nearest neighbor classification.
+%The $k$d-tree \cite{friedman1977} is probably the most famous of these structures,
+%but it is limited to only Euclidean space.
+%
+%
+%These data structures are most often used to speed up the $k$-nearest neighbor classification algorithm.
+%But many other learning tasks also require neighbor searches,
+%and cover trees can speed up these tasks as well:
+%localized support vector machines \cite{Segata2010},
+%dimensionality reduction \cite{Lisitsyn2013},
+%and reinforcement learning \cite{Tziortziotis2014}.
+%Making cover trees faster---the main contribution of this paper---also makes these other tasks faster.
+%
+%Nearest neighbor queries are a fundamental algorithmic tool,
+%and speeding up nearest neighbor queries makes many algorithms faster.
+%It is simple and effective in practice,
+%but it can only be used on Euclidean spaces.
+%
+%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

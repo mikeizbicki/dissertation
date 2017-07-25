@@ -74,6 +74,337 @@
 # https://ncatlab.org/nlab/show/statistics
 # https://www.quora.com/What-is-the-relationship-between-category-theory-and-statistics
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% ridge regression
+
+@inproceedings{zhang2013divide,
+  title={Divide and conquer kernel ridge regression},
+  author={Zhang, Yuchen and Duchi, John and Wainwright, Martin},
+  booktitle={Conference on Learning Theory},
+  pages={592--617},
+  year={2013}
+}
+
+@article{meng2014lsrn,
+  title={LSRN: A parallel iterative solver for strongly over-or underdetermined systems},
+  author={Meng, Xiangrui and Saunders, Michael A and Mahoney, Michael W},
+  journal={SIAM Journal on Scientific Computing},
+  volume={36},
+  number={2},
+  pages={C95--C118},
+  year={2014},
+  publisher={SIAM}
+}
+
+@InProceedings{szabo2015twostage,
+  title = 	 {{Two-stage sampled learning theory on distributions}},
+  author = 	 {Zoltan Szabo and Arthur Gretton and Barnabas Poczos and Bharath Sriperumbudur},
+  booktitle = 	 {Proceedings of the Eighteenth International Conference on Artificial Intelligence and Statistics},
+  pages = 	 {948--957},
+  year = 	 {2015},
+  editor = 	 {Guy Lebanon and S. V. N. Vishwanathan},
+  volume = 	 {38},
+  series = 	 {Proceedings of Machine Learning Research},
+  address = 	 {San Diego, California, USA},
+  month = 	 {09--12 May},
+  publisher = 	 {PMLR},
+  pdf = 	 {http://proceedings.mlr.press/v38/szabo15.pdf},
+  url = 	 {http://proceedings.mlr.press/v38/szabo15.html},
+  abstract = 	 {We focus on the distribution regression problem: regressing to a real-valued response from a probability distribution. Although there exist a large number of similarity measures between distributions, very little is known about their generalization performance in specific learning tasks. Learning problems formulated on distributions have an inherent two-stage sampled difficulty: in practice only samples from sampled distributions are observable, and one has to build an estimate on similarities computed between sets of points. To the best of our knowledge, the only existing method with consistency guarantees for distribution regression requires kernel density estimation as an intermediate step (which suffers from slow convergence issues in high dimensions), and the domain of the distributions to be compact Euclidean. In this paper, we provide theoretical guarantees for a remarkably simple algorithmic alternative to solve the distribution regression problem: embed the distributions to a reproducing kernel Hilbert space, and learn a ridge regressor from the embeddings to the outputs. Our main contribution is to prove the consistency of this technique in the two-stage sampled setting under mild conditions (on separable, topological domains endowed with kernels). As a special case, we answer a 15-year-old open question: we establish the consistency of the classical set kernel [Haussler, 1999; Gaertner et. al, 2002] in regression, and cover more recent kernels on distributions, including those due to [Christmann and Steinwart, 2010].}
+}
+
+@article{zhang2015divide,
+  title={Divide and conquer kernel ridge regression: a distributed algorithm with minimax optimal rates.},
+  author={Zhang, Yuchen and Duchi, John C and Wainwright, Martin J},
+  journal={Journal of Machine Learning Research},
+  volume={16},
+  pages={3299--3340},
+  year={2015}
+}
+
+@article{szabo2016learning,
+  title={Learning theory for distribution regression},
+  author={Szab{\'o}, Zolt{\'a}n and Sriperumbudur, Bharath and P{\'o}czos, Barnab{\'a}s and Gretton, Arthur},
+  journal={Journal of Machine Learning Research},
+  volume={17},
+  number={152},
+  pages={1--40},
+  year={2016}
+}
+
+@incollection{wang2016deco,
+title = {DECOrrelated feature space partitioning for distributed sparse regression},
+author = {Wang, Xiangyu and Dunson, David B and Leng, Chenlei},
+booktitle = {Advances in Neural Information Processing Systems 29},
+editor = {D. D. Lee and M. Sugiyama and U. V. Luxburg and I. Guyon and R. Garnett},
+pages = {802--810},
+year = {2016},
+publisher = {Curran Associates, Inc.},
+url = {http://papers.nips.cc/paper/6349-decorrelated-feature-space-partitioning-for-distributed-sparse-regression.pdf}
+}
+
+@article{gascón2017privacy,
+  title={Privacy-preserving distributed linear regression on high-dimensional data},
+  author={Gascón, Adrià and Schoppmann, Phillipp and Balle, Borja and Raykova, Mariana and Doerner, Jack and Zahur, Samee and Evans, David},
+  journal={Proceedings on Privacy Enhancing Technologies},
+  volume={4},
+  pages={248--267},
+  year={2017}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PCA and kmeans
+
+@article{pearson1901liii,
+  title={LIII. On lines and planes of closest fit to systems of points in space},
+  author={Pearson, Karl},
+  journal={The London, Edinburgh, and Dublin Philosophical Magazine and Journal of Science},
+  volume={2},
+  number={11},
+  pages={559--572},
+  year={1901},
+  publisher={Taylor \& Francis}
+}
+
+@article{hotelling1933analysis,
+  title={Analysis of a complex of statistical variables into principle components},
+  journal={Journal of Educational Psychology},
+  year={1933},
+  author={Hotelling, H}
+}
+
+@article{wold1978cross,
+  title={Cross-validatory estimation of the number of components in factor and principal components models},
+  author={Wold, Svante},
+  journal={Technometrics},
+  volume={20},
+  number={4},
+  pages={397--405},
+  year={1978},
+  publisher={Taylor \& Francis}
+}
+
+@article{eastment1982cross,
+  title={Cross-validatory choice of the number of components from a principal component analysis},
+  author={Eastment, HT and Krzanowski, WJ},
+  journal={Technometrics},
+  volume={24},
+  number={1},
+  pages={73--77},
+  year={1982},
+  publisher={Taylor \& Francis}
+}
+
+@article{krzanowski1987cross,
+  title={Cross-validation in principal component analysis},
+  author={Krzanowski, WJ},
+  journal={Biometrics},
+  pages={575--584},
+  year={1987},
+  publisher={JSTOR}
+}
+
+@article{mertens1995efficient,
+  title={The efficient cross-validation of principal components applied to principal component regression},
+  author={Mertens, Bart and Fearn, Tom and Thompson, Michael},
+  journal={Statistics and Computing},
+  volume={5},
+  number={3},
+  pages={227--235},
+  year={1995},
+  publisher={Springer}
+}
+
+@article{diana2002cross,
+  title={Cross-validation methods in principal component analysis: a comparison},
+  author={Diana, Giancarlo and Tommasi, Chiara},
+  journal={Statistical Methods \& Applications},
+  volume={11},
+  number={1},
+  pages={71--82},
+  year={2002},
+  publisher={Springer}
+}
+
+@inproceedings{qu2002principal,
+  title={Principal component analysis for dimension reduction in massive distributed data sets},
+  author={Qu, Yongming and Ostrouchov, George and Samatova, Nagiza and Geist, Al},
+  journal={ICDM},
+  year={2002}
+}
+
+@inproceedings{collins2002generalization,
+  title={A generalization of principal components analysis to the exponential family},
+  author={Collins, Michael and Dasgupta, Sanjoy and Schapire, Robert E},
+  booktitle={Advances in neural information processing systems},
+  pages={617--624},
+  year={2002}
+}
+
+@inproceedings{ding2004k,
+  title={K-means clustering via principal component analysis},
+  author={Ding, Chris and He, Xiaofeng},
+  booktitle={Proceedings of the twenty-first international conference on Machine learning},
+  pages={29},
+  year={2004},
+  organization={ACM}
+}
+
+@article{engelen2004fast,
+  title={Fast cross-validation in robust PCA},
+  author={Engelen, Sanne and Hubert, Mia},
+  year={2004},
+  journal={Proceedings of Computational Statistics}
+}
+
+@inproceedings{bai2005principal,
+  title={Principal component analysis for distributed data sets with updating},
+  author={Bai, Zheng-Jian and Chan, Raymond H and Luk, Franklin T},
+  organization={Springer},
+  year={2005}
+}
+
+@article{camacho2012cross,
+  title={Cross-validation in PCA models with the element-wise k-fold (ekf) algorithm: theoretical aspects},
+  author={Camacho, Jos{\'e} and Ferrer, Alberto},
+  journal={Journal of Chemometrics},
+  volume={26},
+  number={7},
+  pages={361--373},
+  year={2012},
+  publisher={Wiley Online Library}
+}
+
+@article{josse2012selecting,
+  title={Selecting the number of components in principal component analysis using cross-validation approximations},
+  author={Josse, Julie and Husson, Fran{\c{c}}ois},
+  journal={Computational Statistics \& Data Analysis},
+  volume={56},
+  number={6},
+  pages={1869--1879},
+  year={2012},
+  publisher={Elsevier}
+}
+
+@inproceedings{liang2013distributed,
+  title={Distributed PCA and k-means clustering},
+  author={Liang, Yingyu and Balcan, Maria-Florina and Kanchanapally, Vandana},
+  journal={The Big Learning Workshop at NIPS},
+  year={2013}
+}
+
+@InProceedings{kannan2014princople,
+  title = 	 {Principal Component Analysis and Higher Correlations for Distributed Data},
+  author = 	 {Ravi Kannan and Santosh Vempala and David Woodruff},
+  booktitle = 	 {Proceedings of The 27th Conference on Learning Theory},
+  pages = 	 {1040--1057},
+  year = 	 {2014},
+  editor = 	 {Maria Florina Balcan and Vitaly Feldman and Csaba Szepesvári},
+  volume = 	 {35},
+  series = 	 {Proceedings of Machine Learning Research},
+  address = 	 {Barcelona, Spain},
+  month = 	 {13--15 Jun},
+  publisher = 	 {PMLR},
+  pdf = 	 {http://proceedings.mlr.press/v35/kannan14.pdf},
+  url = 	 {http://proceedings.mlr.press/v35/kannan14.html},
+  abstract = 	 {We consider algorithmic problems in the setting in which the input data has been partitioned arbitrarily on many servers. The goal is to compute a function of all the data, and the bottleneck is the communication used by the algorithm. We present algorithms for two illustrative problems on massive data sets: (1) computing a low-rank approximation of a matrix A=A^1 + A^2 + \ldots + A^s, with matrix A^t stored on server t and (2) computing a function of a vector a_1 + a_2 + \ldots + a_s, where server t has the vector a_t; this includes the well-studied special case of computing frequency moments and separable functions, as well as higher-order correlations such as the number of subgraphs of a specified type occurring in a graph. For both problems we give algorithms with nearly optimal communication, and in particular the only dependence on n, the size of the data, is in the number of bits needed to represent indices and words (O(\log n)). }
+}
+
+@article{garber2015fast,
+  title={Fast and simple PCA via convex optimization},
+  author={Garber, Dan and Hazan, Elad},
+  journal={arXiv preprint arXiv:1509.05647},
+  year={2015}
+}
+
+@article{schizas2015distributed,
+  title={A distributed framework for dimensionality reduction and denoising},
+  author={Schizas, Ioannis D and Aduroja, Abiodun},
+  journal={IEEE transactions on signal processing},
+  volume={63},
+  number={23},
+  pages={6379--6394},
+  year={2015},
+  publisher={IEEE}
+}
+
+@inproceedings{liu2016decentralized,
+  title={Decentralized Robust Subspace Clustering.},
+  author={Liu, Bo and Yuan, Xiao-Tong and Yu, Yang and Liu, Qingshan and Metaxas, Dimitris N},
+  journal={AAAI},
+  year={2016}
+}
+
+################################################################################
+# submodular
+
+@inproceedings{barbosa2015power,
+  title={The power of randomization: Distributed submodular maximization on massive datasets},
+  author={Barbosa, Rafael and Ene, Alina and Nguyen, Huy and Ward, Justin},
+  booktitle={International Conference on Machine Learning},
+  pages={1236--1244},
+  year={2015}
+}
+
+@inproceedings{mirzasoleiman2015distributed,
+  title={Distributed submodular cover: Succinctly summarizing massive data},
+  author={Mirzasoleiman, Baharan and Karbasi, Amin and Badanidiyuru, Ashwinkumar and Krause, Andreas},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={2881--2889},
+  year={2015}
+}
+
+@inproceedings{malkomes2015fast,
+  title={Fast distributed k-center clustering with outliers on massive data},
+  author={Malkomes, Gustavo and Kusner, Matt J and Chen, Wenlin and Weinberger, Kilian Q and Moseley, Benjamin},
+  booktitle={Advances in Neural Information Processing Systems},
+  pages={1063--1071},
+  year={2015}
+}
+
+@inproceedings{qi2016robust,
+  title={Robust submodular data partitioning for distributed speech recognition},
+  author={Qi, Jun and Tejedor, Javier},
+  booktitle={Acoustics, Speech and Signal Processing (ICASSP), 2016 IEEE International Conference on},
+  pages={2254--2258},
+  year={2016},
+  organization={IEEE}
+}
+
+@inproceedings{bhaskara2016greedy,
+  title={Greedy column subset selection: New bounds and distributed algorithms},
+  author={Bhaskara, Aditya and Rostamizadeh, Afshin and Altschuler, Jason and Zadimoghaddam, Morteza and Fu, Thomas and Mirrokni, Vahab},
+  year={2016},
+  organization={ICML}
+}
+
+@inproceedings{lucic2016horizontally,
+  title={Horizontally Scalable Submodular Maximization.},
+  author={Lucic, Mario and Bachem, Olivier and Zadimoghaddam, Morteza and Krause, Andreas},
+  booktitle={ICML},
+  pages={2981--2989},
+  year={2016}
+}
+
+@article{mirzasoleiman2016distributed,
+  title={Distributed submodular maximization},
+  author={Mirzasoleiman, Baharan and Karbasi, Amin and Sarkar, Rik and Krause, Andreas},
+  journal={Journal of Machine Learning Research},
+  volume={17},
+  number={238},
+  pages={1--44},
+  year={2016}
+}
+
+@inproceedings{barbosa2016new,
+  title={A new framework for distributed submodular maximization},
+  author={Barbosa, Rafael da Ponte and Ene, Alina and Nguyen, Huy L and Ward, Justin},
+  booktitle={Foundations of Computer Science (FOCS), 2016 IEEE 57th Annual Symposium on},
+  pages={645--654},
+  year={2016},
+  organization={Ieee}
+}
+
 ################################################################################
 # parallel MCMC
 
