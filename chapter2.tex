@@ -1,81 +1,243 @@
 \documentclass[thesis.tex]{subfiles}
 
+\newcommand{\TO}{{\bfseries to}~}
 \newcommand{\set}[1]{\mathcal {#1}}
 \newcommand{\sized}[1]{\tilde \set {#1}}
 \newcommand{\mappend}[1]{\oplus_{\set {#1}}}
 \newcommand{\mempty}[1]{\epsilon_{\set {#1}}}
 \newcommand{\monoid}[1]{(\set {#1}, \mappend {#1}, \mempty {#1})}
+\newcommand{\semigroup}[1]{(\set {#1}, \mappend {#1})}
+\newcommand{\model}{\hat{\text{model}}}
+
+\newcommand{\riskstar}{{\textrm{err}^*}}
+\newcommand{\risktilde}{\widetilde{\textrm{err}}}
+\newcommand{\riskhat}{\widehat{\textrm{err}}}
+
+\newcommand{\cv}{\mkprocedure{cv}}
+\newcommand{\fastcv}{\mkprocedure{fast\_cv}}
+\newcommand{\distcv}{\mkprocedure{dist\_cv}}
+\newcommand{\greedy}{\mkprocedure{greedy}}
+\newcommand{\GreeDi}{\mkprocedure{GreeDi}}
 
 \newcommand{\mse}[1]{}
 
 \newcommand{\eye}[1]{I_{#1}}
-\newcommand{\p}[1]{p({#1})}
+\newcommand{\q}[1]{q\left({#1}\right)}
+\newcommand{\qi}[1]{q^{(i)}\left({#1}\right)}
+\newcommand{\p}[1]{p\left({#1}\right)}
 \newcommand{\psup}[2]{\hat p^{#1}({#2})}
 \newcommand{\phat}[1]{\psup{}{#1}}
 \newcommand{\pkde}[1]{\psup{\text{kde}}{#1}}
 \newcommand{\pnp}[1]{\psup{\text{NWX,nonparametric}}{#1}}
 \newcommand{\psp}[1]{\psup{\text{NWX,semiparametric}}{#1}}
+\newcommand{\prior}[1]{p_0\left({#1}\right)}
 \newcommand{\gaussian}[3]{\mathcal N({#1};{#2},{#3})}
 
+\newcommand{\wprefix}{{\hat\w_\textit{prefix}}{}}
+\newcommand{\wsuffix}{{\hat\w_\textit{suffix}}{}}
 \newcommand{\wridge}{\hat\w^\textit{ridge}}
 \newcommand{\wridgep}{\hat\w^\textit{ridge,par}}
+\newcommand{\wvi}{\hat\w^\textit{vi}}
+\newcommand{\wsda}{\hat\w^\textit{sda}}
+
+\newcommand{\Pdist}{\mathcal P}
+\newcommand{\Pexp}{\Pdist^\textit{exp}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
 \chapter{Chapter 2}
 
-From a certain perspective, everything in this dissertation could be described as ``obvious.''
-One of my main contributions is to formalize the obvious.
-This gives the practitioner a way to easily and systematically derive new algorithms.
-Despite all of these techniques being obvious,
-as we shall see,
-they are not widely used in practice or research.
+\noindent
+%A machine learning model consists of a set of data points $\Z$,
+%a set of parameters $\W$,
+%and a function $A : \{\Z\} \to \W$ that attempts to find the ``best'' set of parameters for the input data set.
+In machine learning, we are given a set of data points $Z$
 
-\begin{definition}
-    A \emph{monoid} is a tuple $(\set A, \mappend A, \mempty A)$,
-    where $\set A$ is a set,
-    $\mappend A : \set A \times \set A \to \set A$ is a binary operation,
-    and $\mempty A \in \set A$ if it obeys the following two laws:
-    \begin{align}
-    \tag{associativity}
-    \forall a_1, a_2, a_3 \in \set A. & (a_1 \mappend A a_2) \mappend A a_3 &= a_1 \mappend A (a_2 \mappend A a_3)
-    \\
-    \tag{identity}
-    \end{align}
-\end{definition}
+%From a certain perspective, everything in this dissertation could be described as ``obvious.''
+%One of my main contributions is to formalize the obvious.
+%This gives the practitioner a way to easily and systematically derive new algorithms.
+%Despite all of these techniques being obvious,
+%as we shall see,
+%they are not widely used in practice or research.
 
-\begin{definition}
-    A \emph{homomorphism} between two monoids $\monoid A$ and $\monoid B$ is a function  $f: \set A \to \set B$ satisfying
+\ignore{
+\subsubsection{Algebra definitions and examples}
+
+%\begin{definition}
+    A \defn{semigroup} is a tuple $\semigroup A$
+    where $\set A$ is a set and
+    $\mappend A : \set A \times \set A \to \set A$ is an associative binary operation.
+    That is, for all $a_1, a_2, a_3 \in \set A$, 
+    \begin{equation}
+    (a_1 \mappend A a_2) \mappend A a_3 = a_1 \mappend A (a_2 \mappend A a_3)
+    .
+    \end{equation}
+    When clear from context, we will often refer to the set $\set A$ by itself as a semigroup and drop the subscript from $\mappend{}$.
+%\end{definition}
+%
+%\begin{definition}
+    A \defn{homomorphism} between two semigroups $\semigroup A$ and $\semigroup B$ is a function  $f: \set A \to \set B$ satisfying
     \begin{equation}
         f(a_1 \mappend A a_2) = f(a_1) \mappend B f(a_2)
+        .
     \end{equation}
-\end{definition}
+%\end{definition}
 
-\begin{definition}
-    A \emph{learning algorithm} is a function from $\{\set Z\} \to \set W$.
+\begin{example}
+\end{example}
+
+\begin{example}
+    Every vector space is a semigroup with vector addition as the binary operation.
+    Linear functions are homomorphisms. 
+\end{example}
+
+\subsubsection{Learning algorithms}
+
+%\begin{definition}
+    A \defn{learning algorithm} is a function from $\{\set Z\} \to \set W$.
     We call a learning algorithm \emph{homomorphic} if there exists an operation $\mappend W$ such that $\monoid W$ is a monoid and $A$ is a homomorphism.
-\end{definition}
+%\end{definition}
 
 %\begin{remark}
     %For any monoidal parameter space $\monoid W$, we can define the sized monoid %$\monoid {\sized W}$ as follows.
 %\end{remark}
 
-\begin{example}
-    Sized monoid
-\end{example}
+%\begin{example}
+    %Sized monoid
+%\end{example}
+%
+%\begin{example}
+    %product monoid
+%\end{example}
+%
+%\begin{example}
+    %trivial learner, bad runtime properties
+%\end{example}
+}
 
-\begin{example}
-    product monoid
-\end{example}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{example}
-    trivial learner, bad runtime properties
-\end{example}
+We typically measure the quality of an estimator by its \defn{risk},
+which is defined to be
+\begin{equation}
+    \riskstar = \E \Loss(\w,Z)
+\end{equation}
+where the expectation is taken with respect to the data $Z$.
+In most situations, the distribution of $Z$ is unknown and so the true risk cannot be computed.
+The \defn{empirical risk} is an approximation to the true risk given by
+\begin{equation}
+    \risktilde = \Loss(\what,Z)
+\end{equation}
+where $\what$ now depends on $Z$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Parallel and distributed learning}
+
+There are many frameworks for distributed machine learning.
+
+\begin{algorithm}
+    \caption{\mkprocedure{dist\_learn}(learning algorithm $f$, data sets $Z_i$)}
+    \vspace{0.1in}
+    prerequisite: each machine $i$ has dataset $Z_i$ stored locally
+    \begin{algorithmic}[1]
+        \State each machine:
+        \State ~~~~~computes $\what_i = f(Z_i)$
+        \State ~~~~~transmits $\what_i$ to the master
+        \State master machine:
+        \State ~~~~~$\what = merge\{\what_i\}_{i=1}^m$
+    \end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Differential privacy}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Cross validation}
+
+Cross validation is a method for estimating the quality of an estimator.
+
+\begin{algorithm}
+    \caption{\cv(learning algorithm $f$, data set $Z$, number of folds $k$)}
+    \vspace{0.1in}
+    \begin{algorithmic}[1]
+        \State partition $Z$ into $k$ disjoint sets $Z_1,...,Z_k$
+        \vspace{0.1in}
+        \For {$i \in \{1,...,k\}$}
+            \State $\what_{-i} = f(Z - Z_i)$ 
+            \State $\riskhat_i = \Loss(\model_i,Z_i)$
+        \EndFor
+        \vspace{0.1in}
+        \State \Return $\frac 1 k \sum_{i=1}^k \riskhat_i$
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{\fastcv(learning algorithm $f$, data set $Z$, number of folds $k$)}
+    \vspace{0.1in}
+    \begin{algorithmic}[1]
+        \State partition $Z$ into $k$ equally sized disjoint sets $Z_1,...,Z_k$
+        %\State
+        \vspace{0.1in}
+        %\State // calculate local models
+        \For {$i = 1$ \TO $k$}
+            \State $\what_{i} = f(Z_i)$ 
+        \EndFor
+        \vspace{0.1in}
+        %\State // calculate prefixes
+        \For {$i = 1$ \TO $k$}
+            \State $\wprefix_{,i} = \wprefix_{,i-1} \mappend{} \what_i$ 
+        \EndFor
+        \vspace{0.1in}
+        %\State // calculate suffixes
+        \For {$i = k$ \TO $1$}
+            \State $\wsuffix_{,i} = \wsuffix_{,i+1} \mappend{} \what_i$ 
+        \EndFor
+        \vspace{0.1in}
+        %\State // merge models and calculate estimated risk
+        \For {$i = 1$ \TO $k$}
+            \State $\what_{-i} = \wprefix_i \mappend{} \wsuffix_i$
+            \State $\riskhat_i = \Loss(\what_{-i},Z_i)$
+        \EndFor
+        \vspace{0.1in}
+        \State \Return $\frac 1 k \sum_{i=1}^k \riskhat_i$
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+    \caption{\distcv(learning algorithm $f$, data set $Z$, number of folds $k$)}
+    \vspace{0.1in}
+    prerequisite: each machine $i$ has dataset $Z_i$ stored locally
+    \begin{algorithmic}[1]
+        \State each machine $i$:
+        \State ~~~~~calculates $\what_i = f(Z_i)$
+        \State ~~~~~broadcasts $\what_i$ to each other machine
+        \State each machine $i$:
+        \State ~~~~~computes $\w_{-i} = merge\{\w_1,...,\w_{i-1},\w_{i+1},...,\w_k\}$
+        \State ~~~~~computes $\riskhat_i = \Loss(\what_{-i},Z_i)$
+        \State ~~~~~transmits $\riskhat_i$ to the master
+        \State the master machine:
+        \State ~~~~~computes $\riskhat = \frac 1 k \sum_{i=1}^k \riskhat_i$
+        \State ~~~~~\Return $\riskhat$
+    \end{algorithmic}
+\end{algorithm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Online learning}
+
+\begin{algorithm}
+    \caption{\mkprocedure{add1dp}(learning algorithm $f$, model $\what$, data point $z$)}
+    \vspace{0.1in}
+    \begin{algorithmic}[1]
+        \State \Return $\what \mappend{} f(z)$
+    \end{algorithmic}
+\end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Examples: sufficient statistics}
+\section{Examples: estimators with closed form solutions}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -151,77 +313,136 @@ Despite the simplicity, ridge regression remains an actively studied problem.
 \cite{zhang2013divide,zhang2015divide} dnc kernel rr.
 \cite{szabo2015twostage,szabo2016learning} uses kernel ridge regression to solve the distribution regression problem (which is a generalization of multiple instance learning).
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Principle component analysis}
+\subsection{Exponential family distributions}
 
-Principle component analysis (PCA) is a popular technique for dimensionality reduction.
-The main idea was introduced by \cite{pearson1901liii}, 
-and \cite{hotelling1933analysis} first introduced the term principle components.
+%There are three important subfamilies of the EF that we will consider:
+%linear exponential families (LEFs),
+%curved exponential families (CEFs),
+%and stratified/deep exponential families (SEFs/DEFs).
 
+The \defn{exponential family} (EF) of distributions is defined to be the set $\Pexp$ of all distributions whose density can be written in the form
 \begin{equation}
-    \w = \argmin_\w \ltwo{\x - \w\pinv\w\x}^2
+    \p{\z | \w} = h(\z)\exp\left(\trans{\w} T(\z) - \psi(\w)\right)
+\end{equation}
+where $\z\in\Z$ and $\w\in\W$.
+We make no assumption on the set $\Z$, but require $\W$ to be an open subset of a hilbert space $\set H$.
+We will ignore the technical details of infinite dimensional hilbert spaces and denote the inner product using $\trans{}$ in analogy with finite dimensional vectors.
+The function $h : \Z\to\R$ is called the base measure,
+$T : Z \to \W$ the sufficient statistic,
+and $\psi : \W \to \R$ the log partition function.
+Many authors require $\psi$ to be strongly convex,
+but we will require only that derivative be invertible.
+%Many popular distributions (e.g. Gaussian, Dirichlet, Poisson, exponential, and categorical) are in the exponential family.
+
+%Given a prior distribution on the parameter vector $\w$,
+%the \defn{maximum a posteriori estimate} (map)
+%There are many introductions to exponential families,
+%but the presentation in \citet{amari2016information} is especially apropos to our discussion.
+%Given a data set $Z$, we can estimate the parameters of the distribution as
+To perform parameter estimation using ERM,
+we set the loss to the negative log likelihood 
+\begin{equation}
+    \loss(\z;\w) 
+    = -\log\p{\z|\w}
+    = -\log h(\z) - \trans\w T(\z) + \psi(\w)
+    .
 \end{equation}
 
-Modern research into PCA can be divided into two categories.
-The first category of research proposes methods for determining the target dimension.
-Many practitioners use heuristic techniques of ``what looks good enough''.
-A number of more disciplined approaches make distributional assumptions.
-The most general technique is to use cross validation.
-Unfortunately, this is also the most expensive technique computationally.
-Considerable work has been done to improve both the theoretical guarantees of cross validation and improve its runtime
-\citep{wold1978cross,eastment1982cross,krzanowski1987cross,mertens1995efficient,diana2002cross,engelen2004fast,josse2012selecting,camacho2012cross}.
-
-Another vein of work improves the robustness of PCA.
-\cite{collins2002generalization} generalizes PCA to other exponential family distributions.
-\cite{ding2004k} shows a close relationship between PCA and $k$-means.
-
-A final vein of work improves the runtime of PCA.
-One of the simplest approaches is to subsamples the data set into a so-called \emph{core set},
-then run PCA on this smaller data set.
-If the core set is constructed appropriately,
-then the result will be a good approximation of the PCA on the entire data set.
-\cite{garber2015fast} provides the state-of-the-art core set generation method
-along with an excellent survey of prior work.
-A number of works deal with the distributed environment.
-\cite{bai2005principal} distributed PCA that doesn't work in this framework.
-\cite{schizas2015distributed} use ADMM for distributed PCA.
-\cite{liu2016decentralized} uses ADMM for distributed clustering.
-\cite{kannan2014princople} provide a method for PCA that requires only $O(1)$ rounds of communication.
-This method is not suitable for our framework, however, because we require exactly 1 round of communication.
-
-The data points are assumed to be in $\R^d$,
-and we are given a target dimension $k<\!\!<d$ to project the data onto.
-Let $X$ denote the $mn\times d$ input data matrix.
-We will assume without loss of generality that the rows of $X$ have zero mean.
-Then calculate the singular value decomposition 
 \begin{equation}
-    P = UD\trans V
+    \reg(\w) = \log\prior\w
 \end{equation}
+where $\prior\w$ is the prior distribution over $\w$.
+The ERM is then
+\newcommand{\deriv}[2]{\frac{\dd {#1}}{\dd {#2}}}
+\begin{align}
+    \label{eq:ef:erm}
+    %\werm = \argmin_{\w\in\W} \sum_{\z\in Z} \loss(\z;\w) + \lambda \reg(\w)
+    \werm 
+    &= \argmin_{\w\in\W} \sum_{\z\in Z}\left( \psi(\w) - \trans\w T(\z)\right)
+    %\\
+    %= \left(\deriv{}{\w}\psi\right)^{-1} \left(\frac{1}{mn} \sum_{\z\in Z} T(\z) \right)
+    = \psi'^{-1} \left(\frac{1}{mn} \sum_{\z\in Z} T(\z) \right)
+    .
+\end{align}
 
 
-\cite{liang2013distributed} the good stuff.
-\cite{qu2002principal} works in this framework, but not approximation guarantees.
+\begin{method}
+    When the parameter space $\W$ equals $\R^d$,
+    the distribution is in the \defn{linear exponential family} (LEF).
+    Local machines calculate 
+    \begin{equation}
+        \wmle_i
+        %= \left(\deriv{}{\w}\psi\right)^{-1} \left(\frac{1}{n} \sum_{\z\in Z_i} T(\z) \right)
+        = \psi'^{-1} \left(\frac{1}{n} \sum_{\z\in Z_i} T(\z) \right)
+    \end{equation}
+    and the merge procedure is
+    \begin{equation}
+        \label{eq:lef:merge}
+        %\left(\deriv{}{\w}\psi\right)^{-1} 
+        \psi'^{-1} 
+        \left(
+            %\frac{1}{m} \sum_{i=1}^m \deriv{}{\w}\psi \left(\wmle_i\right)
+            \frac{1}{m} \sum_{i=1}^m \psi' \left(\wmle_i\right)
+        \right)
+        .
+    \end{equation}
+    Notice that \eqref{eq:lef:merge} simplifies to \eqref{eq:ef:erm},
+    so the learning function for LEF's is an exact semigroup homomorphism.
+\end{method}
+
+When the parameter space $\W$ is a manifold in the underlying hilbert space $\set H$,
+we say the distribution is in the \defn{curved exponential family} (CEF). 
+The CEF was introduced by \citet{efron1975defining} and is a central topic in the field of information geometry.
+The book \citet{amari2016information} provides a modern treatment of CEFs from this geometric perspective.
+%When $\W$ is a $d$ dimensional manifold embedded in a $d' > d$ dimensional hilbert space.
+
+%\begin{method}
+    %When $d'$ is finite,
+%\end{method}
+%
+%When $d'$ is infinite, other methods of estimation are required.
+
+%Then the ERM estimate is given by
+%\begin{align}
+    %\wmle 
+    %&= \argmax_{\w\in\W} \prod_{\z\in Z} \p{\z | \w} \p{\w}
+    %\\
+    %&= \argmin_{\w\in\W} \sum_{\z\in Z} \loss(\z ; \w) + \reg(\w)
+%\end{align}
+
+\citet{geiger2001stratified} introduced the class of \defn{stratified exponential families} (SEFs),
+which is defined to be the set of all algebraic subsets of $\Pexp$.
+The definition of an algebraic subset comes from algebraic geometry.
+It is rather technical, so we do not review it here.
+\citet{geiger2001stratified} include a number of theorems characterizing the properties of SEFs.
+The most important is that all graphical models with hidden variables are SEFs (but not CEFs).
+%SEFs correspond to graphical models with hidden variables.
+%The original presentation of SEFs was in terms of algebraic geometry
+\cite{ranganath2015deep} independently reinvented essentially the same concept in the form of \defn{deep exponential families} (DEFs).
+A DEF is the distribution resulting from placing EF priors on the natural parameters of an EF distribution.
+\citet{ranganath2015deep} suggest using variational methods to solve for the parameters of DEFs.
+Section \ref{sec:merge:vi} discusses variational methods in detail.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Exponential family}
+\subsection{Ad-hoc approximations to the maximum likelihood}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Naive Bayes}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{High dimensional logistic regression}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Examples: non-quadratic empirical risk minimization}
 
+When either the loss or regularization functions for ERM are non-quadratic,
+no closed form solution exists.
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Averaging}
+\label{sec:merge:ave}
 
 The simplest and most popular non-interactive estimator is the averaging estimator:
 \begin{equation}
@@ -353,41 +574,211 @@ In Section 6, we consider a problem with dimension $d\approx7\times10^5$;
 the corresponding Hessian is too large to practically invert.
 %For these reasons, we do not compare against \citet{jordan2016communication} in our experiments.
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Principle component analysis}
+
+Principle component analysis (PCA) is a popular technique for dimensionality reduction.
+The main idea was introduced by \cite{pearson1901liii}, 
+and \cite{hotelling1933analysis} first introduced the term principle components.
+
+\begin{equation}
+    \w = \argmin_\w \ltwo{\x - \w\pinv\w\x}^2
+\end{equation}
+
+Modern research into PCA can be divided into two categories.
+The first category of research proposes methods for determining the target dimension.
+Many practitioners use heuristic techniques of ``what looks good enough''.
+A number of more disciplined approaches make distributional assumptions.
+The most general technique is to use cross validation.
+Unfortunately, this is also the most expensive technique computationally.
+Considerable work has been done to improve both the theoretical guarantees of cross validation and improve its runtime
+\citep{wold1978cross,eastment1982cross,krzanowski1987cross,mertens1995efficient,diana2002cross,engelen2004fast,josse2012selecting,camacho2012cross}.
+
+Another vein of work improves the robustness of PCA.
+\cite{collins2002generalization} generalizes PCA to other exponential family distributions.
+\cite{ding2004k} shows a close relationship between PCA and $k$-means.
+
+A final vein of work improves the runtime of PCA.
+One of the simplest approaches is to subsamples the data set into a so-called \emph{core set},
+then run PCA on this smaller data set.
+If the core set is constructed appropriately,
+then the result will be a good approximation of the PCA on the entire data set.
+\cite{garber2015fast} provides the state-of-the-art core set generation method
+along with an excellent survey of prior work.
+A number of works deal with the distributed environment.
+\cite{bai2005principal} distributed PCA that doesn't work in this framework.
+\cite{schizas2015distributed} use ADMM for distributed PCA.
+\cite{liu2016decentralized} uses ADMM for distributed clustering.
+\cite{kannan2014princople} provide a method for PCA that requires only $O(1)$ rounds of communication.
+This method is not suitable for our framework, however, because we require exactly 1 round of communication.
+
+The data points are assumed to be in $\R^d$,
+and we are given a target dimension $k<\!\!<d$ to project the data onto.
+Let $X$ denote the $mn\times d$ input data matrix.
+We will assume without loss of generality that the rows of $X$ have zero mean.
+Then calculate the singular value decomposition 
+\begin{equation}
+    P = UD\trans V
+\end{equation}
+
+
+\cite{liang2013distributed} the good stuff.
+\cite{qu2002principal} works in this framework, but not approximation guarantees.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Submodular optimization}
+\label{sec:merge:submodular}
 
-\cite{mirzasoleiman2015distributed} 
-Lots of good references.
+%A set function $f : \{\Z\} \to \R$ is \defn{submodular} if
+%\begin{equation}
+    %f(Z_1 \cup Z_2) + f(Z_1 \cap Z_2) \le f(Z_1) + f(Z_2)
+    %.
+%\end{equation}
+%\citet{lovasz1983submodular} shows that submodular functions are closely related to convex functions.
 
-\cite{mirzasoleiman2016distributed} 2 round GreeDi algorithm.
+%Techniques in submodular optimization are widely used in machine learning.
+Submodular functions are a class of set function that are easy to optimize.
+Many machine learning problems have recently been solved using submodular functions.
+\citet{mirzasoleiman2016distributed} provides a detailed survey of recent success.
+A significant body of work has developed in the last five years on distributed submodular optimization for large data sets.
+Seven of these papers fit our semigroup framework
+and so induce fast cross validation procedures.
+This is the first work addressing fast cross validation in submodular learning algorithms.
+In this section we first define submodularity,
+then introduce the distributed optimizers.
 
-\citep{barbosa2015power} gives a 2 round method similar to OWA.
+Let $f : \{\Z\} \to \R$,
+and define the discrete derivative of $f$ to be
+\begin{equation}
+    f'(e; Z) = f (Z\cup\{e\}) - f(Z)
+    .
+\end{equation}
+We call the function $f$ \defn{monotone} if for all $e$ and $Z$, $f'(e;Z) \ge 0$.
+We further call $f$ \defn{submodular} if for all $A \subseteq B \subseteq Z$ and $e\in Z-B$,
+\begin{equation}
+    f'(e;A)\ge f'(e;B)
+    .
+\end{equation}
+We consider the problem of monotone submodular maximization subject to cardinality constraints.
+That is, we want to solve
+\begin{equation}
+    \label{eq:submodular:opt}
+    \hat S =
+    \argmax_{S\subseteq Z} f(S)
+    ~~~~~\text{s.t.}~~~~~
+    |S|\le k
+    .
+\end{equation}
+%Many machine learning problems can be cast as a special case of submodular maximization.
+Solving \eqref{eq:submodular:opt} is NP-hard,
+so it is standard to use a greedy approximation algorithm introduced by \citet{nemhauser1978analysis}.
+The procedure is shown in Algorithm \ref{alg:submodular:greedy}.
 
-\cite{malkomes2015fast} gives 2 round method for $k$-centers based on submodular optimization.
+\begin{algorithm}
+    \caption{\greedy(data set $Z$, constraint size $k$)}
+    \label{alg:submodular:greedy}
+    \vspace{0.1in}
+    \begin{algorithmic}[1]
+        \State $S \leftarrow \{\}$
+        \For {$i = 1$ \TO $k$}
+            \State $\z_i \leftarrow \argmax_{\z\in Z-S} f'(\z;S)$
+            \State $S \leftarrow S \cup \{\z_i\}$
+        \EndFor
+        \State \Return $S$
+    \end{algorithmic}
+\end{algorithm}
 
-\cite{barbosa2016new}
+\cite{mirzasoleiman2013distributed} introduced a method to merge solutions together.
 
-\cite{lucic2016horizontally} plus good table summarizing results.
+\begin{algorithm}
+    \caption{GreeDi()}
+    \vspace{0.1in}
+    \begin{algorithmic}[1]
+        \State
+    \end{algorithmic}
+\end{algorithm}
 
-\cite{bhaskara2016greedy}
+\cite{mirzasoleiman2015distributed},\citep{barbosa2015power} 
+
+\cite{malkomes2015fast} uses the same framework to solve the $k$-centers clustering problem.
+They provide improved approximation guarantees that are stronger than the general submodular case.
+\cite{bhaskara2016greedy} uses the same framework on a specific class of submodular optimization problems called ``column subset selection.''
+They provide approximation guarantees for this problem that are better than the general case.
+
+\cite{barbosa2016new} considers a more general submodular optimization problem than \eqref{eq:submodular:opt}.
+In particular, they do not require the function be monotone, and they support matroid and $p$-system constraints in addition to cardinality constraints.
+\citet{mirzasoleiman2016distributed} show that their original GreeDi algorithm is also able to handle the case of non-monotone functions under these more general constraints.
+
+active set selection in sparse gaussian processes 
+inference for determinental point processes \citep{mirzasoleiman2016distributed}
+
+\subsubsection{Applications of submodular optimization}
 
 \cite{qi2016robust} use distributed submodular optimization to partition a dataset into $m$ clusters.
 Each of these clusters then learns a neural network independently and can be thought of as part of the free monoid framework.
+
+\cite{lucic2016horizontally} provides an interactive distributed algorithm,
+plus a good table summarizing results.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Examples: Bayesian Methods}
 
-Bayesian machine learning methods estimate the \emph{posterior distribution} $\p{\theta|Z}$ of a parameter $\theta$ given data set $Z$.
+%Bayesian machine learning methods estimate the \defn{posterior distribution} $\p{\theta|Z}$ of a parameter $\theta$ given data set $Z$.
+We assume that our data set is sampled from some distribution $p(\z|\w)$,
+and we have a prior distribution $p(\w)$.
+Then the \defn{posterior distribution} is defined to be $\p{\w|\z}$,
+and by bayes theorem we have
+\begin{equation}
+    p(\w | \z) = \frac{p(\z|\w)p(\w)}{p(\z)}
+    .
+\end{equation}
+In bayesian methods, we make a parametric assumption about the posterior distribution.
+
+%\begin{align}
+    %p(\w | Z) 
+    %&= \frac{p(Z|\w)p(\w)}{p(Z)}
+    %\\
+    %&= \frac{\prod_{i=1}^mp(Z_i|\w)p(\w)}{\prod_{i=1}^mp(Z_i)}
+    %\\
+    %&= \frac{\prod_{i=1}^m\frac{p(\w|Z_i)p(Z_i)}{p(\w)}p(\w)}{\prod_{i=1}^mp(Z_i)}
+%\end{align}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Bayesian classifiers}
+
+Assume that the data space $\Z$ is decomposed into $\X\times \Y$,
+where $\X$ is the space of features and $\Y$ the space of class labels.
+Our goal is to learn a distribution $\p{\y ; \x}$.
+We then classify according to rule
+\begin{equation}
+    \argmax_{\y\in\Y} \p{\y | \x}
+    \end{equation}
+By bayes theorem, we have that
+\begin{equation}
+    \p{\y | \x} = \frac{\p{\x | \y}\p{\y}}{\p{\x}}
+    .
+\end{equation}
+
+In naive bayes, we assume that the data can be decomposed into $d$ dimensions,
+and these dimensions are independent.
+That is,
+\begin{equation}
+    \p{\w | \z} = \prod_{i=1}^d \psup{(i)}{\w^{(i)} | \z^{(i)}}
+\end{equation}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Gaussian posteriors}
 
-The simplest method of merging posterior distributions was proposed by \cite{neiswanger2013asymptotically}.
-They assume that the posterior distribution is approximately normal.
+The simplest method of merging posterior distributions was proposed by \cite{neiswanger2014asymptotically}.
+They use the Bernstein-von Mises theorem\footnote{
+    The Bernstein-von Mises theorem is also often called the Bayesian central limit theorem.
+}
+to argue that the local posterior distribution is approximately normal.
 That is,
 \begin{equation}
     \p{\theta | Z_i}
@@ -395,11 +786,6 @@ That is,
     \gaussian{\theta}{\hat\mu_i}{\hat\Sigma_i}
     .
 \end{equation}
-This assumption is justified by the Bernstein-von Mises theorem.%
-\footnote{
-    The Bernstein-von Mises theorem is also often called the Bayesian central limit theorem.
-}
-
 The final posterior density is then given by
 \begin{equation}
     \phat{\theta | Z}
@@ -411,27 +797,76 @@ The final posterior density is then given by
     ,
 \end{equation}
 where
-\begin{align}
+\begin{equation}
     \hat\Sigma
-    &=
+    =
     \left(
         \sum_{i=1}^m
         \hat\Sigma_i^{-1}
     \right)^{-1}
-    ,
-    \\
+    ~~~~~\text{and}~~~~~
+    %\\
     \hat\mu
-    &=
+    =
     \hat\Sigma \left(\sum_{i=1}^m \hat\Sigma^{-1} \mu_i \right)
     .
-\end{align}
+\end{equation}
+Like averaging (see Section \ref{sec:merge:ave}),
+this method reduces the variance but not the bias of the posterior.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Nonparametric and semiparametric merging}
+\subsection{Variational inference (VI)}
+\label{sec:merge:vi}
+
+Variational inference (VI) is a popular method for approximating intractable posterior distributions.
+\cite{jordan1999introduction} and \cite{blei2017variational} provide detailed introductions.
+A surrogate distribution $q$ is used to approximate the posterior,
+and the parameters $\wvi$ of $q$ are given by minimizing the KL divergence: 
+\begin{equation}
+    %\wvi = \argmin_{\w\in\W} \kl{\q{\theta | Z, \w}}{\p{\theta | Z}}
+    \wvi = \argmin_{\w\in\W} \int_{\theta\in\Theta}\q{\theta | \w}\log\frac{\q{\theta | \w}}{\p{\theta | Z}}
+    \dd\theta
+    .
+\end{equation}
+The most common form of VI is the mean field approximation.
+Here, the $q$ distribution factorizes as
+\begin{equation}
+    \q{\theta|\w} = \prod_{i=1}^d \qi{\theta^{(i)}|\w^{(i)}}
+\end{equation}
+where the superscript ${}^{(i)}$ denotes the $i$th component in the vector and
+the $q^{(i)}$ are univariate distributions in the exponential family.
+
+%Because solving for the parameters $\wvi$ requires optimization,
+%distributed variational estimators closely resemble distributed point estimators.
+%Remarkably, no existing literature has pointed out this connection,
+%and it is likely that both communities would improve by increased interaction.
+\citet{broderick2013streaming} propose the \defn{streaming distributed asynchronous Bayes} (SDA-Bayes) method of variational inference.
+\begin{equation}
+    \wsda
+\end{equation}
+
+Parameter averaging fails spectacularly when the model is non-identifiable.
+This rarely occurs in the models of Section \ref{sec:merge:ave}, 
+but nonidentifiability is common in the sort of models that require variational methods.
+\citet{campbell2014approximate} propose an extension to SVB called \defn{approximate merging of posteriors with symmetries} (AMPS) that can works for nonidentifiable models.
+
+\citet{neiswanger2015embarrassingly}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Markov chain monte carlo (MCMC)}
 
 Recent work has focused on improving non-asymptotic bounds of MCMC 
 \citep[e.g.][]{latuszynski2013nonasymptotic,andrieu2015convergence,adamczak2015exponential,andrieu2016establishing}.
+
+A number of recent papers have developed approximate cross validation techniques for MCMC
+\citep{marshall2003approximate,
+bhattacharya2007importance,
+bornn2010efficient,
+held2010posterior,
+vehtari2012survey,
+li2016approximating}.
 
 \cite{neiswanger2014asymptotically} also present asymptotically efficient estimators.
 We can write the kernel density estimate of the posterior as
@@ -483,6 +918,8 @@ where
         \E((\phat{\theta} - \p{\theta})^2)
     \end{equation}
 \end{theorem}
+
+\citet{meeds2015optimization}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

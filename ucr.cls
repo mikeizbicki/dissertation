@@ -148,6 +148,7 @@
 \theoremstyle{definition}
 \newtheorem{definition}[theorem]{Definition}
 \newtheorem{example}[theorem]{Example}
+\newtheorem{method}[theorem]{Semigroup Example}
 \newtheorem{exercise}[theorem]{Exercise}
 \newtheorem{lemma}[theorem]{Lemma}
 \newtheorem{notation}[theorem]{Notation}
