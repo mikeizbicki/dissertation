@@ -39,14 +39,26 @@
 \newcommand{\wridgep}{\hat\w^\textit{ridge,par}}
 \newcommand{\wvi}{\hat\w^\textit{vi}}
 \newcommand{\wsda}{\hat\w^\textit{sda}}
+\newcommand{\wgreedy}{\hat\w^\textit{greedy}}
+\newcommand{\wGreeDi}{\hat\w^\textit{GreeDi}}
+\newcommand{\wpca}{\hat\w^\textit{pca}}
+\newcommand{\wlbk}{\hat\w^\textit{lbk}}
 
 \newcommand{\Pdist}{\mathcal P}
 \newcommand{\Pexp}{\Pdist^\textit{exp}}
+\newcommand{\GO}[2]{\text{GO}_{{#1},{#2}}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
 \chapter{Chapter 2}
+
+%Our model of computation is closely related to the \emph{map reduce class} (MRC) introduced by \cite{karloff2010model}.
+%They define the class $MRC^i$
+\cite{karloff2010model} introduce the \emph{map reduce class} model of computation as an alternative to the PRAM model for analyzing algorithms.
+Specifically, they define $MRC^i$ to be the class of functions computable on a MapReduce architecture with $O(\log^i n)$ rounds of computation.
+Our model of computation is a subset of $MRC^0$,
+however we require exactly one round of computation rather than a constant number of rounds.
 
 \noindent
 %A machine learning model consists of a set of data points $\Z$,
@@ -577,80 +589,128 @@ the corresponding Hessian is too large to practically invert.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Principle component analysis}
+\label{sec:merge:pca}
 
-Principle component analysis (PCA) is a popular technique for dimensionality reduction.
-The main idea was introduced by \cite{pearson1901liii}, 
-and \cite{hotelling1933analysis} first introduced the term principle components.
+\defn{Principle component analysis} (PCA) is a popular technique for dimensionality reduction.
+%Given a data set $Z$ of points in $\R^d$,
+%the goal of PCA is to find the subspace of dimension $k$ that captures most of the variability of the data.
+%The technique was introduced by \cite{pearson1901liii}, 
+%and \cite{hotelling1933analysis} first introduced the term principle components.
+In this section,
+we describe how PCA works on a single machine,
+show that two existing techniques for distributed PCA fit our framework,
+then describe the importance of fast cross validation techniques for PCA.
 
+Let $Z$ denote the $mn\times d$ input data matrix.
+The goal of PCA is to find a $d\times k$ matrix with $k \ltlt d$ such that the distance between $Z$ and $Z\w\pinv\w$ is minimized.
+Formally, 
+%the goal of PCA is to find a subspace of dimension $k<d$ that captures most of the variability of the data.
 \begin{equation}
-    \w = \argmin_\w \ltwo{\x - \w\pinv\w\x}^2
+    \label{eq:pca:defn}
+    \wpca = \argmin_{\w\in\R^{d\times k}} \ltwo{Z - Z\w\pinv\w}^2
 \end{equation}
+The optimization \eqref{eq:pca:defn} is non-convex, 
+but the solution can be calculated efficiently via the \defn{singular value decomposition} (SVD). 
+The SVD of $Z$ is
+\begin{equation}
+    Z = UD\trans V
+    ,
+\end{equation}
+where $U$ is an orthogonal matrix of dimension $mn\times mn$, 
+$D$ is a diagonal matrix of dimension $mn\times d$, 
+and $V$ is an orthogonal matrix dimension $d\times d$.
+The columns of $U$ are called the left singular vectors, 
+the columns of $V$ the right singular vectors,
+and the entries in $D$ the singular values.
+The solution to \eqref{eq:pca:defn} is given by the first $k$ columns of $V$.
+\citet{halko2011finding} provides a method for efficiently calculating approximate SVDs when only $k$ entries are needed.
 
-Modern research into PCA can be divided into two categories.
-The first category of research proposes methods for determining the target dimension.
-Many practitioners use heuristic techniques of ``what looks good enough''.
-A number of more disciplined approaches make distributional assumptions.
-The most general technique is to use cross validation.
+\cite{qu2002principal} and \cite{liang2013distributed} introduce essentially the same algorithm for distributed PCA.
+Each machine $i$ locally calculates the SVD, $Z_i = U_i D_i \trans {V_i}$.
+Let $D_i^{(k)}$ denote the $k\times k$ submatrix of $D_i$ containing the first $k$ singular values,
+and $V_i^\{k\}$ denote the $d\times k$ submatrix of $V_i$ containing the first $k$ columns.
+The local machines each transmit $D_i^{(k)}$ and $V_i^{(k)}$ to the master machine.
+The master calculates 
+\begin{equation}
+    S = \sum_{i=1}^m V_i^{(k)}D_i^{(k)}\trans{V_i^{(k)}}
+\end{equation}
+Performing the SVD on $S$ then gives the approximate principle components of the entire data set $Z$.
+\cite{qu2002principal} further provide a modification to the merge procedure that approximately centers the data,
+but they cannot provide any theoretical guarantees on the performance of their algorithm relative to the single machine oracle.
+\cite{liang2013distributed} do not consider the possibility of centering the data,
+but they do show that their algorithm is a $1+\varepsilon$ approximation of the single machine algorithm, where $\varepsilon$ depends on properties of the data and the choice of $k$.
+
+A major difficulty in PCA (distributed or not) is selecting a good value for $k$.
+There are two reasons to choose a small value of $k$.
+The most obvious is computational.
+When $k$ is small, future stages in the data processing pipeline will be more efficient because they are working in a lower dimensional space.
+But there is a more subtle statistical reason.
+When there is a large noise component in the data,
+using fewer dimensions removes this noise and improves the statistical efficiency of later stages of the data pipeline.
+Perhaps the simplest method of determining $k$ is the scree test \citep{cattell1966scree},
+where the data's singular values are plotted and the analyst makes a subjective judgement.
+More robust methods make distributional assumptions \citep{bartlett1950tests}.
+Under these assumptions, the noise in the data can be estimated directly and $k$ determined appropriately.
+When these distributional assumption do not hold, however, the resulting $k$ value can be arbitrarily poor.
+The most robust solution uses cross validation and the PRESS statistic.
+%%In general, the optimal $k$ value will depend on the task at hand.
+%Many practitioners use heuristic techniques of ``what looks good enough''.
+%A number of more disciplined approaches make distributional assumptions.
+%The most general technique is to use cross validation.
 Unfortunately, this is also the most expensive technique computationally.
-Considerable work has been done to improve both the theoretical guarantees of cross validation and improve its runtime
+Considerable work has been done to improve both the theoretical guarantees of cross validation and improve its runtime via approximations
 \citep{wold1978cross,eastment1982cross,krzanowski1987cross,mertens1995efficient,diana2002cross,engelen2004fast,josse2012selecting,camacho2012cross}.
+Notably, none of these fast cross validation techniques work in the distributed setting.
+Thus the distributed fast cross validation technique induced by \cite{qu2002principal} and \cite{liang2013distributed} is both novel and useful.
 
-Another vein of work improves the robustness of PCA.
-\cite{collins2002generalization} generalizes PCA to other exponential family distributions.
-\cite{ding2004k} shows a close relationship between PCA and $k$-means.
+%%Another vein of work improves the robustness of PCA.
+%%\cite{collins2002generalization} generalizes PCA to other exponential family distributions.
+%%\cite{ding2004k} shows a close relationship between PCA and $k$-means.
+%%
+%A final vein of work improves the runtime of PCA.
+%One of the simplest approaches is to subsamples the data set into a so-called \emph{core set},
+%then run PCA on this smaller data set.
+%If the core set is constructed appropriately,
+%then the result will be a good approximation of the PCA on the entire data set.
+%\cite{garber2015fast} provides the state-of-the-art core set generation method
+%along with an excellent survey of prior work.
+%A number of works deal with the distributed environment.
+%\cite{bai2005principal} distributed PCA that doesn't work in this framework.
+%\cite{schizas2015distributed} use ADMM for distributed PCA.
+%\cite{liu2016decentralized} uses ADMM for distributed clustering.
+%\cite{kannan2014princople} provide a method for PCA that requires only $O(1)$ rounds of communication.
+%This method is not suitable for our framework, however, because we require exactly 1 round of communication.
 
-A final vein of work improves the runtime of PCA.
-One of the simplest approaches is to subsamples the data set into a so-called \emph{core set},
-then run PCA on this smaller data set.
-If the core set is constructed appropriately,
-then the result will be a good approximation of the PCA on the entire data set.
-\cite{garber2015fast} provides the state-of-the-art core set generation method
-along with an excellent survey of prior work.
-A number of works deal with the distributed environment.
-\cite{bai2005principal} distributed PCA that doesn't work in this framework.
-\cite{schizas2015distributed} use ADMM for distributed PCA.
-\cite{liu2016decentralized} uses ADMM for distributed clustering.
-\cite{kannan2014princople} provide a method for PCA that requires only $O(1)$ rounds of communication.
-This method is not suitable for our framework, however, because we require exactly 1 round of communication.
-
-The data points are assumed to be in $\R^d$,
-and we are given a target dimension $k<\!\!<d$ to project the data onto.
-Let $X$ denote the $mn\times d$ input data matrix.
-We will assume without loss of generality that the rows of $X$ have zero mean.
-Then calculate the singular value decomposition 
-\begin{equation}
-    P = UD\trans V
-\end{equation}
-
-
-\cite{liang2013distributed} the good stuff.
-\cite{qu2002principal} works in this framework, but not approximation guarantees.
+%\cite{liang2013distributed} the good stuff.
+%
+%Let $X$ be a $d\times j$ matrix with orthonormal columns.
+%Let $\varepsilon\in(0,1]$ and $k\in\mathbb N$ satisfying 
+%\begin{equation}
+    %\ltwo{\wpca X - \wlbk X}^2 \le \varepsilon d(P,L(X))^2
+%\end{equation}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Submodular optimization}
 \label{sec:merge:submodular}
 
-%A set function $f : \{\Z\} \to \R$ is \defn{submodular} if
-%\begin{equation}
-    %f(Z_1 \cup Z_2) + f(Z_1 \cap Z_2) \le f(Z_1) + f(Z_2)
-    %.
-%\end{equation}
-%\citet{lovasz1983submodular} shows that submodular functions are closely related to convex functions.
-
-%Techniques in submodular optimization are widely used in machine learning.
-Submodular functions are a class of set function that are easy to optimize.
-Many machine learning problems have recently been solved using submodular functions.
-\citet{mirzasoleiman2016distributed} provides a detailed survey of recent success.
-A significant body of work has developed in the last five years on distributed submodular optimization for large data sets.
-Seven of these papers fit our semigroup framework
+Submodular functions are a class of set function.
+Submodular functions share many important properties with convex functions \citep{lovasz1983submodular}.
+In particular, they are easy to optimize and have many applications. 
+The maximization of submodular functions has become an important technique in the approximation of NP-hard problems \citep{krause14survey}.
+%\citet{mirzasoleiman2016distributed} provide a detailed survey of recent applications in machine learning.
+Applications in machine learning include clustering, sparse nonparametric regression, image segmentation, document summarization, and social network modeling \citep[see references within][]{mirzasoleiman2016distributed}.
+The last five years has seen work focused on scaling up submodular optimization via distributed algorithms.
+Six of these papers fit our semigroup framework
+\citep{mirzasoleiman2013distributed,barbosa2015power,malkomes2015fast,bhaskara2016greedy,barbosa2016new,mirzasoleiman2016distributed}
 and so induce fast cross validation procedures.
 This is the first work addressing fast cross validation in submodular learning algorithms.
 In this section we first define submodularity,
 then introduce the distributed optimizers.
 
-Let $f : \{\Z\} \to \R$,
-and define the discrete derivative of $f$ to be
+For a set function $f : \{\Z\} \to \R$,
+a set $Z\subset\Z$ and an element $e\in\Z$,
+we define the \defn{discrete derivative} of $f$ at $Z$ with respect to $e$ to be
 \begin{equation}
     f'(e; Z) = f (Z\cup\{e\}) - f(Z)
     .
@@ -661,7 +721,7 @@ We further call $f$ \defn{submodular} if for all $A \subseteq B \subseteq Z$ and
     f'(e;A)\ge f'(e;B)
     .
 \end{equation}
-We consider the problem of monotone submodular maximization subject to cardinality constraints.
+We first consider the problem of monotone submodular maximization subject to cardinality constraints.
 That is, we want to solve
 \begin{equation}
     \label{eq:submodular:opt}
@@ -672,11 +732,13 @@ That is, we want to solve
     .
 \end{equation}
 %Many machine learning problems can be cast as a special case of submodular maximization.
-Solving \eqref{eq:submodular:opt} is NP-hard,
-so it is standard to use a greedy approximation algorithm introduced by \citet{nemhauser1978analysis}.
-The procedure is shown in Algorithm \ref{alg:submodular:greedy}.
-
-\begin{algorithm}
+Solving \eqref{eq:submodular:opt} is NP-hard in general,
+so it is standard to use the greedy approximation algorithm introduced by \citet{nemhauser1978analysis}.
+The procedure (which we will refer to as $\greedy$) is shown in Algorithm \ref{alg:submodular:greedy}.
+The $\greedy$ algorithm is known to be a $1-1/e$ approximation algorithm\footnote{
+The symbol $e$ is Euler's constant and not an approximation variable.},
+and no better approximation algorithm exists unless $P=NP$ \citep{krause14survey}.
+\begin{algorithm}[t]
     \caption{\greedy(data set $Z$, constraint size $k$)}
     \label{alg:submodular:greedy}
     \vspace{0.1in}
@@ -690,37 +752,94 @@ The procedure is shown in Algorithm \ref{alg:submodular:greedy}.
     \end{algorithmic}
 \end{algorithm}
 
-\cite{mirzasoleiman2013distributed} introduced a method to merge solutions together.
+\cite{mirzasoleiman2013distributed} introduced the first method of merging independently computed solutions in their $\GreeDi$ (GREEdy DIstributed) algorithm.
+$\GreeDi$ works by first running the $\greedy$ algorithm locally on each node to compute local solutions $\wgreedy_i$.
+These solutions are transmitted to the master machine.
+The master combines the local solutions into a set of size $km$ and reruns $\greedy$ on the combined set.
+%That is, the merge procedure is given by the equation
+In notation, the merge procedure is given by
+\begin{equation}
+    \GreeDi(\wgreedy_1,...,\wgreedy_m) = \greedy(\cup_{i=1}^m\wgreedy_i,k)
+    .
+\end{equation}
+\cite{mirzasoleiman2013distributed} show that in the worst case,
+$\GreeDi$ achieves an approximation guarantee of 
+\begin{equation}
+    f(\wGreeDi) \ge \frac{(1-1/e)^2}{\min\{m,k\}} f(\wstar)
+    .
+\end{equation}
+They also show these bounds can be improved when the set $Z$ has either an associated metric or distribution,
+which is often the case in practice.
+\citet{barbosa2015power} improve the analysis of $\GreeDi$ to show that in expectation
+\begin{equation}
+    f(\wGreeDi) \ge \frac {1-1/e}{2} f(\wstar)
+    ,
+\end{equation}
+which matches the guarantee of the optimal $\greedy$ centralized algorithm up to the $1/2$ constant factor.
+Notably, the approximation is independent of the number of machines $m$ or the size of the problem $k$.
 
-\begin{algorithm}
-    \caption{GreeDi()}
-    \vspace{0.1in}
-    \begin{algorithmic}[1]
-        \State
-    \end{algorithmic}
-\end{algorithm}
+Subsequent work has extended the $\GreeDi$ framework to apply to more general submodular optimization problems.
+\cite{malkomes2015fast} solves the $k$-centers clustering problem;
+\cite{bhaskara2016greedy} solves the column subset selection problem;
+and both \cite{barbosa2016new} and \citet{mirzasoleiman2016distributed} solve submodular problems with matroid, $p$-system, and knapsack constraints.
+The algorithms presented in each of these papers follows the same basic pattern:
+the $\greedy$ algorithm used by the local machines and the merge procedure is replaced by an alternative algorithm that is more appropriate for the new problem setting.
 
-\cite{mirzasoleiman2015distributed},\citep{barbosa2015power} 
+As with continuous statistical optimization problems,
+the difficulty of submodular optimization is known to depend on the curvature of the problem
+\citep{vondrak2010submodularity}.
+The \defn{curvature} is defined to be
+\begin{equation}
+    c = 1 - \min_{e\in Z} \frac{f'(e;Z-e)}{f(e)}
+    .
+\end{equation}
+When the curvature is small, the $\greedy$ algorithm will perform better.
+\citet{vondrak2010submodularity} shows that $\greedy$ greedy returns a $(1-e^{-c})/c$ approximate solution,
+and that no better approximation is possible.
+There is as yet no work discussing the relationship of curvature to the difficulty of merging local solutions.
+It seems likely, however, that a bound analogous to the continuous bound provided by \citet{liu2014distributed} will hold.
 
-\cite{malkomes2015fast} uses the same framework to solve the $k$-centers clustering problem.
-They provide improved approximation guarantees that are stronger than the general submodular case.
-\cite{bhaskara2016greedy} uses the same framework on a specific class of submodular optimization problems called ``column subset selection.''
-They provide approximation guarantees for this problem that are better than the general case.
+%\citet{lovasz1983submodular} shows that submodular functions are closely related to convex functions.
+%\subsubsection{Applications of submodular optimization}
+%
+%active set selection in sparse gaussian processes \citep{mirzasoleiman2016distributed},
+%inference for determinental point processes \citep{mirzasoleiman2016distributed}
+%
+%Submodular functions have been used to create summaries of documents
+%\citep{lin2004rouge,lin2010multi,lin2011class,lin2012learning}.
+%\citet{tschiatschek2014learning} introduces many submodular loss functions for summarizing image data.
+%They also point out that \citet{simon2007scene}
+%\citet{sinha2011extractive}
+%\citet{sinha2011summarization}
+%\citet{denton2004selecting}
+%use submodular objectives.
+%\citet{kulesza2011k} uses a submodular objective to sample from determinental point processes.
+%\citet{iyer2015submodular} introduces submodular point processes,
+%and \citet{gotovos2015sampling} shows how to sample from these models.
+%Can this be combined with the parallel MCMC procedures?
+%\cite{qi2016robust} use distributed submodular optimization to partition a dataset into $m$ clusters.
+%Each of these clusters then learns a neural network independently and can be thought of as part of the free monoid framework.
 
-\cite{barbosa2016new} considers a more general submodular optimization problem than \eqref{eq:submodular:opt}.
-In particular, they do not require the function be monotone, and they support matroid and $p$-system constraints in addition to cardinality constraints.
-\citet{mirzasoleiman2016distributed} show that their original GreeDi algorithm is also able to handle the case of non-monotone functions under these more general constraints.
-
-active set selection in sparse gaussian processes 
-inference for determinental point processes \citep{mirzasoleiman2016distributed}
-
-\subsubsection{Applications of submodular optimization}
-
-\cite{qi2016robust} use distributed submodular optimization to partition a dataset into $m$ clusters.
-Each of these clusters then learns a neural network independently and can be thought of as part of the free monoid framework.
-
-\cite{lucic2016horizontally} provides an interactive distributed algorithm,
-plus a good table summarizing results.
+%Techniques in submodular optimization are widely used in machine learning.
+%\cite{malkomes2015fast} uses the same framework to solve the $k$-centers clustering problem.
+%They provide improved approximation guarantees that are stronger than the general submodular case.
+%\cite{bhaskara2016greedy} uses the same framework on a specific class of submodular optimization problems called ``column subset selection.''
+%They provide approximation guarantees for this problem that are better than the general case.
+%
+%\cite{barbosa2016new} considers a more general submodular optimization problem than \eqref{eq:submodular:opt}.
+%In particular, they do not require the function be monotone, and they support matroid and $p$-system constraints in addition to cardinality constraints.
+%\citet{mirzasoleiman2016distributed} show that their original GreeDi algorithm is also able to handle the case of non-monotone functions under these more general constraints.
+%
+%active set selection in sparse gaussian processes 
+%inference for determinental point processes \citep{mirzasoleiman2016distributed}
+%
+%\subsubsection{Applications of submodular optimization}
+%
+%\cite{qi2016robust} use distributed submodular optimization to partition a dataset into $m$ clusters.
+%Each of these clusters then learns a neural network independently and can be thought of as part of the free monoid framework.
+%
+%\cite{lucic2016horizontally} provides an interactive distributed algorithm,
+%plus a good table summarizing results.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
