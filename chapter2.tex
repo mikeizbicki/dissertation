@@ -39,11 +39,13 @@
 \newcommand{\wridgep}{\hat\w^\textit{ridge,par}}
 \newcommand{\wvi}{\hat\w^\textit{vi}}
 \newcommand{\wsda}{\hat\w^\textit{sda}}
+\newcommand{\wamps}{\hat\w^\textit{amps}}
 \newcommand{\wgreedy}{\hat\w^\textit{greedy}}
 \newcommand{\wGreeDi}{\hat\w^\textit{GreeDi}}
 \newcommand{\wpca}{\hat\w^\textit{pca}}
 \newcommand{\wlbk}{\hat\w^\textit{lbk}}
 
+\newcommand{\ELBO}{\text{ELBO}}
 \newcommand{\Pdist}{\mathcal P}
 \newcommand{\Pexp}{\Pdist^\textit{exp}}
 \newcommand{\GO}[2]{\text{GO}_{{#1},{#2}}}
@@ -169,6 +171,8 @@ There are many frameworks for distributed machine learning.
 \subsection{Cross validation}
 
 Cross validation is a method for estimating the quality of an estimator.
+
+\citet{joulani2015fast} provides a tree based fast cross validation algorithm for incremental learning algorithms.
 
 \begin{algorithm}
     \caption{\cv(learning algorithm $f$, data set $Z$, number of folds $k$)}
@@ -329,6 +333,7 @@ Despite the simplicity, ridge regression remains an actively studied problem.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Exponential family distributions}
+\label{sec:merge:ef}
 
 %There are three important subfamilies of the EF that we will consider:
 %linear exponential families (LEFs),
@@ -407,7 +412,7 @@ The ERM is then
 
 When the parameter space $\W$ is a manifold in the underlying hilbert space $\set H$,
 we say the distribution is in the \defn{curved exponential family} (CEF). 
-The CEF was introduced by \citet{efron1975defining} and is a central topic in the field of information geometry.
+The CEF was introduced by \citet{efron1975defining} and \citet{amari1982differential} and is a central topic in the field of information geometry.
 The book \citet{amari2016information} provides a modern treatment of CEFs from this geometric perspective.
 %When $\W$ is a $d$ dimensional manifold embedded in a $d' > d$ dimensional hilbert space.
 
@@ -425,7 +430,7 @@ The book \citet{amari2016information} provides a modern treatment of CEFs from t
     %&= \argmin_{\w\in\W} \sum_{\z\in Z} \loss(\z ; \w) + \reg(\w)
 %\end{align}
 
-\citet{geiger2001stratified} introduced the class of \defn{stratified exponential families} (SEFs),
+\cite{geiger1998graphical} and \citet{geiger2001stratified} introduced the class of \defn{stratified exponential families} (SEFs),
 which is defined to be the set of all algebraic subsets of $\Pexp$.
 The definition of an algebraic subset comes from algebraic geometry.
 It is rather technical, so we do not review it here.
@@ -437,6 +442,31 @@ The most important is that all graphical models with hidden variables are SEFs (
 A DEF is the distribution resulting from placing EF priors on the natural parameters of an EF distribution.
 \citet{ranganath2015deep} suggest using variational methods to solve for the parameters of DEFs.
 Section \ref{sec:merge:vi} discusses variational methods in detail.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Bayesian classifiers}
+
+Assume that the data space $\Z$ is decomposed into $\X\times \Y$,
+where $\X$ is the space of features and $\Y$ the space of class labels.
+Our goal is to learn a distribution $\p{\y ; \x}$.
+We then classify according to rule
+\begin{equation}
+    \argmax_{\y\in\Y} \p{\y | \x}
+    \end{equation}
+By bayes theorem, we have that
+\begin{equation}
+    \p{\y | \x} = \frac{\p{\x | \y}\p{\y}}{\p{\x}}
+    .
+\end{equation}
+
+In naive bayes, we assume that the data can be decomposed into $d$ dimensions,
+and these dimensions are independent.
+That is,
+\begin{equation}
+    \p{\w | \z} = \prod_{i=1}^d \psup{(i)}{\w^{(i)} | \z^{(i)}}
+\end{equation}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -623,10 +653,10 @@ The columns of $U$ are called the left singular vectors,
 the columns of $V$ the right singular vectors,
 and the entries in $D$ the singular values.
 The solution to \eqref{eq:pca:defn} is given by the first $k$ columns of $V$.
-\citet{halko2011finding} provides a method for efficiently calculating approximate SVDs when only $k$ entries are needed.
+\citet{halko2011finding} provides a method for efficiently calculating approximate SVDs on a single machine when only the first $k$ singular values/vectors are needed.
 
 \cite{qu2002principal} and \cite{liang2013distributed} introduce essentially the same algorithm for distributed PCA.
-Each machine $i$ locally calculates the SVD, $Z_i = U_i D_i \trans {V_i}$.
+Each machine $i$ locally calculates the SVD of its local dataset $Z_i = U_i D_i \trans {V_i}$.
 Let $D_i^{(k)}$ denote the $k\times k$ submatrix of $D_i$ containing the first $k$ singular values,
 and $V_i^\{k\}$ denote the $d\times k$ submatrix of $V_i$ containing the first $k$ columns.
 The local machines each transmit $D_i^{(k)}$ and $V_i^{(k)}$ to the master machine.
@@ -636,7 +666,7 @@ The master calculates
 \end{equation}
 Performing the SVD on $S$ then gives the approximate principle components of the entire data set $Z$.
 \cite{qu2002principal} further provide a modification to the merge procedure that approximately centers the data,
-but they cannot provide any theoretical guarantees on the performance of their algorithm relative to the single machine oracle.
+but they do not provide any theoretical guarantees on the performance of their algorithm relative to the single machine oracle.
 \cite{liang2013distributed} do not consider the possibility of centering the data,
 but they do show that their algorithm is a $1+\varepsilon$ approximation of the single machine algorithm, where $\varepsilon$ depends on properties of the data and the choice of $k$.
 
@@ -694,8 +724,7 @@ Thus the distributed fast cross validation technique induced by \cite{qu2002prin
 \subsection{Submodular optimization}
 \label{sec:merge:submodular}
 
-Submodular functions are a class of set function.
-Submodular functions share many important properties with convex functions \citep{lovasz1983submodular}.
+Submodular functions are a class of set function that share many important properties with convex functions \citep{lovasz1983submodular}.
 In particular, they are easy to optimize and have many applications. 
 The maximization of submodular functions has become an important technique in the approximation of NP-hard problems \citep{krause14survey}.
 %\citet{mirzasoleiman2016distributed} provide a detailed survey of recent applications in machine learning.
@@ -768,8 +797,8 @@ $\GreeDi$ achieves an approximation guarantee of
     f(\wGreeDi) \ge \frac{(1-1/e)^2}{\min\{m,k\}} f(\wstar)
     .
 \end{equation}
-They also show these bounds can be improved when the set $Z$ has either an associated metric or distribution,
-which is often the case in practice.
+%They also show these bounds can be improved when the set $Z$ has either an associated metric or distribution,
+%which is often the case in practice.
 \citet{barbosa2015power} improve the analysis of $\GreeDi$ to show that in expectation
 \begin{equation}
     f(\wGreeDi) \ge \frac {1-1/e}{2} f(\wstar)
@@ -788,13 +817,14 @@ the $\greedy$ algorithm used by the local machines and the merge procedure is re
 As with continuous statistical optimization problems,
 the difficulty of submodular optimization is known to depend on the curvature of the problem
 \citep{vondrak2010submodularity}.
-The \defn{curvature} is defined to be
+The \defn{submodular curvature} is defined to be
 \begin{equation}
     c = 1 - \min_{e\in Z} \frac{f'(e;Z-e)}{f(e)}
     .
 \end{equation}
 When the curvature is small, the $\greedy$ algorithm will perform better.
-\citet{vondrak2010submodularity} shows that $\greedy$ greedy returns a $(1-e^{-c})/c$ approximate solution,
+In particular, when the $c=0$ the problem is said to be \defn{modular} and the $\greedy$ algorithm returns an optimal solution.
+\citet{vondrak2010submodularity} shows that for all $c>0$, $\greedy$ returns a $(1-e^{-c})/c$ approximate solution,
 and that no better approximation is possible.
 There is as yet no work discussing the relationship of curvature to the difficulty of merging local solutions.
 It seems likely, however, that a bound analogous to the continuous bound provided by \citet{liu2014distributed} will hold.
@@ -846,15 +876,40 @@ It seems likely, however, that a bound analogous to the continuous bound provide
 \section{Examples: Bayesian Methods}
 
 %Bayesian machine learning methods estimate the \defn{posterior distribution} $\p{\theta|Z}$ of a parameter $\theta$ given data set $Z$.
-We assume that our data set is sampled from some distribution $p(\z|\w)$,
-and we have a prior distribution $p(\w)$.
-Then the \defn{posterior distribution} is defined to be $\p{\w|\z}$,
-and by bayes theorem we have
-\begin{equation}
-    p(\w | \z) = \frac{p(\z|\w)p(\w)}{p(\z)}
-    .
-\end{equation}
-In bayesian methods, we make a parametric assumption about the posterior distribution.
+%We assume that our data set is sampled from some distribution $p(\z|\w)$,
+%and we have a prior distribution $p(\w)$.
+%Then the \defn{posterior distribution} is defined to be $\p{\w|\z}$,
+%and by bayes theorem we have
+%\begin{equation}
+    %p(\w | \z) = \frac{p(\z|\w)p(\w)}{p(\z)}
+    %.
+%\end{equation}
+%In bayesian methods, we make a parametric assumption about the posterior distribution.
+
+In Bayesian inference, 
+we treat the data set $Z$ as observed variables and assume there is a hidden variable $\theta$ on which the data depends.
+%we are given a model that includes observed variables $\z$ and hidden variables $\theta$.
+Our goal is to calculate the \defn{posterior distribution} $p(\theta | Z)$.
+%By convention, the notation $p(\theta | Z)$ suppresses the distribution's dependence on parameters $\w\in\W$. 
+In this section we discuss three general techniques for learning the posterior.
+%The first method uses a simple parametric assumption on the posterior distribution and is the Bayesian equivalent of model averaging.
+We warm-up with the Bernstein-von Mises (BvM) method.
+BvM uses a simple model based on a parametric approximation and sufficient statistics.
+%Distributed learning of the BvM method is the Bayesian analog of parameter averaging.
+Next we discuss variational inference (VI).
+VI also makes a parametric approximation,
+but uses a more complex optimization procedure to choose the parameters.
+We shall see that the distributed methods for VI are closely related to those for ERM.
+The final method is markov chain monte carlo (MCMC).
+MCMC uses sampling to approximate the posterior.
+The distributed methods share little in common with the optimization methods.
+%We can use bayes theorem to write the posterior as 
+%\begin{equation}
+    %p(\theta | \z) = \frac{p(\z|\theta)p(\theta)}{p(\z)}
+    %.
+%\end{equation}
+%The conditional probability of the evidence $p(\z|\theta)$ and the prior distribution $p(\theta)$ are typically easy to compute,
+%but the evidence distribution $p(\z)$ is often computationally intractable.
 
 %\begin{align}
     %p(\w | Z) 
@@ -867,44 +922,26 @@ In bayesian methods, we make a parametric assumption about the posterior distrib
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Bayesian classifiers}
+\subsection{Bernstein-von Mises}
 
-Assume that the data space $\Z$ is decomposed into $\X\times \Y$,
-where $\X$ is the space of features and $\Y$ the space of class labels.
-Our goal is to learn a distribution $\p{\y ; \x}$.
-We then classify according to rule
-\begin{equation}
-    \argmax_{\y\in\Y} \p{\y | \x}
-    \end{equation}
-By bayes theorem, we have that
-\begin{equation}
-    \p{\y | \x} = \frac{\p{\x | \y}\p{\y}}{\p{\x}}
-    .
-\end{equation}
-
-In naive bayes, we assume that the data can be decomposed into $d$ dimensions,
-and these dimensions are independent.
-That is,
-\begin{equation}
-    \p{\w | \z} = \prod_{i=1}^d \psup{(i)}{\w^{(i)} | \z^{(i)}}
-\end{equation}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Gaussian posteriors}
-
-The simplest method of merging posterior distributions was proposed by \cite{neiswanger2014asymptotically}.
-They use the Bernstein-von Mises theorem\footnote{
+When the posterior distribution $p(\theta|Z_i)$ has a parametric form in the exponential family,
+then the local posteriors can easily be combined (Section \ref{sec:merge:ef}).
+Under mild conditions, the \defn{Bernstein-von Mises theorem}\footnote{
     The Bernstein-von Mises theorem is also often called the Bayesian central limit theorem.
 }
-to argue that the local posterior distribution is approximately normal.
-That is,
+states that as the number of samples $n\to\infty$,
+the distribution $p(\theta|Z_i)$ converges to a normal distribution. 
+See for example Chapter 10.2 of \cite{vandervaart1998asymptotic} for a formal statement of the theorem with conditions.
+\cite{neiswanger2014asymptotically} use this result to create a simple distributed learning procedure that can be thought of as the Bayesian alternative to parameter averaging (Section \ref{sec:merge:ave}). 
+%
+%That is,
+In particular, they assume
 \begin{equation}
     \p{\theta | Z_i}
     \approx
     \gaussian{\theta}{\hat\mu_i}{\hat\Sigma_i}
-    .
 \end{equation}
+where $\hat\mu_i$ and $\hat\Sigma_i$ are local mean and covariance parameter estimates computed by either variational inference (Section \ref{sec:merge:vi}) or markov chain monte carlo (Section \ref{sec:merge:mcmc}).
 The final posterior density is then given by
 \begin{equation}
     \phat{\theta | Z}
@@ -931,54 +968,232 @@ where
     .
 \end{equation}
 Like averaging (see Section \ref{sec:merge:ave}),
-this method reduces the variance but not the bias of the posterior.
+this method reduces the variance but not the bias of the model parameters $\hat\mu$ and $\hat\Sigma$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Variational inference (VI)}
 \label{sec:merge:vi}
 
-Variational inference (VI) is a popular method for approximating intractable posterior distributions.
-\cite{jordan1999introduction} and \cite{blei2017variational} provide detailed introductions.
-A surrogate distribution $q$ is used to approximate the posterior,
-and the parameters $\wvi$ of $q$ are given by minimizing the KL divergence: 
+Variational inference (VI) is a popular method for approximating intractable posterior distributions \citep{jordan1999introduction,blei2017variational}. 
+%\cite{jordan1999introduction} and \cite{blei2017variational} provide detailed introductions.
+%In this section we present VI as a form of ERM and three methods for distributed VI that fit our framework.
+There are three existing methods of distributed VI that fit our framework.
+To describe these methods,
+we will present VI as a special case of ERM.
+This is a non-standard presentation of VI,
+but it highlights the similarities between distributed VI methods and the distributed ERM methods already presented.
+In particular, we will see that the distributed VI methods are several years behind the distributed ERM methods,
+and the distributed ERM methods can be directly applied to VI for improved performance.%
+\footnote{
+    It seems to be a trend that the optimization techniques used in variational methods lag behind the state-of-the-art non-bayesian learning approaches by several years.
+    For example:
+    (1) Stochastic gradient descent (SGD) was an established technique in large scale non-bayesian learning at least as early as \citet{bottou2004large},
+    but SGD did not get applied to the variational bayes setting until \citet{hoffman2013stochastic}.
+    Some papers \citep[e.g.][]{canini2009online,hoffman2010online,wang2011online} used online learning techniques earlier,
+    but they only applied in special cases and still lagged behind the non-bayesian optimization research.
+    (2) Differentially private empirical risk minimization has been known since \citet{chaudhuri2011differentially}, with privacy preserving models existing in special cases earlier \citep{chaudhuri2009privacy}.
+    Differential privacy appears to have only been applied to variational inference so far in three papers \citep{karwa2015private,park2016variational,jalko2016differentially},
+    all of which are currently under review and remain published only on the ArXiv.
+    (3) Essentially no papers on variational inference provide learning guarantees (either finite sample or asymptotic) on the quality of the learned parameters,
+    whereas hundreds (if not thousands) of these results exist for the ERM case.
+}
+As far as I know, there is no existing work on fast cross validation procedures for variational methods.
+We will derive three new fast cross validation methods based on the distributed VI methods,
+and \fixme{} new fast cross validation methods based on the distributed ERM methods.
+
+Variational inference uses optimization to create a deterministic approximation to the posterior that is easy to compute.
+Given a surrogate family of distributions $Q = \{ q(\theta|\w) : \w\in\W \}$,
+the variational parameters are given by
 \begin{equation}
-    %\wvi = \argmin_{\w\in\W} \kl{\q{\theta | Z, \w}}{\p{\theta | Z}}
-    \wvi = \argmin_{\w\in\W} \int_{\theta\in\Theta}\q{\theta | \w}\log\frac{\q{\theta | \w}}{\p{\theta | Z}}
-    \dd\theta
+    \label{eq:vi:wvi:kl}
+    \wvi = \argmin_{\w\in\W} \kl{q(\theta|\w)}{p(\theta|Z)}
     .
 \end{equation}
-The most common form of VI is the mean field approximation.
-Here, the $q$ distribution factorizes as
+Solving \eqref{eq:vi:wvi:kl} is equivalent to the ERM problem
 \begin{equation}
-    \q{\theta|\w} = \prod_{i=1}^d \qi{\theta^{(i)}|\w^{(i)}}
+    \label{eq:vi:wvi:erm}
+    \wvi = \argmin_{\w\in\W} \sum_{\z\in Z} \loss(\z;\w) + \lambda\reg(\w)
 \end{equation}
-where the superscript ${}^{(i)}$ denotes the $i$th component in the vector and
-the $q^{(i)}$ are univariate distributions in the exponential family.
-
-%Because solving for the parameters $\wvi$ requires optimization,
-%distributed variational estimators closely resemble distributed point estimators.
-%Remarkably, no existing literature has pointed out this connection,
-%and it is likely that both communities would improve by increased interaction.
-\citet{broderick2013streaming} propose the \defn{streaming distributed asynchronous Bayes} (SDA-Bayes) method of variational inference.
+where
 \begin{equation}
-    \wsda
+    \loss(\z;\w) = -\int_{\theta\in\Theta} q(\theta|\w)\log p(\z|\theta) \dd\theta
+    ~~~~~\text{and}~~~~~
+    \reg(\w) = \kl{q(\theta|\w)}{p(\theta)}
+    .
 \end{equation}
+The loss $\loss$ above is commonly known as the negative cross entropy.
+Practitioners commonly choose the distributions $p$ and $q$ to be conjugate members of the exponential family,
+in which case $\loss$ and $\reg$ will have closed form representations.
+The ERM formulation has two main advantages.
+First, the $\lambda$ hyperparameter directly controls the strength of the prior distribution and can be tuned via cross validation.
+Second, we can apply standard tools from ERM to VI,
+which seemingly hasn't been done before.
+For example, all the previous methods for distributed ERM can now be directly applied to VI.
 
-Parameter averaging fails spectacularly when the model is non-identifiable.
-This rarely occurs in the models of Section \ref{sec:merge:ave}, 
-but nonidentifiability is common in the sort of models that require variational methods.
-\citet{campbell2014approximate} propose an extension to SVB called \defn{approximate merging of posteriors with symmetries} (AMPS) that can works for nonidentifiable models.
+The equivalence between \eqref{eq:vi:wvi:kl} and \eqref{eq:vi:wvi:erm} follows because 
+\begin{align}
+    &\kl{q(\theta|\w)}{p(\theta|Z)}
+    \\&=
+    \int_{\theta\in\Theta} q(\theta|\w)\log\frac{q(\theta|\w)}{p(\theta|Z)} \dd\theta
+    \\&=
+    \int_{\theta\in\Theta} q(\theta|\w)\log q(\theta|\w)\dd\theta 
+   -\int_{\theta\in\Theta} q(\theta|\w)\log p(\theta|Z) \dd\theta
+    \\&=
+    \int_{\theta\in\Theta} q(\theta|\w)\log q(\theta|\w)\dd\theta 
+   -\int_{\theta\in\Theta} q(\theta|\w)\log \frac{p(Z|\theta)p(\theta)}{p(Z)} \dd\theta
+    \\&=
+    \int_{\theta\in\Theta} q(\theta|\w)\log \frac{q(\theta|\w)}{p(\theta)}\dd\theta 
+   -\int_{\theta\in\Theta} q(\theta|\w)\log p(Z|\theta) \dd\theta
+   +\int_{\theta\in\Theta} q(\theta|\w)\log p(Z) \dd\theta
+    \\&=
+    \int_{\theta\in\Theta} q(\theta|\w)\log \frac{q(\theta|\w)}{p(\theta)}\dd\theta 
+   -\int_{\theta\in\Theta} q(\theta|\w)\log p(Z|\theta) \dd\theta
+   +\log p(Z)
+    \\&=
+    \int_{\theta\in\Theta} q(\theta|\w)\log \frac{q(\theta|\w)}{p(\theta)}\dd\theta 
+   -\int_{\theta\in\Theta} q(\theta|\w)\log \prod_{\z\in Z}p(\z|\theta) \dd\theta
+   +\log p(Z)
+    \\&=
+    \int_{\theta\in\Theta} q(\theta|\w)\log \frac{q(\theta|\w)}{p(\theta)}\dd\theta 
+   -\sum_{\z\in Z}\int_{\theta\in\Theta} q(\theta|\w)\log p(\z|\theta) \dd\theta
+   +\log p(Z)
+    \\&=
+    \reg(\w)
+   +\sum_{\z\in Z} \loss(\z;\w)
+   +\log p(Z)
+\end{align}
+Finally, since the term $\log p(Z)$ does not depend on $\w$ it can be removed from the optimization in \eqref{eq:vi:wvi:erm}. 
 
-\citet{neiswanger2015embarrassingly}
+%we define the \defn{evidence lower bound} (ELBO) function as
+%\begin{align}
+    %\ELBO(\w) = \E\log p(\theta,\z) - \E\log q(\theta|\w)
+    %%\ELBO(\w) &= \E\log p(\z|\theta) + \E\log p(\theta) - \E\log q(\theta|\w)
+    %%\\
+    %%&= -\KL{q(\theta|\w)}{p{\theta|Z}} + \log p(\z)
+%\end{align}
+%where the expectations are taken with respect to $q$.
+%The variational parameters are then given by
+%\begin{equation}
+    %\wvi = \argmax_{\w\in\W} \ELBO(\w)
+    %.
+%\end{equation}
+%The justification for this optimization is that maximizing the $\ELBO$ is equivalent to minimizing the KL-divergence between $q$ and $p$ \citep{blei2017variational}.
+%The optimization is traditionally solved in the single machine setting using coordinate ascent.
+%is used to approximate the posterior,
+%and the variational parameter $\wvi$ is given by minimizing the KL divergence: 
+%\begin{align}
+    %\label{eq:vi:wvi}
+    %\wvi 
+    %&= \argmin_{\w\in\W} \kl{\q{\theta | \w}}{\p{\theta | Z}}
+    %%\\
+    %%&= \argmin_{\w\in\W} \E_q \q{\theta | \w} \log\frac{\q{\theta|\w}}{\p{\theta|Z}}
+    %%\wvi = \argmin_{\w\in\W} \int_{\theta\in\Theta}\q{\theta | \w}\log\frac{\q{\theta | \w}}{\p{\theta | Z}}\dd\theta
+    %.
+%\end{align}
+%To make the optimization in \eqref{eq:vi:wvi} tractable, we define the \defn{evidence lower bound} ($\ELBO$) function
+%The most common form of VI is the mean field approximation.
+%Here, the $q$ distribution factorizes as
+%\begin{equation}
+    %\q{\theta|\w} = \prod_{i=1}^d \qi{\theta^{(i)}|\w^{(i)}}
+%\end{equation}
+%where the superscript ${}^{(i)}$ denotes the $i$th component in the vector and
+%the $q^{(i)}$ are univariate distributions.
+%It is further common to assume that the $q^{(i)}$ are in the exponential family.
+
+We now present the three methods for distributed VI that fit our framework.
+\citet{broderick2013streaming} proposed the first method, 
+\defn{streaming distributed asynchronous Bayes} (SDA-Bayes). 
+SDA-Bayes is effectively a form of parameter averaging (see Section \ref{sec:merge:ave}) that also updates the regularization. 
+Each local machine calculates the variational approximation $q(\theta|\wvi_i)$ locally,
+then the merged parameters are given by
+\begin{equation}
+    \wsda = (1-m)\wvi_0+\sum_{i=1}^m\wvi_i
+\end{equation}
+where $\wvi_0$ denotes the hyper parameters of the prior distribution $p(\theta)$,
+which is assumed to be in the same exponential family as the variational approximation $q(\theta|\wvi_i)$.
+
+The merge formula for SDA-Bayes has the following probabilistic justification.
+We can factor the global posterior into local posteriors and apply the exponential family assumption to get
+\begin{align}
+    p(\theta|Z) 
+    &= p(\theta|Z_1,...,Z_m)
+    \\
+    &\propto \left( \prod_{i=1}^m p(Z_i|\theta) \right) p(\theta)
+    \\
+    &\propto \left( \prod_{i=1}^m \frac{p(\theta|Z_i)}{p(\theta)} \right) p(\theta)
+    \\
+    &= p(\theta)^{1-m} \prod_{i=1}^m p(\theta|Z_i)
+    \\
+    &\approx p(\theta)^{1-m} \prod_{i=1}^m q(\theta|\wvi_i)
+    \\&=
+    h(\theta)\exp\left(\trans{\left((1-m)\wvi_0+\sum_{i=1}^m\wvi_i\right)} T(\theta) - (1-m)\psi(\wvi_0)-\sum_{i=1}^m\psi(\wvi_i)\right)
+    \\&\approx
+    h(\theta)\exp\left(\trans{\left((1-m)\wvi_0+\sum_{i=1}^m\wvi_i\right)} T(\theta) - \psi\left((1-m)\wvi_0-\sum_{i=1}^m\wvi_i\right)\right)
+    \\&=q(\theta|\wsda)
+\end{align}
+SDA-Bayes unfortunately provides no insight into how $\wsda$ compares to the single machine oracle VI parameters $\wvi$.
+With parameter averaging, at least we know that the variance shrinks at the optimal rate even if the bias does not improve,
+and we can use this result to determine how many machines we can realistically use for distributed computing.
+For SDA, there is no similar result.
+
+%The remaining two methods for distributed VI are improvements to SDA-Bayes.
+%Parameter averaging (and hence SDA-Bayes) fails spectacularly when the model is non-identifiable.
+%This rarely occurs in the models of Section \ref{sec:merge:ave}, 
+%but nonidentifiability is common in the sort of models that require variational methods.
+
+One limitation of SDA-Bayes is that it only works when the parameters of the variational family are identifiable.
+We say that the variational family is \defn{identifiable} if for all $\w_1 \ne \w_2 \in W$, $q(\theta|\w_1)\ne q(\theta|\w_2)$.
+One important class of nonidentifiability is parameter symmetry.
+Let $S_d$ denote the group of permutation matrices of dimension $d$ 
+(called the symmetric group of order $d$),
+and recall that the variational parameter space $\W=\R^d$.
+We say that the parameter space exhibits \defn{symmetry} if for any $P\in S_d$, $q(\theta|\w) = q(\theta|P\w)$.
+Symmetry is commonly found in mixture models, 
+and it complicates their learning.
+\citet{campbell2014approximate} propose an extension to SDA-Bayes called \defn{approximate merging of posteriors with symmetries} (AMPS).
+The AMPS estimator is given by
+\begin{equation}
+\wamps = (1-m)\wvi_0+\sum_{i=1}^mP_i\wvi_i
+\end{equation}
+where the $P_i$ are given by
+\begin{equation}
+    \{P_i\} = \argmax_{P_i\in S_d} \psi\left((1-m)\wvi_0+\sum_{i=1}^mP_i\wvi_i\right)
+\end{equation}
+The intuition behind AMPS is that we should permute all the matrices in such a way that they have the highest probability of being aligned correctly.
+Maximizing the log partition function $\psi$ does this.
+The idea of optimizing over permutation matrices to handle symmetry non-identifiabilities is useful in general ERM, not only variational methods.
+No similar result exists for merging procedures for general ERM.
+
+A second limitation of SDA-Bayes is that it requires the prior and variational families be conjugate.
+\citet{gershman2012nonparametric} introduce \defn{nonparametric variational inference} (NVI), 
+which is a single machine method that does not require conjugacy.
+\citet{neiswanger2015embarrassingly} propose a distributed extension to NVI that fits our framework.
+The central idea is that the variational family is the mixture 
+\begin{equation}
+    Q^\textit{nvi}= \left\{\frac{1}{k}\prod_{i=1}^k \normal{\theta}{\mu}{\Sigma} : \mu\in\R^d, \Sigma\text{ is a $d$ dimensional covariance matrix}\right\}
+\end{equation}
+and $k$ is a hyperparameter determining the number of mixture components.
+Since $Q^\textit{nvi}$ is a family of mixture models, 
+it exhibits parameter symmetry.
+Rather than optimizing over rotation matrices like AMPS,
+\citet{neiswanger2015embarrassingly} choose to use a merge procedure that uses sampling to align the components.
+As the details are rather complicated,
+we do not describe them here.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Markov chain monte carlo (MCMC)}
+\label{sec:merge:mcmc}
 
-Recent work has focused on improving non-asymptotic bounds of MCMC 
-\citep[e.g.][]{latuszynski2013nonasymptotic,andrieu2015convergence,adamczak2015exponential,andrieu2016establishing}.
-
+\defn{Markov chain monte carlo} (MCMC) is a stochastic method for approximating the posterior of a distribution \citep{andrieu2003introduction}.
+MCMC provides a way to create samples from the posterior distribution,
+and these samples can be used as a surrogate to a parametric form.
+MCMC is typically slower than variational methods but more accurate.
+As the number of MCMC samples approaches infinity,
+the approximation error of MCMC shrinks to zero;
+whereas the approximation error for variational methods is always some nonzero constant determined by the approximating distribution.
+In this section, we will see two distributed MCMC methods that fit our framework.
 A number of recent papers have developed approximate cross validation techniques for MCMC
 \citep{marshall2003approximate,
 bhattacharya2007importance,
@@ -986,6 +1201,11 @@ bornn2010efficient,
 held2010posterior,
 vehtari2012survey,
 li2016approximating}.
+None of these fast cross validation algorithms is suitable for the distributed environment,
+unlike the methods induced by our framework.
+
+%Recent work has focused on improving non-asymptotic bounds of MCMC 
+%\citep[e.g.][]{latuszynski2013nonasymptotic,andrieu2015convergence,adamczak2015exponential,andrieu2016establishing}.
 
 \cite{neiswanger2014asymptotically} also present asymptotically efficient estimators.
 We can write the kernel density estimate of the posterior as
