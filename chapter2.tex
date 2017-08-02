@@ -10,8 +10,10 @@
 \newcommand{\model}{\hat{\text{model}}}
 
 \newcommand{\riskstar}{{\textrm{err}^*}}
-\newcommand{\risktilde}{\widetilde{\textrm{err}}}
 \newcommand{\riskhat}{\widehat{\textrm{err}}}
+\newcommand{\riskvalid}{\widehat{\textrm{err}}^\textit{valid}}
+\newcommand{\riskcv}{\widehat{\textrm{err}}^\textit{cv}}
+\newcommand{\riskboot}{\widehat{\textrm{err}}^\textit{boot}}
 
 \newcommand{\cv}{\mkprocedure{cv}}
 \newcommand{\fastcv}{\mkprocedure{fast\_cv}}
@@ -19,6 +21,7 @@
 \newcommand{\greedy}{\mkprocedure{greedy}}
 \newcommand{\GreeDi}{\mkprocedure{GreeDi}}
 
+\newcommand{\merge}{\mkprocedure{merge}}
 \newcommand{\mse}[1]{}
 
 \newcommand{\eye}[1]{I_{#1}}
@@ -33,6 +36,7 @@
 \newcommand{\prior}[1]{p_0\left({#1}\right)}
 \newcommand{\gaussian}[3]{\mathcal N({#1};{#2},{#3})}
 
+\newcommand{\wf}{{\hat\w^{f}}}
 \newcommand{\wprefix}{{\hat\w_\textit{prefix}}{}}
 \newcommand{\wsuffix}{{\hat\w_\textit{suffix}}{}}
 \newcommand{\wridge}{\hat\w^\textit{ridge}}
@@ -57,16 +61,117 @@
 
 %Our model of computation is closely related to the \emph{map reduce class} (MRC) introduced by \cite{karloff2010model}.
 %They define the class $MRC^i$
-\cite{karloff2010model} introduce the \emph{map reduce class} model of computation as an alternative to the PRAM model for analyzing algorithms.
-Specifically, they define $MRC^i$ to be the class of functions computable on a MapReduce architecture with $O(\log^i n)$ rounds of computation.
-Our model of computation is a subset of $MRC^0$,
-however we require exactly one round of computation rather than a constant number of rounds.
 
 \noindent
 %A machine learning model consists of a set of data points $\Z$,
 %a set of parameters $\W$,
 %and a function $A : \{\Z\} \to \W$ that attempts to find the ``best'' set of parameters for the input data set.
-In machine learning, we are given a set of data points $Z$
+%We are given a set of $mn$ data points $Z$ a set of models $\set H$
+%A machine learning model consists of a set of parameters $\W$ and a loss function 
+%This chapter introduces the semigroup framework for machine learning and describes
+
+%In the most general machine learning setting,
+%we are given a random variable $\Z$ and our goal is to esti
+%a machine learning problem is defined by a set $\Z$ of data points,
+%a set $\W$ of parameters,
+%and an algorithm $A : \Z \to \W$
+
+\noindent
+This chapter introduces the semigroup framework for machine learning.
+Section \ref{sec:notation} formally defines the framework and introduces the required notation.
+Section \ref{sec:par}
+
+\subsection{Notation and problem statement}
+\label{sec:notation}
+Let $\Z$ be a probability space with an unknown distribution called the \defn{data space},
+and $f$ be a function from $\Z$ to a space $\W$ called the \defn{parameter space}.
+Our goal is to estimate $\E_{\z\in\Z} f(\z)$ based on a sample of points $Z$ from $\set Z$.
+We call a function $\hat f : \{\Z\} \to \W$ an \defn{estimator} of $f$ if
+\begin{equation}
+    \label{eq:notation:fhat}
+    \hat f(Z) \approx \E_{\z\in\Z}f(\z)
+    .
+\end{equation}
+When the data set $Z$ is understood from context,
+we will denote the parameter estimate by $\what^f=\hat f(Z)$.
+
+%The approximation \eqref{eq:notation:fhat} cannot be exact unless the distribution over $\Z$ is trivial,
+The quality of an estimator is determined by the accuracy of the approximation \eqref{eq:notation:fhat}.
+To formally measure this accuracy, 
+we require a \defn{loss function} $\Loss : \{\Z\} \times \W \to \R$. 
+We define the \defn{true parameter} to be 
+\begin{equation}
+    \wstar = \argmin_{\w\in\W} \E_{\z\in\Z}\Loss(\z;\w)
+\end{equation}
+and assume for notational convenience that $\wstar$ is unique.
+When $\W$ is a normed space, we define the \defn{statistical error} to be
+\begin{equation}
+    \ltwo{\wstar-\what}
+\end{equation}
+We define \defn{true loss} to be
+\begin{equation}
+    \riskstar = \E_{\z\in\Z}\Loss(\z;\wstar)
+\end{equation}
+and the \defn{empirical loss} of an estimator $f$ to be 
+\begin{equation}
+    \riskhat^f = \Loss(Z;\what^f)
+    .
+\end{equation}
+We can measure the quality of an estimator by the difference between the true and empirical losses.
+
+%we are given a set $Z\subseteq\Z$ of training data,
+%a set $\W$ of model parameters,
+%a loss function $\Loss : \Z \times \W \to \R$,
+%a regularization function $\reg : \W \to \R$,
+%and a regularization strength $\lambda \in \R$.%
+%\footnote{
+    %Throughout this thesis, we will use the script font to denote sets that may be either finite or infinite,
+%and the italic font to denote sets that must be finite.
+%}
+A particularly important estimator is the \defn{regularized loss minimizer} (RLM).%
+\footnote{
+    There are many estimators closely related to the RLM that share its useful properties.
+    For example: 
+    empirical risk minimization,
+    structural risk minimization,
+    minimum description length estimation,
+    maximum likelihood estimation, 
+    quasi maximum likelihood estimation,
+    and maximum a posteriori estimation.
+    For our purposes, all these estimators are essentially the same.
+}
+The RLM estimator is parameterized by a regularization function $\reg : \W \to \R$ 
+and a constant $\lambda : \R$.
+The estimator is given by
+\begin{equation}
+    \wrlm = \argmin_{\w\in\W} \Loss(Z;\w) + \lambda\reg(\w)
+    .
+\end{equation}
+In the common case where the data $Z$ is drawn i.i.d.\ from $\Z$, the RLM estimator can be written as
+\begin{equation}
+    \wrlm = \argmin_{\w\in\W} \sum_{\z\in\Z}\loss(\z;\w) + \lambda\reg(\w)
+    .
+\end{equation}
+Standard results on the RLM estimator show that under mild conditions,
+$\ltwo{\wstar-\what^f}\le O(1/\sqrt{mn})$.
+%There are two common interpretations of RLM.
+%In the Bayesian interpretation, the loss $\loss$ represents the negative log likelihood of a
+
+%Let $\z$ be a random variable drawn from some probability space $\Z$,
+%and $f : \z \to \W$ be a function.
+%
+%We typically measure the quality of an estimator by its \defn{risk},
+%which is defined to be
+%\begin{equation}
+    %\riskstar = \E \Loss(\w,Z)
+%\end{equation}
+%where the expectation is taken with respect to the data $Z$.
+%In most situations, the distribution of $Z$ is unknown and so the true risk cannot be computed.
+%The \defn{empirical risk} is an approximation to the true risk given by
+%\begin{equation}
+    %\risktilde = \Loss(\what,Z)
+%\end{equation}
+%where $\what$ now depends on $Z$.
 
 %From a certain perspective, everything in this dissertation could be described as ``obvious.''
 %One of my main contributions is to formalize the obvious.
@@ -132,37 +237,121 @@ In machine learning, we are given a set of data points $Z$
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-We typically measure the quality of an estimator by its \defn{risk},
-which is defined to be
-\begin{equation}
-    \riskstar = \E \Loss(\w,Z)
-\end{equation}
-where the expectation is taken with respect to the data $Z$.
-In most situations, the distribution of $Z$ is unknown and so the true risk cannot be computed.
-The \defn{empirical risk} is an approximation to the true risk given by
-\begin{equation}
-    \risktilde = \Loss(\what,Z)
-\end{equation}
-where $\what$ now depends on $Z$.
+\subsection{Problem statement}
+
+We consider estimators that have an associated merge function $\merge_f : \{\W\}\to\W$.
+
+This problem was inspired by an algebraic question:
+when is it possible for the parameter space $\W$ to be a semigroup,
+and the estimator $f$ to be a homomorphism?%
+\footnote{
+A \defn{semigroup} is a tuple $\semigroup A$
+where $\set A$ is a set and
+$\mappend A : \set A \times \set A \to \set A$ is an associative binary operation.
+That is, for all $a_1, a_2, a_3 \in \set A$, 
+%\begin{equation}
+$(a_1 \mappend A a_2) \mappend A a_3 = a_1 \mappend A (a_2 \mappend A a_3)$
+.
+%\end{equation}
+A \defn{homomorphism} between two semigroups $\semigroup A$ and $\semigroup B$ is a function  $f: \set A \to \set B$ satisfying
+%\begin{equation}
+$f(a_1 \mappend A a_2) = f(a_1) \mappend B f(a_2)$
+.
+%\end{equation}
+}
+The study of semigroups is closely related to the study of computational complexity
+\citep{tesson2004monoids,tesson2006bridges}.
+
+\citet{brown2004semigroup} shows how the study of semigroups and rings can be applied to the analysis of markov chains.
+
+\citet{hildebrand2005survey} provides a survey of results on random walks on finite semigroups.
+
+There are many types of approximate homomorphisms.
+\citet{zelinka1970tolerance} and \citet{zelinka1975tolerance} replace the equality relation with the weaker notion of a tolerance relation.%
+\footnote{
+    A \defn{tolerance relation} is an equivalence relation that need not obey transitivity.
+    They were a popular object of study for modeling fuzzy set theories.
+}
+More recently, quasimorphisms have been studied \citep{kotschick2004quasi}.
+\citet{green2014approximate} provides a survey of approximate homomorphisms and algebraic structures.
+
+There is an entire subfield known as algebraic statistics.
+This subfield has its own journal (appropriately titled \emph{Algebraic Statistics}) 
+and several books \citep{pachter2005algebraic,drton2008lectures,sullivant2017algebraic}.
+The focus of this line of work is to study exponential family distributions defined by algebraic varieties.%
+\footnote{
+    A set of points is called an \defn{algebraic variety} if it is the set of zeros of a polynomial equation.
+}
+The tools of algebraic geometry (which describe the properties of algebraic varieties)
+can then be used to describe the properties of statistical models.
+We will briefly mention results from this line of work in our discussion of exponential families in Section \ref{sec:merge:ef},
+but otherwise this line of work is unrelated to this thesis.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Parallel and distributed learning}
 
-There are many frameworks for distributed machine learning.
+%\defn{Parallel learning algorithms} use multiple process
+
+Many datasets are too large to fit in the memory of a single machine.
+To analyze them, we must partition the data onto many machines and use distributed algorithms.
+Existing distributed learning algorithms fall into one of two categories:
+
+\defn{Interactive distributed algorithms} require many rounds of communication between machines.
+Representative examples include \citet{boyd2011distributed}, \citet{li2014scaling}, \cite{ma2015adding}, and \cite{zhao2017scope}. 
+These algorithms resemble standard iterative algorithms where each iteration is followed by a communication step. 
+The appeal of interactive algorithms is that they enjoy the same statistical performance as standard sequential algorithms.
+That is, given $m$ machines each with $n$ data points of dimension $d$, interactive algorithms have error that decays as $O(\sqrt{d/mn})$.
+But, interactive algorithms have three main disadvantages.
+First, these algorithms are slow when communication latency is the bottleneck.
+An extreme example occurs in the \emph{federated learning} environment proposed by \cite{mcmahan2017communication}, which uses cell phones as the computational nodes. 
+Second, these algorithms require special implementations.
+They do not work with off-the-shelf statistics libraries provided by (for example) Python, R, and Matlab.
+Third, because of the many rounds of communication, any sensitive information in the data is likely to leak between machines.
+
+\defn{Non-interactive distributed algorithms} require only a single round of communication.
+Each machine independently solves the learning problem on a small subset of data,
+then a master machine merges the solutions together.
+These algorithms solve all the problems of interactive ones:
+they are fast when communication is the main bottleneck;
+they are easy to implement with off-the-shelf statistics packages;
+and they are robust to privacy considerations.
+The downside is worse statistical performance.
+The popular averaging estimator has worst case performance $O(\sqrt{d/n})$ completely independent of the number of machines $m$. 
+A growing body of work improves the analysis of the averaging estimator under special conditions 
+(e.g.
+\citet{mcdonald2009efficient},
+\citet{zhang2012communication},
+\citet{zhang2013divide},
+and
+\citet{rosenblatt2016optimality})
+and develops more robust non-interactive estimators
+(e.g.
+\citet{zinkevich2010parallelized},
+\citet{liu2014distributed},  
+\citet{lee2015communication}, 
+\citet{battey2015distributed},
+\citet{han2016bootstrap},
+and \citet{jordan2016communication}).
+Existing estimators either work on only a limited class of models or have computationally intractable merge procedures.
 
 \begin{algorithm}
     \caption{\mkprocedure{dist\_learn}(learning algorithm $f$, data sets $Z_i$)}
     \vspace{0.1in}
     prerequisite: each machine $i$ has dataset $Z_i$ stored locally
     \begin{algorithmic}[1]
-        \State each machine:
-        \State ~~~~~computes $\what_i = f(Z_i)$
-        \State ~~~~~transmits $\what_i$ to the master
+        \State each machine $i$ independently and in parallel:
+        \State ~~~~~compute $\wf_i = f(Z_i)$
+        \State ~~~~~transmit $\wf_i$ to the master
         \State master machine:
-        \State ~~~~~$\what = merge\{\what_i\}_{i=1}^m$
+        \State ~~~~~compute $\wf = \merge_f\{\what_i\}_{i=1}^m$
     \end{algorithmic}
 \end{algorithm}
+
+\cite{karloff2010model} introduce the \defn{map reduce class} model of computation as an alternative to the PRAM model for analyzing algorithms.
+Specifically, they define $MRC^i$ to be the class of functions computable on a MapReduce architecture with $O(\log^i n)$ rounds of computation.
+Our model of computation is a subset of $MRC^0$,
+however we require exactly one round of computation rather than a constant number of rounds.
 
 \subsubsection{Differential privacy}
 
@@ -170,21 +359,70 @@ There are many frameworks for distributed machine learning.
 
 \subsection{Cross validation}
 
-Cross validation is a method for estimating the quality of an estimator.
+%Model selection is the process whereby we select which machine learning algorithm to use.
+%There are three main methods for model selection in machine learning:
+%the validation set,
+%the bootstrap,
+%and cross validation.
+
+%The empirical risk $\riskhat$ is a biased estimator of the true risk $\riskstar$.
+It is important to measure the quality of a machine learning model.
+
+\newcommand{\Ztrain}{Z_\textit{train}}
+\newcommand{\Ztest }{Z_\textit{test }}
+In the validation set estimator,
+we divide the training data set into two sets $\Ztrain$ and $\Ztest$.
+The risk is then estimated by
+\begin{equation}
+    \riskvalid = \Loss(\Ztest,f(\Ztrain))
+    .
+\end{equation}
+$\riskvalid$ is an asymptotically unbiased estimator of $\riskstar$,
+but it has statistically
+The main advantage of the validation set method is computational,
+as the function $f$ needs to be evaluated only once.
+Many modern machine learning applications use an expensive learning procedure and a large data set,
+so multiple evaluations of $f$ would be computationally impractical.
+
+%The empirical loss calculated from a data set is not a good measu
+%Cross validation is a method for measuring the quality of an estimator.
+
+Previous work on distributed learning has essentially ignored the model selection step of learning.
 
 \citet{joulani2015fast} provides a tree based fast cross validation algorithm for incremental learning algorithms.
 
+The bootstrap is an alternative to cross validation.
+\citet{kleiner2012big} and \citet{kleiner2014scalable} introduce the \defn{bag of little bootstraps} (BLB) as an efficiently computatable alternative to the bootstrap.
+
+Standard no-free-lunch results for estimators \citep[e.g. Chapter 8 of][]{shalev2014understanding} ensure that there is no universally best method for estimating an estimator's true error rate for all distributions.
+\citet{kohavi1995study} empirically compare the bootstrap to $k$-fold cross validation,
+and determine that on real world datasets $k$-fold cross validation with a small $k\approx10$ has the best performance.
+
+\begin{algorithm}
+    \caption{bootstrap(learning algorithm $f$, data set $Z$, number of samples $t$)}
+    \vspace{0.1in}
+    \begin{algorithmic}[1]
+        \For {$i=1$ \TO $t$}
+            \State let $Z^{(i)}$ be a sample of $mn$ data points from $Z$ with replacement
+            \State let $\riskhat^{(i)} = \Loss(Z-Z^{(i)},f(Z^{(i)}))$
+        \EndFor
+        \State \Return
+    \end{algorithmic}
+\end{algorithm}
+
+The standard procedure for $k$-fold cross validation is shown in Algorithm \ref{alg:cv}.
 \begin{algorithm}
     \caption{\cv(learning algorithm $f$, data set $Z$, number of folds $k$)}
+    \label{alg:cv}
     \vspace{0.1in}
     \begin{algorithmic}[1]
         \State partition $Z$ into $k$ disjoint sets $Z_1,...,Z_k$
-        \vspace{0.1in}
+        %\vspace{0.1in}
         \For {$i \in \{1,...,k\}$}
             \State $\what_{-i} = f(Z - Z_i)$ 
             \State $\riskhat_i = \Loss(\model_i,Z_i)$
         \EndFor
-        \vspace{0.1in}
+        %\vspace{0.1in}
         \State \Return $\frac 1 k \sum_{i=1}^k \riskhat_i$
     \end{algorithmic}
 \end{algorithm}
@@ -994,7 +1232,7 @@ and the distributed ERM methods can be directly applied to VI for improved perfo
     but they only applied in special cases and still lagged behind the non-bayesian optimization research.
     (2) Differentially private empirical risk minimization has been known since \citet{chaudhuri2011differentially}, with privacy preserving models existing in special cases earlier \citep{chaudhuri2009privacy}.
     Differential privacy appears to have only been applied to variational inference so far in three papers \citep{karwa2015private,park2016variational,jalko2016differentially},
-    all of which are currently under review and remain published only on the ArXiv.
+    all of which are currently under review and remain published only on the arXiv.
     (3) Essentially no papers on variational inference provide learning guarantees (either finite sample or asymptotic) on the quality of the learned parameters,
     whereas hundreds (if not thousands) of these results exist for the ERM case.
 }
@@ -1160,7 +1398,7 @@ where the $P_i$ are given by
 \begin{equation}
     \{P_i\} = \argmax_{P_i\in S_d} \psi\left((1-m)\wvi_0+\sum_{i=1}^mP_i\wvi_i\right)
 \end{equation}
-The intuition behind AMPS is that we should permute all the matrices in such a way that they have the highest probability of being aligned correctly.
+The intuition behind AMPS is that we should permute each machine's parameters in such a way that they have the highest probability of being aligned correctly.
 Maximizing the log partition function $\psi$ does this.
 The idea of optimizing over permutation matrices to handle symmetry non-identifiabilities is useful in general ERM, not only variational methods.
 No similar result exists for merging procedures for general ERM.
@@ -1180,6 +1418,8 @@ Rather than optimizing over rotation matrices like AMPS,
 \citet{neiswanger2015embarrassingly} choose to use a merge procedure that uses sampling to align the components.
 As the details are rather complicated,
 we do not describe them here.
+We do note, however, that the sampling is done locally on the master machine with no communication.
+The method therefore fits our framework.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1187,8 +1427,10 @@ we do not describe them here.
 \label{sec:merge:mcmc}
 
 \defn{Markov chain monte carlo} (MCMC) is a stochastic method for approximating the posterior of a distribution \citep{andrieu2003introduction}.
-MCMC provides a way to create samples from the posterior distribution,
-and these samples can be used as a surrogate to a parametric form.
+MCMC provides a way to generate samples from the posterior distribution,
+and these samples can be used to calculate the expectation and mode of the distribution.
+For example,
+
 MCMC is typically slower than variational methods but more accurate.
 As the number of MCMC samples approaches infinity,
 the approximation error of MCMC shrinks to zero;

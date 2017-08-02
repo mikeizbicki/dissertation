@@ -64,43 +64,6 @@ Existing distributed learning algorithms fall into one of two categories:
 %Existing distributed algorithms can be classified as either interactive or non-interactive depending on their communication complexity.
 %In this paper we propose an algorithm that exhibits the benefits of both types.
 
-\emph{Interactive} algorithms require many rounds of communication between machines.
-Representative examples include \citet{boyd2011distributed}, \citet{li2014scaling}, \cite{ma2015adding}, and \cite{zhao2017scope}. 
-These algorithms resemble standard iterative algorithms where each iteration is followed by a communication step. 
-The appeal of interactive algorithms is that they enjoy the same statistical performance as standard sequential algorithms.
-That is, given $m$ machines each with $n$ data points of dimension $d$, interactive algorithms have error that decays as $O(\sqrt{d/mn})$.
-But, interactive algorithms have three main disadvantages.
-First, these algorithms are slow when communication latency is the bottleneck.
-An extreme example occurs in the \emph{federated learning} environment proposed by \cite{mcmahan2017communication}, which uses cell phones as the computational nodes. 
-Second, these algorithms require special implementations.
-They do not work with off-the-shelf statistics libraries provided by (for example) Python, R, and Matlab.
-Third, because of the many rounds of communication, any sensitive information in the data is likely to leak between machines.
-
-\emph{Non-interactive} algorithms require only a single round of communication.
-Each machine independently solves the learning problem on a small subset of data,
-then a master machine merges the solutions together.
-These algorithms solve all the problems of interactive ones:
-they are fast when communication is the main bottleneck;
-they are easy to implement with off-the-shelf statistics packages;
-and they are robust to privacy considerations.
-The downside is worse statistical performance.
-The popular averaging estimator has worst case performance $O(\sqrt{d/n})$ completely independent of the number of machines $m$. 
-A growing body of work improves the analysis of the averaging estimator under special conditions 
-(e.g.
-\citet{mcdonald2009efficient},
-\citet{zhang2012communication},
-\citet{zhang2013divide},
-and
-\citet{rosenblatt2016optimality})
-and develops more robust non-interactive estimators
-(e.g.
-\citet{zinkevich2010parallelized},
-\citet{liu2014distributed},  
-\citet{lee2015communication}, 
-\citet{battey2015distributed},
-\citet{han2016bootstrap},
-and \citet{jordan2016communication}).
-Existing estimators either work on only a limited class of models or have computationally intractable merge procedures.
 
 %Non-interactive learning alg
 %The popular large scale learning system Vowpal Wabbit combines both types of algorithms to achieve good real world performance.
