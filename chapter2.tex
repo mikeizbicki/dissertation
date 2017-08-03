@@ -11,6 +11,8 @@
 
 \newcommand{\riskstar}{{\textrm{err}^*}}
 \newcommand{\riskhat}{\widehat{\textrm{err}}}
+\newcommand{\riskemp}{\widehat{\textrm{err}}^\textit{emp}}
+\newcommand{\risksrm}{\widehat{\textrm{err}}^\textit{srm}}
 \newcommand{\riskvalid}{\widehat{\textrm{err}}^\textit{valid}}
 \newcommand{\riskcv}{\widehat{\textrm{err}}^\textit{cv}}
 \newcommand{\riskboot}{\widehat{\textrm{err}}^\textit{boot}}
@@ -114,7 +116,7 @@ We define \defn{true loss} to be
 \end{equation}
 and the \defn{empirical loss} of an estimator $f$ to be 
 \begin{equation}
-    \riskhat^f = \Loss(Z;\what^f)
+    \riskemp{}^{,f} = \Loss(Z;\what^f)
     .
 \end{equation}
 We can measure the quality of an estimator by the difference between the true and empirical losses.
@@ -357,28 +359,105 @@ however we require exactly one round of computation rather than a constant numbe
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Cross validation}
+\subsection{Model selection and fast/distributed cross validation}
 
-%Model selection is the process whereby we select which machine learning algorithm to use.
-%There are three main methods for model selection in machine learning:
-%the validation set,
-%the bootstrap,
-%and cross validation.
+Model selection is the process of selecting a good machine learning algorithm for a particular task.
+Unfortunately, the best model selection methods have high computational cost and so cannot be used in large scale learning systems.
+Most research on large scale learning has focused only on accelerating the learning algorithm,
+with the model selection process receiving comparatively little attention.
+%Despite the importance of model selection,
+%there has been very little work on large scale or distributed model selection procedures.
+%The validation set method is the standard method in large scale learning due to attractive computational features,
+%but other methods have better statistical properties.
+In this section, we review four popular model selection procedures with emphasis on their statistical and computational tradeoffs.
+We show in particular that cross validation has the best statistical properties,
+but that standard cross validation techniques are too slow for large scale data.
+We develop a new cross validation technique for semigroup learning algorithms
+that has only a constant computational overhead independent of the size of the problem.
+Effectively, this results in ``free'' cross validation of model parameter estimates for all embarassingly parallel learning algorithms.
 
-%The empirical risk $\riskhat$ is a biased estimator of the true risk $\riskstar$.
-It is important to measure the quality of a machine learning model.
+We begin by formally defining the \defn{model selection} problem.
+Given a set of learning algorithms $\set F : \{\Z \to \W\}$ and a dataset $Z$,
+the best algorithm $f^*$ is given by
+\begin{equation}
+    f^*
+    = \argmin_{f\in\set F} \riskstar(f(Z))
+    = \argmin_{f\in\set F} \E_{\z\in\Z}\Loss(\z,f(Z))
+    .
+\end{equation}
+Because the distribution over $Z$ is unknown, 
+the distribution over $f(Z)$ will also be unknown;
+so $\riskstar(f(Z))$ cannot be directly computed and must be estimated.
+Given an estimator $\riskhat{}^g \approx \riskstar$,
+we estimate the optimal model to be
+\begin{equation}
+    \label{eq:cv:hatfg}
+    \hat f^g = \argmin_{f\in\set F} \riskhat^g(f(Z))
+    .
+\end{equation}
+The minimization \eqref{eq:cv:hatfg} is highly nonconvex,
+and a number of techniques have been proposed to solve it.
+In the popular but naive \defn{grid search} technique,
+the space of functions $\set F$ is discretized into a finite grid $F\subset\set F$,
+and the optimization is performed over $F$.
+Grid search tends to work well when $\set F$ is one dimensional,
+but the performance degrades in higher dimensions.
+More advanced techniques involve randomly subsampling $\set F$ \citep{bergstra2012random} and the so-called \defn{bayesian optimization} techniques \citep[e.g.][]{snoek2012practical,feurer2015efficient}.
+Each of these techniques requires as a subroutine a good estimate of the true error.
+We focus in the remainder of this section on these estimators.
 
-\newcommand{\Ztrain}{Z_\textit{train}}
-\newcommand{\Ztest }{Z_\textit{test }}
-In the validation set estimator,
-we divide the training data set into two sets $\Ztrain$ and $\Ztest$.
+Standard no-free-lunch results \citep[e.g.\ Chapter 8 of][]{shalev2014understanding} ensure that there is no universally best method for estimating an estimator's true error for all distributions.
+
+The most obvious estimator of $\riskstar$ is the empirical risk $\riskemp$.
+Unfortunately, the empirical risk $\riskemp$ is heavily biased because it evaluates the model on the same data it was trained on.
+\defn{Structural risk minimization} (SRM) is a technique that uses a debiased empirical risk $\riskemp$ for model selection
+\citep[Chapter 7 of ][]{shalev2014understanding}.
+%The idea is to create an upperbound on the model's \defn{excess risk} $(\riskemp-\riskstar)$.
+The idea is to create a function $b : \{\Z\} \to \R$ that upper bounds the \defn{excess risk}.
+That is,
+\begin{equation}
+    \riskstar-    \riskemp\le b(Z)
+    .
+\end{equation}
+These bounds are often given in terms of the learning algorithm's VC-dimension or rademacher complexity.
+The SRM risk estimator is then given by
+\begin{equation}
+    \risksrm 
+    = \riskemp + b(Z) 
+    \ge \riskstar
+    .
+\end{equation}
+The main advantage of the SRM estimator is its computational simplicity.
+But SRM is not often used in practice because deriving the bound function $b$ can be difficult,
+and the known bounds are typically not tight enough to give good approximations.
+
+\newcommand{\Ztrain}{Z^\textit{train}}
+\newcommand{\Ztest }{Z^\textit{test }}
+\newcommand{\ntrain}{n^\textit{train}}
+\newcommand{\ntest }{n^\textit{test }}
+The most commonly used risk estimator in large scale learning is the \defn{validation set estimator}.
+This method divides the training data set into two disjoint sets $\Ztrain$ and $\Ztest$.
 The risk is then estimated by
 \begin{equation}
     \riskvalid = \Loss(\Ztest,f(\Ztrain))
     .
 \end{equation}
-$\riskvalid$ is an asymptotically unbiased estimator of $\riskstar$,
-but it has statistically
+%Let $\ntrain$ and $\ntest$ denote the number of elements in $\Ztrain$ and $\Ztest$ respectively.
+%Asymptotically, we have that as both $\ntrain\to\infty$ and $\ntest\to\infty$,
+%$\riskvalid\to\riskstar$.
+%Asymptotically as the size of the test set $|\Ztest|$ goes to infinity,
+%but its finite sample properties are much more difficult to analyze. 
+This estimator is unbiased in the sense that
+\begin{equation}
+    \E_{\z\sim\Ztest}\Loss(\z,f(\Ztrain)) = \riskstar(f(\Ztrain))
+    .
+\end{equation}
+The variance of $\riskvalid$ is determined by the number of samples in the validation set:
+as the number of samples increases, the variance decreases.
+Unfortunately, increasing the size of the validation set decreases the size of the test set,
+increasing the model's true error.
+There is no general procedure for finding the optimal balance between the size of the training and test sets,
+although in practice it is common to use about 10\% of the data in the validation set.
 The main advantage of the validation set method is computational,
 as the function $f$ needs to be evaluated only once.
 Many modern machine learning applications use an expensive learning procedure and a large data set,
@@ -387,31 +466,42 @@ so multiple evaluations of $f$ would be computationally impractical.
 %The empirical loss calculated from a data set is not a good measu
 %Cross validation is a method for measuring the quality of an estimator.
 
-Previous work on distributed learning has essentially ignored the model selection step of learning.
-
-\citet{joulani2015fast} provides a tree based fast cross validation algorithm for incremental learning algorithms.
-
-The bootstrap is an alternative to cross validation.
+The \defn{bootstrap} improves the statistical properties of the validation set estimator but is more expensive computationally.
+The bootstrap approximates the 
+The full procedure is shown in Algorithm \ref{alg:boot}.
 \citet{kleiner2012big} and \citet{kleiner2014scalable} introduce the \defn{bag of little bootstraps} (BLB) as an efficiently computatable alternative to the bootstrap.
+The BLB subsamples some small fraction of the data set in each iteration before performing the full bootstrap test.
 
-Standard no-free-lunch results for estimators \citep[e.g. Chapter 8 of][]{shalev2014understanding} ensure that there is no universally best method for estimating an estimator's true error rate for all distributions.
-\citet{kohavi1995study} empirically compare the bootstrap to $k$-fold cross validation,
-and determine that on real world datasets $k$-fold cross validation with a small $k\approx10$ has the best performance.
-
-\begin{algorithm}
+\begin{algorithm}[t]
     \caption{bootstrap(learning algorithm $f$, data set $Z$, number of samples $t$)}
+    \label{alg:boot}
     \vspace{0.1in}
     \begin{algorithmic}[1]
         \For {$i=1$ \TO $t$}
             \State let $Z^{(i)}$ be a sample of $mn$ data points from $Z$ with replacement
             \State let $\riskhat^{(i)} = \Loss(Z-Z^{(i)},f(Z^{(i)}))$
         \EndFor
-        \State \Return
+        \State \Return $\riskboot = \frac 1 t \sum_{i=1}^t \riskhat^{(i)}$
     \end{algorithmic}
 \end{algorithm}
 
-The standard procedure for $k$-fold cross validation is shown in Algorithm \ref{alg:cv}.
-\begin{algorithm}
+\defn{Cross validation} also improves on the validation set method.
+Cross validation is the method of choice for small data sets where the increased computation is negligible.
+\citet{kohavi1995study} empirically compare the bootstrap to $k$-fold cross validation,
+and determine that on real world datasets $k$-fold cross validation with a small $k\approx10$ has the best performance.
+When computational requirements are ignored,
+it is tempting to make $k$ as large as possible.
+This is not recommended, however.
+\citet{rao2008dangers} shows that as $k$ increases beyond a certain threshold, 
+the bias of the estimator increases as well.
+
+There are many variations of cross validation with slightly different theoretical properties \citep{arlot2010survey}.
+A standard version called $k$-fold cross validation is shown in Algorithm \ref{alg:cv}.
+The data set $Z$ is partitioned into $k$ smaller data sets $Z_1,...,Z_k$.
+For each of these data sets, the validation set estimator is used to approximate the true error.
+The results are then averaged and returned.
+
+\begin{algorithm}[t]
     \caption{\cv(learning algorithm $f$, data set $Z$, number of folds $k$)}
     \label{alg:cv}
     \vspace{0.1in}
@@ -419,47 +509,61 @@ The standard procedure for $k$-fold cross validation is shown in Algorithm \ref{
         \State partition $Z$ into $k$ disjoint sets $Z_1,...,Z_k$
         %\vspace{0.1in}
         \For {$i \in \{1,...,k\}$}
-            \State $\what_{-i} = f(Z - Z_i)$ 
-            \State $\riskhat_i = \Loss(\model_i,Z_i)$
+            \State let $\Ztrain_i = Z-Z_i$
+            \State let $\what_{-i} = f(\Ztrain_i)$ 
+            %\State let $\what_{-i} = f(Z - Z_i)$ 
+            \State let $\riskemp_i = \Loss(\model_i,Z_i)$
         \EndFor
         %\vspace{0.1in}
-        \State \Return $\frac 1 k \sum_{i=1}^k \riskhat_i$
+        \State \Return $\frac 1 k \sum_{i=1}^k \riskemp_i$
     \end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}
+Naive $k$-fold cross validation is an expensive procedure taking time $O(k f(n))$.
+For many models, fast cross validation procedures have been developed.
+\citet{arlot2010survey} provide a survey of results,
+describing fast cross validation methods for ridge regression, kernel density estimation, and nearest neighbor classification.
+All of these methods fit the semigroup framework,
+and so these fast cross validation methods can be though of as special cases of our algorithm.
+\citet{joulani2015fast} provides a tree based fast cross validation algorithm for incremental learning algorithms.
+All previous work on fast cross validation methods has been for the single machine case,
+whereas we provide a method for the distributed learning case.
+
+\begin{algorithm}[t]
     \caption{\fastcv(learning algorithm $f$, data set $Z$, number of folds $k$)}
     \vspace{0.1in}
     \begin{algorithmic}[1]
         \State partition $Z$ into $k$ equally sized disjoint sets $Z_1,...,Z_k$
-        %\State
-        \vspace{0.1in}
-        %\State // calculate local models
+        %\vspace{0.1in}
+        \State // calculate local models
         \For {$i = 1$ \TO $k$}
             \State $\what_{i} = f(Z_i)$ 
         \EndFor
-        \vspace{0.1in}
-        %\State // calculate prefixes
+        %\vspace{0.1in}
+        \State // calculate prefixes
         \For {$i = 1$ \TO $k$}
-            \State $\wprefix_{,i} = \wprefix_{,i-1} \mappend{} \what_i$ 
+            %\State $\wprefix_{,i} = \wprefix_{,i-1} \mappend{} \what_i$ 
+            \State $\wprefix_{,i} = \merge_f(\wprefix_{,i-1}, \what_i)$ 
         \EndFor
-        \vspace{0.1in}
-        %\State // calculate suffixes
+        %\vspace{0.1in}
+        \State // calculate suffixes
         \For {$i = k$ \TO $1$}
-            \State $\wsuffix_{,i} = \wsuffix_{,i+1} \mappend{} \what_i$ 
+            %\State $\wsuffix_{,i} = \wsuffix_{,i+1} \mappend{} \what_i$ 
+            \State $\wsuffix_{,i} = \merge_f(\wsuffix_{,i+1} , \what_i)$ 
         \EndFor
-        \vspace{0.1in}
-        %\State // merge models and calculate estimated risk
+        %\vspace{0.1in}
+        \State // merge models and calculate estimated risk
         \For {$i = 1$ \TO $k$}
-            \State $\what_{-i} = \wprefix_i \mappend{} \wsuffix_i$
-            \State $\riskhat_i = \Loss(\what_{-i},Z_i)$
+            %\State $\what_{-i} = \wprefix_i \mappend{} \wsuffix_i$
+            \State $\what_{-i} = \merge_f(\wprefix_i , \wsuffix_i)$
+            \State $\riskemp_i = \Loss(\what_{-i},Z_i)$
         \EndFor
-        \vspace{0.1in}
-        \State \Return $\frac 1 k \sum_{i=1}^k \riskhat_i$
+        %\vspace{0.1in}
+        \State \Return $\frac 1 k \sum_{i=1}^k \riskemp_i$
     \end{algorithmic}
 \end{algorithm}
 
-\begin{algorithm}
+\begin{algorithm}[t]
     \caption{\distcv(learning algorithm $f$, data set $Z$, number of folds $k$)}
     \vspace{0.1in}
     prerequisite: each machine $i$ has dataset $Z_i$ stored locally
@@ -469,25 +573,25 @@ The standard procedure for $k$-fold cross validation is shown in Algorithm \ref{
         \State ~~~~~broadcasts $\what_i$ to each other machine
         \State each machine $i$:
         \State ~~~~~computes $\w_{-i} = merge\{\w_1,...,\w_{i-1},\w_{i+1},...,\w_k\}$
-        \State ~~~~~computes $\riskhat_i = \Loss(\what_{-i},Z_i)$
-        \State ~~~~~transmits $\riskhat_i$ to the master
+        \State ~~~~~computes $\riskemp_i = \Loss(\what_{-i},Z_i)$
+        \State ~~~~~transmits $\riskemp_i$ to the master
         \State the master machine:
-        \State ~~~~~computes $\riskhat = \frac 1 k \sum_{i=1}^k \riskhat_i$
-        \State ~~~~~\Return $\riskhat$
+        \State ~~~~~computes $\riskemp = \frac 1 k \sum_{i=1}^k \riskemp_i$
+        \State ~~~~~\Return $\riskemp$
     \end{algorithmic}
 \end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Online learning}
-
-\begin{algorithm}
-    \caption{\mkprocedure{add1dp}(learning algorithm $f$, model $\what$, data point $z$)}
-    \vspace{0.1in}
-    \begin{algorithmic}[1]
-        \State \Return $\what \mappend{} f(z)$
-    \end{algorithmic}
-\end{algorithm}
+%\subsection{Online learning}
+%
+%\begin{algorithm}
+    %\caption{\mkprocedure{add1dp}(learning algorithm $f$, model $\what$, data point $z$)}
+    %\vspace{0.1in}
+    %\begin{algorithmic}[1]
+        %\State \Return $\what \mappend{} f(z)$
+    %\end{algorithmic}
+%\end{algorithm}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
