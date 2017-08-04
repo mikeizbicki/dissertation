@@ -54,6 +54,7 @@
 \usepackage{wrapfig}
 \usepackage[usenames,dvipsnames,svgnames,table]{xcolor}
 \usepackage{setspace}
+\usepackage{booktabs,makecell}
 
 %\usepackage{placeins}
 %\let\Oldsection\section
@@ -100,6 +101,17 @@
 %\let\emph\relax % there's no \RedeclareTextFontCommand
 %\DeclareTextFontCommand{\emph}{\bfseries}
 
+%\usepackage[T1]{fontenc}
+\usepackage{calligra}
+\newcommand{\fancyf}{%
+  \mkern-4mu
+  \text{%
+    \scalebox{1}[.8]{%
+      \rotatebox[origin=c]{20}{\fontfamily{calligra}\selectfont f}
+    }%
+  }%
+ \mkern-4mu
+}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \usepackage[breakable, theorems, skins]{tcolorbox}
@@ -282,7 +294,7 @@
 \newcommand{\what}{{\hat\w}}
 \newcommand{\wq}{\hat\w^{q}}
 \newcommand{\wqstar}{\hat\w^{q^*}}
-\newcommand{\dist}{\mathcal{D}}
+%\newcommand{\dist}{\mathcal{D}}
 \newcommand{\reg}{r}
 \newcommand{\loss}{\ell}
 \newcommand{\Loss}{\mathcal{L}}

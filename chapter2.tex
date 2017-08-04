@@ -38,7 +38,9 @@
 \newcommand{\prior}[1]{p_0\left({#1}\right)}
 \newcommand{\gaussian}[3]{\mathcal N({#1};{#2},{#3})}
 
-\newcommand{\wf}{{\hat\w^{f}}}
+\newcommand{\alg}{\mkprocedure{alg}}
+\newcommand{\f}{f}
+\newcommand{\walg}{{\hat\w^{\alg}}}
 \newcommand{\wprefix}{{\hat\w_\textit{prefix}}{}}
 \newcommand{\wsuffix}{{\hat\w_\textit{suffix}}{}}
 \newcommand{\wridge}{\hat\w^\textit{ridge}}
@@ -83,22 +85,161 @@ This chapter introduces the semigroup framework for machine learning.
 Section \ref{sec:notation} formally defines the framework and introduces the required notation.
 Section \ref{sec:par}
 
-\subsection{Notation and problem statement}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Parallel and distributed learning}
+
+%\defn{Parallel learning algorithms} use multiple process
+
+Many datasets are too large to fit in the memory of a single machine.
+To analyze them, we must partition the data onto many machines and use distributed algorithms.
+Existing distributed learning algorithms fall into one of two categories:
+
+\defn{Interactive distributed algorithms} require many rounds of communication between machines.
+Representative examples include \citet{boyd2011distributed}, \citet{li2014scaling}, \cite{ma2015adding}, and \cite{zhao2017scope}. 
+These algorithms resemble standard iterative algorithms where each iteration is followed by a communication step. 
+The appeal of interactive algorithms is that they enjoy the same statistical performance as standard sequential algorithms.
+That is, given $m$ machines each with $n$ data points of dimension $d$, interactive algorithms have statistical error that decays as $O(\sqrt{d/mn})$.
+But, interactive algorithms have three main disadvantages.
+First, these algorithms are slow when communication latency is the bottleneck.
+An extreme example occurs in the \emph{federated learning} environment proposed by \cite{mcmahan2017communication}, which uses cell phones as the computational nodes. 
+Second, these algorithms require special implementations.
+They do not work with off-the-shelf statistics libraries provided by (for example) Python, R, and Matlab.
+Third, because of the many rounds of communication, any sensitive information in the data is likely to leak between machines.
+
+\defn{Non-interactive distributed algorithms} require only a single round of communication.
+Each machine independently solves the learning problem on a small subset of data,
+then a master machine merges the solutions together.
+These algorithms solve all the problems of interactive ones:
+they are fast when communication is the main bottleneck;
+they are easy to implement with off-the-shelf statistics packages;
+and they are robust to privacy considerations.
+The downside is worse statistical performance.
+The popular averaging estimator has worst case performance $O(\sqrt{d/n})$ completely independent of the number of machines $m$. 
+A growing body of work improves the analysis of the averaging estimator under special conditions 
+(e.g.
+\citet{mcdonald2009efficient},
+\citet{zhang2012communication},
+\citet{zhang2013divide},
+and
+\citet{rosenblatt2016optimality})
+and develops more robust non-interactive estimators
+(e.g.
+\citet{zinkevich2010parallelized},
+\citet{liu2014distributed},  
+\citet{lee2015communication}, 
+\citet{battey2015distributed},
+\citet{han2016bootstrap},
+and \citet{jordan2016communication}).
+Existing estimators either work on only a limited class of models or have computationally intractable merge procedures.
+
+\begin{algorithm}
+    \caption{\mkprocedure{dist\_learn}(learning algorithm $f$, data sets $Z_i$)}
+    \label{alg:dist}
+    \vspace{0.1in}
+    prerequisite: each machine $i$ has dataset $Z_i$ stored locally
+    \begin{algorithmic}[1]
+        \State each machine $i$ independently and in parallel:
+        \State ~~~~~compute $\walg_i = f(Z_i)$
+        \State ~~~~~transmit $\walg_i$ to the master
+        \State master machine:
+        \State ~~~~~compute $\walg = \merge_f\{\what_i\}_{i=1}^m$
+    \end{algorithmic}
+\end{algorithm}
+
+\cite{karloff2010model} introduce the \defn{map reduce class} model of computation as an alternative to the PRAM model for analyzing algorithms.
+Specifically, they define $MRC^i$ to be the class of functions computable on a MapReduce architecture with $O(\log^i n)$ rounds of computation.
+Our model of computation is a subset of $MRC^0$,
+however we require exactly one round of computation rather than a constant number of rounds.
+
+\fixme{Differential privacy}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Notation and formal problem statement}
 \label{sec:notation}
+%All of our notation is standard,
+%and this section can be skimmed with no loss of understanding.
 Let $\Z$ be a probability space with an unknown distribution called the \defn{data space},
-and $f$ be a function from $\Z$ to a space $\W$ called the \defn{parameter space}.
-Our goal is to estimate $\E_{\z\in\Z} f(\z)$ based on a sample of points $Z$ from $\set Z$.
-We call a function $\hat f : \{\Z\} \to \W$ an \defn{estimator} of $f$ if
+let $\W$ be the \defn{parameter space},
+and $\f : \Z \to \W$ be a function called the \defn{model}.
+Our goal is to estimate $\E_{\z\in\Z} \f(\z)$ based on a sample of points $Z$ from $\set Z$.
+We call a function $\alg : \{\Z\} \to \W$ a \defn{machine learning algorithm} or equivalently an \defn{estimator} of $\f$ if
 \begin{equation}
-    \label{eq:notation:fhat}
-    \hat f(Z) \approx \E_{\z\in\Z}f(\z)
+    \label{eq:notation:alg}
+    \alg(Z) \approx \E_{\z\in\Z}\f(\z)
     .
 \end{equation}
+While the terms machine learning algorithm and estimator are interchangeable,
+we will typically refer to $\alg$ as a machine learning algorithm when analyzing its computational properties
+and as an estimator when analyzing its statistical properties.
 When the data set $Z$ is understood from context,
-we will denote the parameter estimate by $\what^f=\hat f(Z)$.
+we will denote the parameter estimate by $\walg=\alg(Z)$.
+
+We study a special class of estimators called \defn{mergeable estimators}.
+We say an estimator is mergeable if there exists a function $\merge : \{\W\} \to \W$ such that
+for any collection of data sets $Z_1,...,Z_m$ satisfying $Z_i\subset\Z$,
+\begin{equation}
+    \label{eq:notation:merge}
+    \merge\{\alg(Z_i)\}_{i=1}^m \approx \alg(\cup_{i=1}^m Z_i)
+    .
+\end{equation}
+In the language of modern algebra,
+the $\merge$ function defines a \defn{semigroup} structure over $\W$ and the $\alg$ function is an \defn{approximate homomorphism}.%
+\footnote{
+%The only major work in machine learning is due to Risi Kondor.
+    Abstract algebra is not widely used in machine learning.
+    The only major work I'm familiar with is due to Risi Kondor.
+    His phd thesis studied group theoretic methods for designing kernels that obey symmetry invariants \citep{kondor2008group}.
+    Abstract algebra is widely studied, however, in both computer science and statistics.
+
+    In theoretical computer science, 
+    semigroups are closely related to the study of regular languages, 
+    finite automata, 
+    parallel computing,
+    and the complexity classes NC and AC
+    \citep{tesson2004monoids,tesson2006bridges}.
+    In functional programming, algebra is widely used to structure code.
+    For example, \citet{yorgey2012monoids} uses semigroups to structure a library for drawing graphics.
+    The elegance of this library largely inspired my study of mergeable estimators.
+
+    Category theory is a branch of mathematics closely related to algebra.
+    \citet{baez2010physics} provide an elementary introduction to category theory and argues that category theory provides a ``rosetta stone'' that facilitates the easy transferring of domain knowledge from one area (e.g. quantum mechanics) to another (e.g. computer science).
+    The emerging field of probabilistic programming languages is based largely on an algebraic/category theoretic structure called the Giry monad \citep[e.g.][]{erwig2006functional,ramsey2002stochastic,pfeffer2009figaro,scibior2015practical}.
+    \citet{mccullagh2002statistical} is a unique work in the statistical literature.
+    This paper uses category theory to formally describe the definition of a statistical model.
+    The advantage of this formalism is that it helps the experiment designer know what assumptions are reasonable to make.
+    It is not clear that there are any algorithmic implications, however.
+
+
+    There is an entire subfield of statistics known as \defn{algebraic statistics}.
+    This subfield has its own journal (appropriately titled \emph{Algebraic Statistics}) 
+    and several books \citep{pachter2005algebraic,drton2008lectures,sullivant2017algebraic}.
+    The focus of this line of work is to study exponential family distributions defined by algebraic varieties (roots of low dimensional polynomials embedded in high dimensional space).
+    The tools of algebraic geometry (which describe the properties of algebraic varieties)
+    can then be used to describe the properties of statistical models.
+    We will briefly mention results from this line of work in our discussion of exponential families in Section \ref{sec:merge:ef},
+    but otherwise this line of work is unrelated to this thesis.
+
+    In pure mathematics, a significant body of work studies the properties of approximate homomorphisms.
+    Some works that have influenced me are:
+    \citet{zelinka1970tolerance} and \citet{zelinka1975tolerance} replace the equality relation with the weaker notion of a tolerance relation (transitivity need not be satisfied).
+    This work was used to model fuzzy logic in expert systems. 
+    %More recently, quasimorphisms have been studied \citep{kotschick2004quasi}.
+    %\citet{green2014approximate} provides a survey of approximate homomorphisms and algebraic structures.
+    \citet{kotschick2004quasi} and \citet{green2014approximate} provide surveys on approximate homomorphisms where the approximation has an analytic flavor, 
+    as do the approximations for mergeable learning algorithms.
+    A primary goal in this work is to show how to construct exact homomorphisms from approximate homomorphisms.
+    This work does not consider the computational cost of the constructions,
+    and so the work is not applicable to the machine learning setting. 
+}
+We will not be using any of the results from algebra,
+so we use the more intuitive terminology of mergeable estimators.
+%Many previously created estimators are mergeable,
+%but this is the first exhaustive study of their properties.
 
 %The approximation \eqref{eq:notation:fhat} cannot be exact unless the distribution over $\Z$ is trivial,
-The quality of an estimator is determined by the accuracy of the approximation \eqref{eq:notation:fhat}.
+The quality of an estimator is determined by the accuracy of the approximations in \eqref{eq:notation:alg} and \eqref{eq:notation:merge}.
 To formally measure this accuracy, 
 we require a \defn{loss function} $\Loss : \{\Z\} \times \W \to \R$. 
 We define the \defn{true parameter} to be 
@@ -149,7 +290,12 @@ The estimator is given by
     \wrlm = \argmin_{\w\in\W} \Loss(Z;\w) + \lambda\reg(\w)
     .
 \end{equation}
-In the common case where the data $Z$ is drawn i.i.d.\ from $\Z$, the RLM estimator can be written as
+In the common case where the data $Z$ is drawn i.i.d.\ from $\Z$, the loss function can be decomposed as 
+\begin{equation}
+    \Loss(Z;\w) = \sum_{\z\in Z} \loss(\z;\w)
+\end{equation}
+where $\loss : \Z \to \W$ is also called the loss function.
+The RLM estimator is then
 \begin{equation}
     \wrlm = \argmin_{\w\in\W} \sum_{\z\in\Z}\loss(\z;\w) + \lambda\reg(\w)
     .
@@ -158,208 +304,13 @@ Standard results on the RLM estimator show that under mild conditions,
 $\ltwo{\wstar-\what^f}\le O(1/\sqrt{mn})$.
 %There are two common interpretations of RLM.
 %In the Bayesian interpretation, the loss $\loss$ represents the negative log likelihood of a
-
-%Let $\z$ be a random variable drawn from some probability space $\Z$,
-%and $f : \z \to \W$ be a function.
-%
-%We typically measure the quality of an estimator by its \defn{risk},
-%which is defined to be
-%\begin{equation}
-    %\riskstar = \E \Loss(\w,Z)
-%\end{equation}
-%where the expectation is taken with respect to the data $Z$.
-%In most situations, the distribution of $Z$ is unknown and so the true risk cannot be computed.
-%The \defn{empirical risk} is an approximation to the true risk given by
-%\begin{equation}
-    %\risktilde = \Loss(\what,Z)
-%\end{equation}
-%where $\what$ now depends on $Z$.
-
-%From a certain perspective, everything in this dissertation could be described as ``obvious.''
-%One of my main contributions is to formalize the obvious.
-%This gives the practitioner a way to easily and systematically derive new algorithms.
-%Despite all of these techniques being obvious,
-%as we shall see,
-%they are not widely used in practice or research.
-
-\ignore{
-\subsubsection{Algebra definitions and examples}
-
-%\begin{definition}
-    A \defn{semigroup} is a tuple $\semigroup A$
-    where $\set A$ is a set and
-    $\mappend A : \set A \times \set A \to \set A$ is an associative binary operation.
-    That is, for all $a_1, a_2, a_3 \in \set A$, 
-    \begin{equation}
-    (a_1 \mappend A a_2) \mappend A a_3 = a_1 \mappend A (a_2 \mappend A a_3)
-    .
-    \end{equation}
-    When clear from context, we will often refer to the set $\set A$ by itself as a semigroup and drop the subscript from $\mappend{}$.
-%\end{definition}
-%
-%\begin{definition}
-    A \defn{homomorphism} between two semigroups $\semigroup A$ and $\semigroup B$ is a function  $f: \set A \to \set B$ satisfying
-    \begin{equation}
-        f(a_1 \mappend A a_2) = f(a_1) \mappend B f(a_2)
-        .
-    \end{equation}
-%\end{definition}
-
-\begin{example}
-\end{example}
-
-\begin{example}
-    Every vector space is a semigroup with vector addition as the binary operation.
-    Linear functions are homomorphisms. 
-\end{example}
-
-\subsubsection{Learning algorithms}
-
-%\begin{definition}
-    A \defn{learning algorithm} is a function from $\{\set Z\} \to \set W$.
-    We call a learning algorithm \emph{homomorphic} if there exists an operation $\mappend W$ such that $\monoid W$ is a monoid and $A$ is a homomorphism.
-%\end{definition}
-
-%\begin{remark}
-    %For any monoidal parameter space $\monoid W$, we can define the sized monoid %$\monoid {\sized W}$ as follows.
-%\end{remark}
-
-%\begin{example}
-    %Sized monoid
-%\end{example}
-%
-%\begin{example}
-    %product monoid
-%\end{example}
-%
-%\begin{example}
-    %trivial learner, bad runtime properties
-%\end{example}
-}
+Most of the examples we will consider of mergeable estimators are variants of the RLM estimator.
+A major challenge of RLM is choosing the optimization strength $\lambda$,
+which we discuss in the next subsection.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Problem statement}
-
-We consider estimators that have an associated merge function $\merge_f : \{\W\}\to\W$.
-
-This problem was inspired by an algebraic question:
-when is it possible for the parameter space $\W$ to be a semigroup,
-and the estimator $f$ to be a homomorphism?%
-\footnote{
-A \defn{semigroup} is a tuple $\semigroup A$
-where $\set A$ is a set and
-$\mappend A : \set A \times \set A \to \set A$ is an associative binary operation.
-That is, for all $a_1, a_2, a_3 \in \set A$, 
-%\begin{equation}
-$(a_1 \mappend A a_2) \mappend A a_3 = a_1 \mappend A (a_2 \mappend A a_3)$
-.
-%\end{equation}
-A \defn{homomorphism} between two semigroups $\semigroup A$ and $\semigroup B$ is a function  $f: \set A \to \set B$ satisfying
-%\begin{equation}
-$f(a_1 \mappend A a_2) = f(a_1) \mappend B f(a_2)$
-.
-%\end{equation}
-}
-The study of semigroups is closely related to the study of computational complexity
-\citep{tesson2004monoids,tesson2006bridges}.
-
-\citet{brown2004semigroup} shows how the study of semigroups and rings can be applied to the analysis of markov chains.
-
-\citet{hildebrand2005survey} provides a survey of results on random walks on finite semigroups.
-
-There are many types of approximate homomorphisms.
-\citet{zelinka1970tolerance} and \citet{zelinka1975tolerance} replace the equality relation with the weaker notion of a tolerance relation.%
-\footnote{
-    A \defn{tolerance relation} is an equivalence relation that need not obey transitivity.
-    They were a popular object of study for modeling fuzzy set theories.
-}
-More recently, quasimorphisms have been studied \citep{kotschick2004quasi}.
-\citet{green2014approximate} provides a survey of approximate homomorphisms and algebraic structures.
-
-There is an entire subfield known as algebraic statistics.
-This subfield has its own journal (appropriately titled \emph{Algebraic Statistics}) 
-and several books \citep{pachter2005algebraic,drton2008lectures,sullivant2017algebraic}.
-The focus of this line of work is to study exponential family distributions defined by algebraic varieties.%
-\footnote{
-    A set of points is called an \defn{algebraic variety} if it is the set of zeros of a polynomial equation.
-}
-The tools of algebraic geometry (which describe the properties of algebraic varieties)
-can then be used to describe the properties of statistical models.
-We will briefly mention results from this line of work in our discussion of exponential families in Section \ref{sec:merge:ef},
-but otherwise this line of work is unrelated to this thesis.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Parallel and distributed learning}
-
-%\defn{Parallel learning algorithms} use multiple process
-
-Many datasets are too large to fit in the memory of a single machine.
-To analyze them, we must partition the data onto many machines and use distributed algorithms.
-Existing distributed learning algorithms fall into one of two categories:
-
-\defn{Interactive distributed algorithms} require many rounds of communication between machines.
-Representative examples include \citet{boyd2011distributed}, \citet{li2014scaling}, \cite{ma2015adding}, and \cite{zhao2017scope}. 
-These algorithms resemble standard iterative algorithms where each iteration is followed by a communication step. 
-The appeal of interactive algorithms is that they enjoy the same statistical performance as standard sequential algorithms.
-That is, given $m$ machines each with $n$ data points of dimension $d$, interactive algorithms have error that decays as $O(\sqrt{d/mn})$.
-But, interactive algorithms have three main disadvantages.
-First, these algorithms are slow when communication latency is the bottleneck.
-An extreme example occurs in the \emph{federated learning} environment proposed by \cite{mcmahan2017communication}, which uses cell phones as the computational nodes. 
-Second, these algorithms require special implementations.
-They do not work with off-the-shelf statistics libraries provided by (for example) Python, R, and Matlab.
-Third, because of the many rounds of communication, any sensitive information in the data is likely to leak between machines.
-
-\defn{Non-interactive distributed algorithms} require only a single round of communication.
-Each machine independently solves the learning problem on a small subset of data,
-then a master machine merges the solutions together.
-These algorithms solve all the problems of interactive ones:
-they are fast when communication is the main bottleneck;
-they are easy to implement with off-the-shelf statistics packages;
-and they are robust to privacy considerations.
-The downside is worse statistical performance.
-The popular averaging estimator has worst case performance $O(\sqrt{d/n})$ completely independent of the number of machines $m$. 
-A growing body of work improves the analysis of the averaging estimator under special conditions 
-(e.g.
-\citet{mcdonald2009efficient},
-\citet{zhang2012communication},
-\citet{zhang2013divide},
-and
-\citet{rosenblatt2016optimality})
-and develops more robust non-interactive estimators
-(e.g.
-\citet{zinkevich2010parallelized},
-\citet{liu2014distributed},  
-\citet{lee2015communication}, 
-\citet{battey2015distributed},
-\citet{han2016bootstrap},
-and \citet{jordan2016communication}).
-Existing estimators either work on only a limited class of models or have computationally intractable merge procedures.
-
-\begin{algorithm}
-    \caption{\mkprocedure{dist\_learn}(learning algorithm $f$, data sets $Z_i$)}
-    \vspace{0.1in}
-    prerequisite: each machine $i$ has dataset $Z_i$ stored locally
-    \begin{algorithmic}[1]
-        \State each machine $i$ independently and in parallel:
-        \State ~~~~~compute $\wf_i = f(Z_i)$
-        \State ~~~~~transmit $\wf_i$ to the master
-        \State master machine:
-        \State ~~~~~compute $\wf = \merge_f\{\what_i\}_{i=1}^m$
-    \end{algorithmic}
-\end{algorithm}
-
-\cite{karloff2010model} introduce the \defn{map reduce class} model of computation as an alternative to the PRAM model for analyzing algorithms.
-Specifically, they define $MRC^i$ to be the class of functions computable on a MapReduce architecture with $O(\log^i n)$ rounds of computation.
-Our model of computation is a subset of $MRC^0$,
-however we require exactly one round of computation rather than a constant number of rounds.
-
-\subsubsection{Differential privacy}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Model selection and fast/distributed cross validation}
+\section{Model selection and fast/distributed cross validation}
 
 Model selection is the process of selecting a good machine learning algorithm for a particular task.
 Unfortunately, the best model selection methods have high computational cost and so cannot be used in large scale learning systems.
@@ -369,12 +320,38 @@ with the model selection process receiving comparatively little attention.
 %there has been very little work on large scale or distributed model selection procedures.
 %The validation set method is the standard method in large scale learning due to attractive computational features,
 %but other methods have better statistical properties.
-In this section, we review four popular model selection procedures with emphasis on their statistical and computational tradeoffs.
+In this section, we review popular model selection procedures with emphasis on their statistical and computational tradeoffs.
+A summary is shown in Table \ref{tab:cv}.
 We show in particular that cross validation has the best statistical properties,
 but that standard cross validation techniques are too slow for large scale data.
-We develop a new cross validation technique for semigroup learning algorithms
-that has only a constant computational overhead independent of the size of the problem.
-Effectively, this results in ``free'' cross validation of model parameter estimates for all embarassingly parallel learning algorithms.
+We develop two new cross validation techniques that address this shortcoming.
+In particular, we show that for semigroup learning algorithms
+cross validation can be performed with only a constant computational overhead independent of the size of the problem,
+and that this cross validation can be distributed.
+Effectively, this results in ``free'' cross validation for all embarrassingly parallel learning algorithms.
+
+\begin{table}[t]
+    \centering
+    \begin{tabular}{lccccc}
+        %method & \multicolumn{1}{p{1cm}}{\centering serial \\ runtime} & distributed runtime & bias & variance \\
+        method & \makecell{serial \\ runtime} & \makecell{distributed\\ runtime} & bias & variance & prerequisites \\
+        \hline
+        \vspace{-0.1in}
+        \\
+        empirical risk & $n$ & ${n}/{p}$ & high & high & --\\
+        SRM & $n$ & ${n}/{p}$ & low & high & excess risk bound\\
+        validation set & $n$ & ${n}/{p}$ & low & high& -- \\
+        bootstrap & $kn$ & ${kn}/{p}$ & low & low & --\\
+        $k$-fold cross validation & $kn$ & ${kn}/{p}$ & low & low & --\\
+        fast $k$-fold cross validation & $k+n$ & ${n}/{p}$ & low & low & mergable, $k=p$\\
+    \end{tabular}
+    \caption{Summary of the estimators of a model's true error.
+        For simplicity, we have assumed the runtime of learning is $O(n)$,
+        the runtime of merging is $O(1)$.
+        We have also ignored the communication cost of distributed learning.
+    }
+    \label{tab:cv}
+\end{table}
 
 We begin by formally defining the \defn{model selection} problem.
 Given a set of learning algorithms $\set F : \{\Z \to \W\}$ and a dataset $Z$,
@@ -403,10 +380,8 @@ and the optimization is performed over $F$.
 Grid search tends to work well when $\set F$ is one dimensional,
 but the performance degrades in higher dimensions.
 More advanced techniques involve randomly subsampling $\set F$ \citep{bergstra2012random} and the so-called \defn{bayesian optimization} techniques \citep[e.g.][]{snoek2012practical,feurer2015efficient}.
-Each of these techniques requires as a subroutine a good estimate of the true error.
+Each of these techniques requires as a subroutine a good estimate $\riskhat^g$ of the true error.
 We focus in the remainder of this section on these estimators.
-
-Standard no-free-lunch results \citep[e.g.\ Chapter 8 of][]{shalev2014understanding} ensure that there is no universally best method for estimating an estimator's true error for all distributions.
 
 The most obvious estimator of $\riskstar$ is the empirical risk $\riskemp$.
 Unfortunately, the empirical risk $\riskemp$ is heavily biased because it evaluates the model on the same data it was trained on.
@@ -424,18 +399,19 @@ The SRM risk estimator is then given by
 \begin{equation}
     \risksrm 
     = \riskemp + b(Z) 
-    \ge \riskstar
+    %\ge \riskstar
     .
 \end{equation}
 The main advantage of the SRM estimator is its computational simplicity.
-But SRM is not often used in practice because deriving the bound function $b$ can be difficult,
+SRM is not often used in practice because deriving the bound function $b$ can be difficult,
 and the known bounds are typically not tight enough to give good approximations.
 
 \newcommand{\Ztrain}{Z^\textit{train}}
 \newcommand{\Ztest }{Z^\textit{test }}
 \newcommand{\ntrain}{n^\textit{train}}
 \newcommand{\ntest }{n^\textit{test }}
-The most commonly used risk estimator in large scale learning is the \defn{validation set estimator}.
+The most commonly used risk estimator in large scale learning is the \defn{validation set estimator}
+\citep[Chapter 11 of ][]{shalev2014understanding}.
 This method divides the training data set into two disjoint sets $\Ztrain$ and $\Ztest$.
 The risk is then estimated by
 \begin{equation}
@@ -447,30 +423,40 @@ The risk is then estimated by
 %$\riskvalid\to\riskstar$.
 %Asymptotically as the size of the test set $|\Ztest|$ goes to infinity,
 %but its finite sample properties are much more difficult to analyze. 
-This estimator is unbiased in the sense that
-\begin{equation}
-    \E_{\z\sim\Ztest}\Loss(\z,f(\Ztrain)) = \riskstar(f(\Ztrain))
-    .
-\end{equation}
-The variance of $\riskvalid$ is determined by the number of samples in the validation set:
+%This estimator is asymptotically unbiased in the sense that as $|\Ztest|\to\infty$,
+%\begin{equation}
+    %\riskvalid(f(\Ztrain)) \to \riskstar(f(\Ztrain))
+    %%\E_{\z\sim\Ztest}\Loss(\z,f(\Ztrain)) = \riskstar(f(\Ztrain))
+    %.
+%\end{equation}
+%For most natural learning algorithms, the bias converges to zero at a very fast rate.
+This estimator has low bias but high variance.
+In particular, the variance of $\riskvalid$ is determined by the number of samples in the validation set:
 as the number of samples increases, the variance decreases.
 Unfortunately, increasing the size of the validation set decreases the size of the test set,
 increasing the model's true error.
 There is no general procedure for finding the optimal balance between the size of the training and test sets,
 although in practice it is common to use about 10\% of the data in the validation set.
-The main advantage of the validation set method is computational,
-as the function $f$ needs to be evaluated only once.
-Many modern machine learning applications use an expensive learning procedure and a large data set,
-so multiple evaluations of $f$ would be computationally impractical.
+The validation set method shares the favorable computational properties of SRM,
+but is easier to use because there is no need to derive a bound on the excess risk.
+When the bound is loose, as is often the case in practice, the validation set method will also have improved statistical performance.
+%The main advantage of the validation set method is computational,
+%as the function $f$ needs to be evaluated only once.
+%Many modern machine learning applications use an expensive learning procedure and a large data set,
+%so multiple evaluations of $f$ would be computationally impractical.
 
-%The empirical loss calculated from a data set is not a good measu
-%Cross validation is a method for measuring the quality of an estimator.
-
-The \defn{bootstrap} improves the statistical properties of the validation set estimator but is more expensive computationally.
-The bootstrap approximates the 
+The \defn{bootstrap} improves the statistical properties of the validation set estimator but is more expensive computationally \citep{efron1979bootstrap}.
 The full procedure is shown in Algorithm \ref{alg:boot}.
+The idea is to use repeated subsampling to create many overlapping train/validation test splits,
+then average the results.
+This averaging reduces the variance of the error estimate.
+The computational complexity is linear in the number of resampling iterations,
+which is too expensive for large scale problems.
 \citet{kleiner2012big} and \citet{kleiner2014scalable} introduce the \defn{bag of little bootstraps} (BLB) as an efficiently computatable alternative to the bootstrap.
 The BLB subsamples some small fraction of the data set in each iteration before performing the full bootstrap test.
+This increases the bias of the estimator but makes it suitable for large scale problems.
+As there are no data dependencies between each of the iterations,
+both the standard bootstrap and BLB are easy to parallelize.
 
 \begin{algorithm}[t]
     \caption{bootstrap(learning algorithm $f$, data set $Z$, number of samples $t$)}
@@ -485,17 +471,9 @@ The BLB subsamples some small fraction of the data set in each iteration before 
     \end{algorithmic}
 \end{algorithm}
 
-\defn{Cross validation} also improves on the validation set method.
-Cross validation is the method of choice for small data sets where the increased computation is negligible.
-\citet{kohavi1995study} empirically compare the bootstrap to $k$-fold cross validation,
-and determine that on real world datasets $k$-fold cross validation with a small $k\approx10$ has the best performance.
-When computational requirements are ignored,
-it is tempting to make $k$ as large as possible.
-This is not recommended, however.
-\citet{rao2008dangers} shows that as $k$ increases beyond a certain threshold, 
-the bias of the estimator increases as well.
-
-There are many variations of cross validation with slightly different theoretical properties \citep{arlot2010survey}.
+\defn{Cross validation} is a family of techniques that also improves the validation set method
+\cite[see][for a survey]{arlot2010survey}.
+%There are many variations of cross validation with slightly different theoretical properties \citep{arlot2010survey}.
 A standard version called $k$-fold cross validation is shown in Algorithm \ref{alg:cv}.
 The data set $Z$ is partitioned into $k$ smaller data sets $Z_1,...,Z_k$.
 For each of these data sets, the validation set estimator is used to approximate the true error.
@@ -519,52 +497,81 @@ The results are then averaged and returned.
     \end{algorithmic}
 \end{algorithm}
 
-Naive $k$-fold cross validation is an expensive procedure taking time $O(k f(n))$.
-For many models, fast cross validation procedures have been developed.
-\citet{arlot2010survey} provide a survey of results,
-describing fast cross validation methods for ridge regression, kernel density estimation, and nearest neighbor classification.
-All of these methods fit the semigroup framework,
-and so these fast cross validation methods can be though of as special cases of our algorithm.
-\citet{joulani2015fast} provides a tree based fast cross validation algorithm for incremental learning algorithms.
-All previous work on fast cross validation methods has been for the single machine case,
-whereas we provide a method for the distributed learning case.
+Naive $k$-fold cross validation is an expensive procedure taking time linear in the number of folds $k$.
+This makes it unsuitable for large scale learning problems.
+Algorithm \ref{alg:fastcv} presents a faster method for cross validation that uses the $\merge_f$ function \citep{izbicki2013algebraic}.
+The algorithm is divided into four loops.
+In the first loop, a ``local model'' $\walg_i$ is trained on each partition $Z_i$.
+The second loop calculates ``prefix models,''
+which satisfy the property that $\wprefix_{,i}\approx f(\cup_{j=1}^{i-1} Z_j)$.
+The third loop calculates  ``suffix models,''
+which satisfy the property that $\wprefix_{,i}\approx f(\cup_{j=i+1}^{k} Z_j)$.
+The final loop merges the prefix and suffix models so that
+$\walg_{-i}\approx f(Z-Z_i)$.
+The computed error is then an unbiased estimate of the true error.
+When the $\merge_f$ function is exact,
+then $\fastcv$ will return exactly the same answer as the standard $\cv$ procedure.
+When $\merge_f$ is not exact,
+then $\fastcv$ will be an approximate version of cross validation,
+and the approximation depends on the accuracy of $\merge_f$.
 
 \begin{algorithm}[t]
     \caption{\fastcv(learning algorithm $f$, data set $Z$, number of folds $k$)}
+    \label{alg:fastcv}
     \vspace{0.1in}
     \begin{algorithmic}[1]
         \State partition $Z$ into $k$ equally sized disjoint sets $Z_1,...,Z_k$
         %\vspace{0.1in}
         \State // calculate local models
         \For {$i = 1$ \TO $k$}
-            \State $\what_{i} = f(Z_i)$ 
+            \State $\walg_{i} = f(Z_i)$ 
         \EndFor
         %\vspace{0.1in}
         \State // calculate prefixes
         \For {$i = 1$ \TO $k$}
-            %\State $\wprefix_{,i} = \wprefix_{,i-1} \mappend{} \what_i$ 
-            \State $\wprefix_{,i} = \merge_f(\wprefix_{,i-1}, \what_i)$ 
+            %\State $\wprefix_{,i} = \wprefix_{,i-1} \mappend{} \walg_i$ 
+            \State $\wprefix_{,i} = \merge_f(\wprefix_{,i-1}, \walg_i)$ 
         \EndFor
         %\vspace{0.1in}
         \State // calculate suffixes
         \For {$i = k$ \TO $1$}
-            %\State $\wsuffix_{,i} = \wsuffix_{,i+1} \mappend{} \what_i$ 
-            \State $\wsuffix_{,i} = \merge_f(\wsuffix_{,i+1} , \what_i)$ 
+            %\State $\wsuffix_{,i} = \wsuffix_{,i+1} \mappend{} \walg_i$ 
+            \State $\wsuffix_{,i} = \merge_f(\wsuffix_{,i+1} , \walg_i)$ 
         \EndFor
         %\vspace{0.1in}
         \State // merge models and calculate estimated risk
         \For {$i = 1$ \TO $k$}
-            %\State $\what_{-i} = \wprefix_i \mappend{} \wsuffix_i$
-            \State $\what_{-i} = \merge_f(\wprefix_i , \wsuffix_i)$
-            \State $\riskemp_i = \Loss(\what_{-i},Z_i)$
+            %\State $\walg_{-i} = \wprefix_i \mappend{} \wsuffix_i$
+            \State $\walg_{-i} = \merge_f(\wprefix_{,i} , \wsuffix_{,i})$
+            \State $\riskhat^{(i)} = \Loss(\walg_{-i},Z_i)$
         \EndFor
         %\vspace{0.1in}
-        \State \Return $\frac 1 k \sum_{i=1}^k \riskemp_i$
+        \State \Return $\riskcv=\frac 1 k \sum_{i=1}^k \riskhat^{(i)}$
     \end{algorithmic}
 \end{algorithm}
 
+Standard cross validation can be easily parallelized as there are no data dependencies between each iteration of the foor loop. 
+The $\fastcv$ method is slightly more difficult to parallelize due to the data dependencies in the first and second for loops.%
+\footnote{
+    The standard parallel prefix-sum algorithm can be used to compute the $\wprefix_{,i}$ and $\wprefix_{,j}$ vectors \citep{ladner1980parallel,blelloch1990prefix},
+    which would parallelize the $\fastcv$ method.
+    These parallel algorithms are designed for shared memory systems,
+    and it is unclear how they generalize to the distributed environment where communication is expensive.
+    Thus the $\distcv$ algorithm uses a different approach.
+}
+Algorithm \ref{alg:distcv} presents a distributed version of fast cross validation.
+This algorithm is closely related to the distributed learning algorithm of Algorithm \ref{alg:dist} and has essentially the same runtime.
+In other words, when learning an embarrassingly parallel model on a distributed architecture,
+we can also perform cross validation with essentially no computational overhead.
+The only difference between the distributed cross validation and distributed learning algorithms is that in the second round of communication, 
+each machine (rather than only the master) computes the model $\w_{-i}$.
+As these machines were sitting idle in Algorithm \ref{alg:dist},
+having them perform work does not increase the runtime.
+The runtime of the cross validation procedure is increased slightly by the fact that an additional round of communication is needed where the master averages the validation errors calculated on each machine.
+
 \begin{algorithm}[t]
     \caption{\distcv(learning algorithm $f$, data set $Z$, number of folds $k$)}
+    \label{alg:distcv}
     \vspace{0.1in}
     prerequisite: each machine $i$ has dataset $Z_i$ stored locally
     \begin{algorithmic}[1]
@@ -572,7 +579,7 @@ whereas we provide a method for the distributed learning case.
         \State ~~~~~calculates $\what_i = f(Z_i)$
         \State ~~~~~broadcasts $\what_i$ to each other machine
         \State each machine $i$:
-        \State ~~~~~computes $\w_{-i} = merge\{\w_1,...,\w_{i-1},\w_{i+1},...,\w_k\}$
+        \State ~~~~~computes $\w_{-i} = \merge_f\{\w_1,...,\w_{i-1},\w_{i+1},...,\w_k\}$
         \State ~~~~~computes $\riskemp_i = \Loss(\what_{-i},Z_i)$
         \State ~~~~~transmits $\riskemp_i$ to the master
         \State the master machine:
@@ -580,6 +587,31 @@ whereas we provide a method for the distributed learning case.
         \State ~~~~~\Return $\riskemp$
     \end{algorithmic}
 \end{algorithm}
+
+Many other fast cross validation procedures have been developed for specific models.
+\citet{arlot2010survey} provide a survey of results,
+describing fast cross validation methods for ridge regression, kernel density estimation, and nearest neighbor classification.
+Our fast cross validation framework includes each of these models as a special case,
+and many more besides.
+\citet{joulani2015fast} develop a cross validation framework that is closely related to our own.
+Their framework is suitable for any incremental learning algorithm 
+(whereas ours is suitable for mergable algorithms).
+All previous work on fast cross validation only considered the non-distributed case,
+but we have shown that our fast cross validation framework is suitable for the distributed case.
+
+Both the bootstrap and cross validation are strictly better than the validation set method of error estimation,
+but 
+standard no-free-lunch results \citep[e.g.\ Chapter 8 of][]{shalev2014understanding} ensure that there is no universally best method for estimating an estimator's true error for all distributions.
+One of the limitations of the $\distcv$ method is that the number of folds must be the same as the number of processors.
+This will be relatively small compared to the number of data points.
+Conveniently, this turns out to be a good number of folds to use in practice.
+\citet{kohavi1995study} empirically compare the bootstrap to $k$-fold cross validation,
+and determine that on real world datasets $k$-fold cross validation has the best performance.
+When computational requirements are ignored,
+it is tempting to make $k$ as large as possible.
+This is not statistically optimal, however.
+\citet{rao2008dangers} shows that as $k$ increases beyond a certain threshold, 
+the bias of the estimator increases as well.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
