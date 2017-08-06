@@ -52,6 +52,7 @@
 \newcommand{\wGreeDi}{\hat\w^\textit{GreeDi}}
 \newcommand{\wpca}{\hat\w^\textit{pca}}
 \newcommand{\wlbk}{\hat\w^\textit{lbk}}
+\newcommand{\wexp}{\hat\w^\textit{exp}}
 
 \newcommand{\ELBO}{\text{ELBO}}
 \newcommand{\Pdist}{\mathcal P}
@@ -62,6 +63,8 @@
 
 \begin{document}
 \chapter{Chapter 2}
+
+Many machine learning algorithms have divide-and-conquer training algorithms.
 
 %Our model of computation is closely related to the \emph{map reduce class} (MRC) introduced by \cite{karloff2010model}.
 %They define the class $MRC^i$
@@ -85,55 +88,34 @@ This chapter introduces the semigroup framework for machine learning.
 Section \ref{sec:notation} formally defines the framework and introduces the required notation.
 Section \ref{sec:par}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Parallel and distributed learning}
+\section{Notation and formal problem statement}
+\label{sec:notation}
+%All of our notation is standard,
+%and this section can be skimmed with no loss of understanding.
+Let $\Z$ be a probability space with an unknown distribution called the \defn{data space},
+let $\W$ be the \defn{parameter space},
+and $\f : \Z \to \W$ be a function called the \defn{model}.
+Our goal is to estimate $\E_{\z\in\Z} \f(\z)$ based on a sample of points $Z$ from $\set Z$.
+We call a function $\alg : \{\Z\} \to \W$ a \defn{machine learning algorithm} or equivalently an \defn{estimator} if
+\begin{equation}
+    \label{eq:notation:alg}
+    \alg(Z) \approx \E_{\z\in\Z}\f(\z)
+    .
+\end{equation}
+While the terms machine learning algorithm and estimator are interchangeable,
+we will typically refer to $\alg$ as a machine learning algorithm when analyzing its computational properties
+and as an estimator when analyzing its statistical properties.
+Notice that except in trivial models that lack randomness, 
+the approximation in \eqref{eq:notation:alg} can never be exact.
+The randomness ensures that for any finite data set $Z$,
+the left handside can be close to the right hand side with probability,
+but they will be non-equal with probability 1.
+When the data set $Z$ is understood from context,
+we will denote the parameter estimate by $\walg=\alg(Z)$.
 
-%\defn{Parallel learning algorithms} use multiple process
-
-Many datasets are too large to fit in the memory of a single machine.
-To analyze them, we must partition the data onto many machines and use distributed algorithms.
-Existing distributed learning algorithms fall into one of two categories:
-
-\defn{Interactive distributed algorithms} require many rounds of communication between machines.
-Representative examples include \citet{boyd2011distributed}, \citet{li2014scaling}, \cite{ma2015adding}, and \cite{zhao2017scope}. 
-These algorithms resemble standard iterative algorithms where each iteration is followed by a communication step. 
-The appeal of interactive algorithms is that they enjoy the same statistical performance as standard sequential algorithms.
-That is, given $m$ machines each with $n$ data points of dimension $d$, interactive algorithms have statistical error that decays as $O(\sqrt{d/mn})$.
-But, interactive algorithms have three main disadvantages.
-First, these algorithms are slow when communication latency is the bottleneck.
-An extreme example occurs in the \emph{federated learning} environment proposed by \cite{mcmahan2017communication}, which uses cell phones as the computational nodes. 
-Second, these algorithms require special implementations.
-They do not work with off-the-shelf statistics libraries provided by (for example) Python, R, and Matlab.
-Third, because of the many rounds of communication, any sensitive information in the data is likely to leak between machines.
-
-\defn{Non-interactive distributed algorithms} require only a single round of communication.
-Each machine independently solves the learning problem on a small subset of data,
-then a master machine merges the solutions together.
-These algorithms solve all the problems of interactive ones:
-they are fast when communication is the main bottleneck;
-they are easy to implement with off-the-shelf statistics packages;
-and they are robust to privacy considerations.
-The downside is worse statistical performance.
-The popular averaging estimator has worst case performance $O(\sqrt{d/n})$ completely independent of the number of machines $m$. 
-A growing body of work improves the analysis of the averaging estimator under special conditions 
-(e.g.
-\citet{mcdonald2009efficient},
-\citet{zhang2012communication},
-\citet{zhang2013divide},
-and
-\citet{rosenblatt2016optimality})
-and develops more robust non-interactive estimators
-(e.g.
-\citet{zinkevich2010parallelized},
-\citet{liu2014distributed},  
-\citet{lee2015communication}, 
-\citet{battey2015distributed},
-\citet{han2016bootstrap},
-and \citet{jordan2016communication}).
-Existing estimators either work on only a limited class of models or have computationally intractable merge procedures.
-
-\begin{algorithm}
+\begin{algorithm}[t]
     \caption{\mkprocedure{dist\_learn}(learning algorithm $f$, data sets $Z_i$)}
     \label{alg:dist}
     \vspace{0.1in}
@@ -147,35 +129,6 @@ Existing estimators either work on only a limited class of models or have comput
     \end{algorithmic}
 \end{algorithm}
 
-\cite{karloff2010model} introduce the \defn{map reduce class} model of computation as an alternative to the PRAM model for analyzing algorithms.
-Specifically, they define $MRC^i$ to be the class of functions computable on a MapReduce architecture with $O(\log^i n)$ rounds of computation.
-Our model of computation is a subset of $MRC^0$,
-however we require exactly one round of computation rather than a constant number of rounds.
-
-\fixme{Differential privacy}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{Notation and formal problem statement}
-\label{sec:notation}
-%All of our notation is standard,
-%and this section can be skimmed with no loss of understanding.
-Let $\Z$ be a probability space with an unknown distribution called the \defn{data space},
-let $\W$ be the \defn{parameter space},
-and $\f : \Z \to \W$ be a function called the \defn{model}.
-Our goal is to estimate $\E_{\z\in\Z} \f(\z)$ based on a sample of points $Z$ from $\set Z$.
-We call a function $\alg : \{\Z\} \to \W$ a \defn{machine learning algorithm} or equivalently an \defn{estimator} of $\f$ if
-\begin{equation}
-    \label{eq:notation:alg}
-    \alg(Z) \approx \E_{\z\in\Z}\f(\z)
-    .
-\end{equation}
-While the terms machine learning algorithm and estimator are interchangeable,
-we will typically refer to $\alg$ as a machine learning algorithm when analyzing its computational properties
-and as an estimator when analyzing its statistical properties.
-When the data set $Z$ is understood from context,
-we will denote the parameter estimate by $\walg=\alg(Z)$.
-
 We study a special class of estimators called \defn{mergeable estimators}.
 We say an estimator is mergeable if there exists a function $\merge : \{\W\} \to \W$ such that
 for any collection of data sets $Z_1,...,Z_m$ satisfying $Z_i\subset\Z$,
@@ -184,11 +137,15 @@ for any collection of data sets $Z_1,...,Z_m$ satisfying $Z_i\subset\Z$,
     \merge\{\alg(Z_i)\}_{i=1}^m \approx \alg(\cup_{i=1}^m Z_i)
     .
 \end{equation}
-In the language of modern algebra,
-the $\merge$ function defines a \defn{semigroup} structure over $\W$ and the $\alg$ function is an \defn{approximate homomorphism}.%
+Many (but not all) existing estimators are mergeable,
+but the merging structure has not been explicitly studied.%
 \footnote{
 %The only major work in machine learning is due to Risi Kondor.
-    Abstract algebra is not widely used in machine learning.
+    In the language of modern algebra,
+    the $\merge$ function defines a \defn{semigroup} structure over $\W$ and the $\alg$ function is an \defn{approximate homomorphism}.
+    Abstract algebra is not widely used in machine learning,
+    %We will not be using any of the results from algebra,
+    so we use the more intuitive terminology of mergeable estimators.
     The only major work I'm familiar with is due to Risi Kondor.
     His phd thesis studied group theoretic methods for designing kernels that obey symmetry invariants \citep{kondor2008group}.
     Abstract algebra is widely studied, however, in both computer science and statistics.
@@ -233,8 +190,19 @@ the $\merge$ function defines a \defn{semigroup} structure over $\W$ and the $\a
     This work does not consider the computational cost of the constructions,
     and so the work is not applicable to the machine learning setting. 
 }
-We will not be using any of the results from algebra,
-so we use the more intuitive terminology of mergeable estimators.
+Instead, these estimators have been studied in the context of distributed machine learning.
+Algorithm \ref{alg:dist} shows how the $\merge$ function can be easily used to generate a distributed estimator.
+Our goal in this chapter is twofold.
+First we show that all mergeable estimators have a fast cross validation procedure (Section \ref{sec:cv}).
+Second, we show that many existing estimators are mergeable.
+For many of these estimators, the distributed learning procedure of Algorithm \ref{alg:dist} is well known.
+But for none of these algorithms was a distributed cross validation procedure previously known.
+Unlike the approximation in \eqref{eq:notation:alg},
+the approximation in \eqref{eq:notation:merge} can be exact,
+and is exact for the important class of estimators reviewed in Section \ref{sec:merge:exact}.
+For other models, we will be less precise about exactly what is meant by $\approx$.
+Different merge functions will satisfy different guarantees.
+
 %Many previously created estimators are mergeable,
 %but this is the first exhaustive study of their properties.
 
@@ -287,6 +255,7 @@ The RLM estimator is parameterized by a regularization function $\reg : \W \to \
 and a constant $\lambda : \R$.
 The estimator is given by
 \begin{equation}
+    \label{eq:notation:rlm}
     \wrlm = \argmin_{\w\in\W} \Loss(Z;\w) + \lambda\reg(\w)
     .
 \end{equation}
@@ -297,6 +266,7 @@ In the common case where the data $Z$ is drawn i.i.d.\ from $\Z$, the loss funct
 where $\loss : \Z \to \W$ is also called the loss function.
 The RLM estimator is then
 \begin{equation}
+    \label{eq:notation:rlm:independent}
     \wrlm = \argmin_{\w\in\W} \sum_{\z\in\Z}\loss(\z;\w) + \lambda\reg(\w)
     .
 \end{equation}
@@ -629,33 +599,266 @@ the bias of the estimator increases as well.
 
 \section{Examples: estimators with closed form solutions}
 
+We now show that many popular machine learning algorithms are mergeable.
+We begin by looking at models whose $\merge$ function is exact.
+That is, given data sets $Z_1,...,Z_m$,
+\begin{equation}
+    \label{eq:examples:merge}
+    \merge(\{\alg(Z_i)\}_{i=1}^m) = \alg(\cup_{i=1}^m Z_i)
+    %\merge(\{\alg(Z_i)\}_{i=1}^m) ~~\text{exactly equals}~~ \alg(\cup_{i=1}^m Z_i)
+    .
+\end{equation}
+Notice that \eqref{eq:examples:merge} is the same as \eqref{eq:notation:merge} which defined the invariant that $\merge$ should obey approximate equality,
+except the $\approx$ symbol has been replaced by $=$.
+In this section, we show that the RLM estimator for linear exponential families, bayesian classifers, and ridge regression all have exact merge functions.
+A key feature of each of these models is that the RLM estimator has a closed form solution.
+This closed form solution is what allows the development of an exact merge function.
+We also show that many other estimators have closed form solutions not based on the RLM,
+and these estimators are also exactly mergeable.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Exponential family distributions}
+\label{sec:merge:ef}
+
+%There are three important subfamilies of the EF that we will consider:
+%linear exponential families (LEFs),
+%curved exponential families (CEFs),
+%and stratified/deep exponential families (SEFs/DEFs).
+
+Exponential family distributions have nice computational properties and are used frequently in practice.
+Many popular distributions (e.g. Gaussian, Dirichlet, Poisson, exponential, and categorical) are in the exponential family.
+In this section we will see that a particularly nice subclass of the exponential family called the linear exponential family is exactly mergeable,
+but that other subclasses called curved exponential families and stratified exponential families are not.
+Many of the merge procedures in later sections will depend on the mergeability of the linear exponential family.
+
+The \defn{exponential family} (EF) of distributions is defined to be the set $\Pexp$ of all distributions whose density can be written in the form
+\begin{equation}
+    \p{\z | \w} = h(\z)\exp\left(\trans{\w} T(\z) - \psi(\w)\right)
+\end{equation}
+where $\z\in\Z$ and $\w\in\W$.
+We make no assumption on the set $\Z$, but require $\W$ to be an open subset of a hilbert space $\set H$.
+We will ignore the technical details of infinite dimensional hilbert spaces and denote the inner product using $\trans{}$ in analogy with finite dimensional vectors.
+The function $h : \Z\to\R$ is called the \defn{base measure},
+$T : Z \to \W$ the \defn{sufficient statistic},
+and $\psi : \W \to \R$ the \defn{log partition function}.
+Many authors require $\psi$ to be strongly convex,
+but we will require only the weaker condition that the derivative be invertible.
+
+%Given a prior distribution on the parameter vector $\w$,
+%the \defn{maximum a posteriori estimate} (map)
+%There are many introductions to exponential families,
+%but the presentation in \citet{amari2016information} is especially apropos to our discussion.
+%Given a data set $Z$, we can estimate the parameters of the distribution as
+%To perform parameter estimation using RLM,
+%we set the loss to the negative log likelihood 
+The standard method to estimate parameters in the exponential family is with \defn {maximum likelihood estimation} (MLE).
+MLE is equivalent to RLM with the regularization strength $\lambda=0$ and loss equal to the negative log likelihood.
+That is,
+\begin{equation}
+    \label{eq:ef:loss}
+    \loss(\z;\w) 
+    = -\log\p{\z|\w}
+    = -\log h(\z) - \trans\w T(\z) + \psi(\w)
+    ,
+\end{equation}
+and the parameter estimate is given by
+\newcommand{\deriv}[2]{\frac{\dd {#1}}{\dd {#2}}}
+\begin{align}
+    \label{eq:ef:erm}
+    %\werm = \argmin_{\w\in\W} \sum_{\z\in Z} \loss(\z;\w) + \lambda \reg(\w)
+    \wexp
+    &= \argmin_{\w\in\W} \sum_{\z\in Z}\left( \psi(\w) - \trans\w T(\z)\right)
+    %\\
+    %= \left(\deriv{}{\w}\psi\right)^{-1} \left(\frac{1}{mn} \sum_{\z\in Z} T(\z) \right)
+    .
+\end{align}
+The $-\log h(\z)$ term in \eqref{eq:ef:loss} does not depend on the parameter $\w$ and so does not appear in the optimization \eqref{eq:ef:erm}.
+
+When the parameter space $\W$ equals the containing hilbert space $\set H$ equals $\R^d$,
+the distribution is said to be in the \defn{linear exponential family} (LEF).%
+\footnote{The LEF is sometimes called the \defn{full exponential family} (FEF) when the parameters are identifiable.}
+The parameter estimate \eqref{eq:ef:erm} then has closed form solution
+\begin{equation}
+    \label{eq:lef:erm}
+    \wexp
+    = \psi'^{-1} \left(\frac{1}{mn} \sum_{\z\in Z} T(\z) \right)
+    ,
+\end{equation}
+which follows from setting the derivative of the objective in \eqref{eq:ef:erm} to zero and solving for $\w$.
+Recall that the data set $Z$ has $mn$ elements,
+which is where the $1/mn$ factor comes from in \eqref{eq:lef:erm}.
+Because the equation for $\wexp$ can be given in closed form,
+an exact merge procedure exists.
+Decompose the data set $Z$ into $m$ data sets $Z_1,...,Z_m$ each of size $n$.
+On each local data set, the parameter estimate is defined to be
+\begin{equation}
+    \label{eq:lef:erm:local}
+    \wexp_i
+    %= \left(\deriv{}{\w}\psi\right)^{-1} \left(\frac{1}{n} \sum_{\z\in Z_i} T(\z) \right)
+    = \psi'^{-1} \left(\frac{1}{n} \sum_{\z\in Z_i} T(\z) \right)
+\end{equation}
+and the merge procedure is then
+\begin{equation}
+    \label{eq:lef:merge}
+    \merge(\{\wexp_i\}_{i=1}^m)
+    =
+    %\left(\deriv{}{\w}\psi\right)^{-1} 
+    \psi'^{-1} 
+    \left(
+        %\frac{1}{m} \sum_{i=1}^m \deriv{}{\w}\psi \left(\wmle_i\right)
+        \frac{1}{m} \sum_{i=1}^m \psi' \left(\wmle_i\right)
+    \right)
+    .
+\end{equation}
+Substituting \eqref{eq:lef:erm:local} into \eqref{eq:lef:merge} gives the standard MLE \eqref{eq:lef:erm}.
+That is, the merge function is exact.
+%Notice that \eqref{eq:lef:merge} simplifies to \eqref{eq:ef:erm},
+%so the learning function for LEF's is an exact semigroup homomorphism.
+
+Other important subfamilies of the exponential family do not have exact merge procedures.
+When the parameter space $\W$ is a manifold in the underlying hilbert space $\set H$,
+we say the distribution is in the \defn{curved exponential family} (CEF). 
+The CEF was introduced by \citet{efron1975defining} and \citet{amari1982differential}.
+\citet{amari2016information} provides a modern treatment of the CEF from the perspective of information geometry.
+The CEF is used to represent dependency relationships between random variables,
+and a particularly important subset of the CEF is the set undirected graphical models with no hidden variables.
+\citet{liu2012distributed} prove that no exact merge procedure exists for CEF distributions.
+
+When the parameter space $\W$ is an algebraic variety,
+then the distribution is in the \defn{stratified exponential family} (SEF).
+\cite{geiger1998graphical} and \citet{geiger2001stratified} introduced SEFs and show that they are equivalent to directed or undirected graphical models with hidden variables.
+They further show that
+\begin{equation}
+    \label{eq:ef:hierarchy}
+    \text{LEF}~ \subset ~\text{CEF}~ \subset ~\text{SEF}~\subset~\text{EF}
+    ,
+\end{equation}
+where the set inequalities in \eqref{eq:ef:hierarchy} are strict.
+An immediate consequence of \eqref{eq:ef:hierarchy} is that exact merge procedures do not exist for SEF distributions since they do not exist for CEF distributions.
+%\citet{geiger2001stratified} include a number of theorems characterizing the properties of SEFs.
+%The most important is that all graphical models with hidden variables are SEFs (but not CEFs).
+%SEFs correspond to graphical models with hidden variables.
+%The original presentation of SEFs was in terms of algebraic geometry
+The \defn{deep exponential family} (DEF) of distributions was proposed by \citet{ranganath2015deep} and is a subset of the SEF.
+A distribution is in the DEF if it is the distribution resulting from placing EF priors on the natural parameters of an EF distribution.
+%\citet{ranganath2015deep} suggest using variational methods to solve for the parameters of DEFs.
+%Section \ref{sec:merge:vi} discusses variational methods in detail.
+Although exact merge procedures do not exist for the CEF, SEF, or DEF,
+approximate merge procedures can be used.
+\fixme{We defer the discussion to Sections \ref{}.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Generative classifiers}
+
+Generative classifiers are some of the oldest and simplest machine learning algorithms.
+They model the data as a probability distribution,
+and parameter estimation of the classifier is just parameter estimation of the underlying distribution.
+Whenever the distribution has a mergeable learning algorithm,
+then the generative classifier does as well.
+Fast cross validation methods for generative classifiers seem to be ``folklore knowledge'' in the statistical community,
+I know of no earlier publications earlier than \cite{izbicki2013algebraic} that describe a fast cross validation method.
+
+Formally, in \defn{classification} we assume that the data space $\Z=\X\times \Y$,
+where $\X$ is the space of features and $\Y$ is a finite set of class labels.
+The goal of classification is to learn an unknown function $\hat y : \set X \to \set Y$.
+%The goal of a \defn{generative classifier} is to learn a distribution $p(y | \x)$.
+%We then classify according to to rule
+In a \defn{generative classifier}, the function $\hat y$ has the form
+\begin{equation}
+    \label{eq:gen:opt1}
+    \hat y(\x) 
+    =
+    \argmax_{y\in\Y} p(y | \x)
+    \end{equation}
+where $p(y | \x)$ is a distribution from a known family with unknown parameters.
+By bayes theorem, we have that
+\begin{equation}
+    \label{eq:gen:bayes}
+    p(y | \x) = \frac{p(y)p(\x | y)}{p(\x)}
+    ,
+\end{equation}
+and so \eqref{eq:gen:opt1} can be rewritten as
+\begin{equation}
+    \label{eq:gen:opt2}
+    \hat y(\x) 
+    =
+    \argmax_{y\in\Y} p(y)p(\x | y)
+    .
+\end{equation}
+The $1/p(\x)$ factor is dropped as it does not affect the optimization.
+To learn a generative classifier,
+we need to learn the parameters of the distributions $p(y)$ and $p(\x|y)$.
+Whenever these distributions have mergeable learning algorithms 
+(e.g. they are in the linear exponential family),
+then the generative classifier does as well.
+
+The \defn{naive bayes} model is an important special case of a generative classifier that makes the following simplifying assumptions:
+the feature space $\X=\R^d$, 
+and each feature $\x^{(i)}$ is independent given $y$.
+In notation,
+\begin{equation}
+    p(\x|y) = \prod_{i=1}^d p(\x^{(i)}|y)
+    .
+\end{equation}
+Substituting into \eqref{eq:gen:opt2} gives the naive bayes classification rule
+\begin{equation}
+    \label{eq:gen:nb}
+    \hat y(\x) 
+    =
+    \argmax_{y\in\Y} p(y)\prod_{i=1}^dp(\x^{(i)} | y)
+    .
+\end{equation}
+The distribution $p(y)$ is typically assumed to be the categorical distribution,
+and the distributions $p(\x^{(i)}|y)$ are typically assumed to be univariate categorical distributions for discrete data or univariate normal distributions for continuous data.
+As all of these distributions are in the linear exponential family,
+naive bayes is a mergeable learning algorithm.
+
+%The \defn{naive bayes classifier} is old and simple.
+%It was widely used before the 2000s,
+%but \citet{ng2002discriminative} showed that naive bayes works well only on very small data sets.
+%Logistic regression is a better choice for large data sets.
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Ridge regression}
-\label{sec:ridge}
+\label{sec:merge:ridge}
 
-%Recall that in empirical risk minimization (ERM) we solve the following equation
-%\begin{equation}
-    %\wmle = \argmin_{\w\in\W} \sum_{\z\in\Z} \loss(\z;\w) + \reg(\w)
-    %,
-%\end{equation}
-%where $\W$ is the space of parameters, 
-%$\Z$ is the space of data points
+%This combination of loss and norm have good computational and theoretical properties,
+%which makes ridge regression one of the most widely used and studied statistical algorithms.
+%The important property of ridge regression for our purposes is that it can be solved for exactly in an embarrassingly parallel fashion.
+%Ridge regression 
 
-%We assume that data is generated by the model
-%\begin{equation}
-    %y \sim \trans\w\x + \epsilon,
-%\end{equation}
-%where $\x$
-%We are given a set of data points $Z\subset \X\times\Y$,
-%and our goal is to find a linear function $f : \X \to \Y$ that best fits the data.
+Fast cross validation procedures for ridge regression have been known at least since \citet{golub1979generalized}.
+More recent work \citep[e.g.][]{pahikkala2006fast,an2007fast} show fast cross validation methods in the kernelized case.
+Our single machine cross validation method can be seen as a generalization of this work.
+Furthermore, no existing ridge regression fast cross validation method supports the distributed environment.
+Despite the simplicity, ridge regression remains an actively studied problem.
+\cite{wang2016deco} propose a distributed algorithm for the case when $d > mn$.
+\cite{meng2014lsrn} propose a distributed solver that works in all cases.
+\cite{gascón2017privacy} proposes a distributed solver that maintains differential privacy guarantees.
+\cite{zhang2013divide,zhang2015divide} dnc kernel rr.
+\cite{szabo2015twostage,szabo2016learning} uses kernel ridge regression to solve the distribution regression problem (which is a generalization of multiple instance learning).
 
-Ridge regression is a special case of ERM using the squared loss and squared $L_2$ norm.
-This combination of loss and norm have good computational and theoretical properties,
-which makes ridge regression one of the most widely used and studied statistical algorithms.
-The important property of ridge regression for our purposes is that it can be solved for exactly in an embarrassingly parallel fashion.
-
-Ridge regression solves the optimization
+The \defn{regression problem} is closely related to classification as presented in the previous section.
+The data space $\Z=\X\times \Y$, and the goal is to learn an unknown function $\hat y : \set X \to \set Y$.
+Unlike the classification problem, however, the set $\Y=\R$ (recall that $\Y$ is finite in classification).
+It is traditional to call $\X$ the set of \defn{covariates} and $\Y$ the set of \defn{response variables}.
+The function $\hat y$ is defined to be
+\begin{equation}
+    \hat y(\x) = \trans\w\x
+\end{equation}
+where $\w\in\W=\R^d$ is a vector of model parameters.
+The standard ridge regression estimator uses RLM with the loss and regularization functions 
+\begin{equation}
+    \loss(\x,y;\w) = \ltwo{y-\trans\w\x}^2
+    ~~~~~\text{and}~~~~~
+    \reg(\w) = \ltwo{\w}^2
+    .
+\end{equation}
+Substituting into the definition of the RLM estimator from Equation \eqref{eq:notation:rlm:independent} gives 
 \begin{equation}
     \label{eq:ridge:ridge}
     \wridge = \argmin_{\w\in\R^d} \sum_{(\x,y)\in Z} (y-\trans \w \x)^2 + \lambda\ltwo{\w}^2
@@ -675,205 +878,84 @@ The result has closed form solution
     \wridge = (\trans X X + \lambda I)^{-1}\trans X\y
     .
 \end{equation}
-The matrix products take time $O(mnd^2)$ and the inverse takes time $O(d^3)$.
-Whenever $mn \gtgt d$, the products dominate the runtime and should be parallelized.
+The matrix product $\trans X X$ take time $O(mnd^2)$, and the inverse takes time $O(d^3)$.
+Whenever $mn \gtgt d$, the product dominate the runtime and should be parallelized.
 
-Because ridge regression has a closed form solution,
-there is a simple embarrassingly parallel algorithm to solve it.
-Each local machine $i$ calculates the statistics
+%Because ridge regression has a closed form solution,
+%there is a simple embarrassingly parallel algorithm to solve it.
+The closed form solution for $\wridge$ lets us construct a merge procedure.
+%Each local machine $i$ calculates the statistics
+For each local data set $Z_i=(X_i, Y_i)$, we calculate the local statistics
 \begin{equation}
     A_i = \trans X_i X_i
-    ,~~~~~\text{and}~~~~~
+    ~~~~~\text{and}~~~~~
     B_i = \trans X_i \y_i
     .
 \end{equation}
-Then the merge procedure calculates
+The runtime of calculating the local statistics $O(nd^2)$, independent of the number of machines $m$.
+The merge procedure is then
 \begin{equation}
     \label{eq:ridge:ridgep}
-    \wridgep = \left(\sum_{i=1}^m A_i + \lambda I\right)^{-1} \sum_{i=1}^m B_i
+    %\wridgep 
+    \merge\{(A_i,B_i)\}_{i=1}^m
+    = \left(\sum_{i=1}^m A_i + \lambda I\right)^{-1} \sum_{i=1}^m B_i
     .
 \end{equation}
 By definition of $A_i$ and $B_i$,
 Equations \eqref{eq:ridge:ridge} and \eqref{eq:ridge:ridgep} are the same.
-
-Despite the simplicity, ridge regression remains an actively studied problem.
-\cite{wang2016deco} propose a distributed algorithm for the case when $d > mn$.
-\cite{meng2014lsrn} propose a distributed solver that works in all cases.
-\cite{gascón2017privacy} proposes a distributed solver that maintains differential privacy guarantees.
-\cite{zhang2013divide,zhang2015divide} dnc kernel rr.
-\cite{szabo2015twostage,szabo2016learning} uses kernel ridge regression to solve the distribution regression problem (which is a generalization of multiple instance learning).
-
+Calculating the summation takes time $O(md^2)$ and the inverse takes time $O(d^3)$.
+The total runtime of $\merge$ is $O(md^2+d^3)$,
+which is independent of the number of data points per machine $n$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Exponential family distributions}
-\label{sec:merge:ef}
+\subsection{Ad-hoc approximations to the RLM}
 
-%There are three important subfamilies of the EF that we will consider:
-%linear exponential families (LEFs),
-%curved exponential families (CEFs),
-%and stratified/deep exponential families (SEFs/DEFs).
+The RLM estimator has the advantage that it asymptotically achieves the Cram\'er-Rao lower bound.
+When the loss function $\loss$ and regularizer $\reg$ are not the squared $L_2$ norm,
+however, no closed form solution exists for the RLM.
+Computing the RLM in these cases is relatively computationally expensive and in particular no exact merge procedure is possible.
+To solve the computational difficulty, 
+many alternative estimators with closed form solutions have been proposed for specific problems.
+For most of these procedures, no explicit distributed or fast cross validation algorithms have been developed.
+But because they all have merge procedures,
+these distributed and fast cross validation algorithms can be derived for free.
 
-The \defn{exponential family} (EF) of distributions is defined to be the set $\Pexp$ of all distributions whose density can be written in the form
-\begin{equation}
-    \p{\z | \w} = h(\z)\exp\left(\trans{\w} T(\z) - \psi(\w)\right)
-\end{equation}
-where $\z\in\Z$ and $\w\in\W$.
-We make no assumption on the set $\Z$, but require $\W$ to be an open subset of a hilbert space $\set H$.
-We will ignore the technical details of infinite dimensional hilbert spaces and denote the inner product using $\trans{}$ in analogy with finite dimensional vectors.
-The function $h : \Z\to\R$ is called the base measure,
-$T : Z \to \W$ the sufficient statistic,
-and $\psi : \W \to \R$ the log partition function.
-Many authors require $\psi$ to be strongly convex,
-but we will require only that derivative be invertible.
-%Many popular distributions (e.g. Gaussian, Dirichlet, Poisson, exponential, and categorical) are in the exponential family.
-
-%Given a prior distribution on the parameter vector $\w$,
-%the \defn{maximum a posteriori estimate} (map)
-%There are many introductions to exponential families,
-%but the presentation in \citet{amari2016information} is especially apropos to our discussion.
-%Given a data set $Z$, we can estimate the parameters of the distribution as
-To perform parameter estimation using ERM,
-we set the loss to the negative log likelihood 
-\begin{equation}
-    \loss(\z;\w) 
-    = -\log\p{\z|\w}
-    = -\log h(\z) - \trans\w T(\z) + \psi(\w)
-    .
-\end{equation}
-
-\begin{equation}
-    \reg(\w) = \log\prior\w
-\end{equation}
-where $\prior\w$ is the prior distribution over $\w$.
-The ERM is then
-\newcommand{\deriv}[2]{\frac{\dd {#1}}{\dd {#2}}}
-\begin{align}
-    \label{eq:ef:erm}
-    %\werm = \argmin_{\w\in\W} \sum_{\z\in Z} \loss(\z;\w) + \lambda \reg(\w)
-    \werm 
-    &= \argmin_{\w\in\W} \sum_{\z\in Z}\left( \psi(\w) - \trans\w T(\z)\right)
-    %\\
-    %= \left(\deriv{}{\w}\psi\right)^{-1} \left(\frac{1}{mn} \sum_{\z\in Z} T(\z) \right)
-    = \psi'^{-1} \left(\frac{1}{mn} \sum_{\z\in Z} T(\z) \right)
-    .
-\end{align}
-
-
-\begin{method}
-    When the parameter space $\W$ equals $\R^d$,
-    the distribution is in the \defn{linear exponential family} (LEF).
-    Local machines calculate 
-    \begin{equation}
-        \wmle_i
-        %= \left(\deriv{}{\w}\psi\right)^{-1} \left(\frac{1}{n} \sum_{\z\in Z_i} T(\z) \right)
-        = \psi'^{-1} \left(\frac{1}{n} \sum_{\z\in Z_i} T(\z) \right)
-    \end{equation}
-    and the merge procedure is
-    \begin{equation}
-        \label{eq:lef:merge}
-        %\left(\deriv{}{\w}\psi\right)^{-1} 
-        \psi'^{-1} 
-        \left(
-            %\frac{1}{m} \sum_{i=1}^m \deriv{}{\w}\psi \left(\wmle_i\right)
-            \frac{1}{m} \sum_{i=1}^m \psi' \left(\wmle_i\right)
-        \right)
-        .
-    \end{equation}
-    Notice that \eqref{eq:lef:merge} simplifies to \eqref{eq:ef:erm},
-    so the learning function for LEF's is an exact semigroup homomorphism.
-\end{method}
-
-When the parameter space $\W$ is a manifold in the underlying hilbert space $\set H$,
-we say the distribution is in the \defn{curved exponential family} (CEF). 
-The CEF was introduced by \citet{efron1975defining} and \citet{amari1982differential} and is a central topic in the field of information geometry.
-The book \citet{amari2016information} provides a modern treatment of CEFs from this geometric perspective.
-%When $\W$ is a $d$ dimensional manifold embedded in a $d' > d$ dimensional hilbert space.
-
-%\begin{method}
-    %When $d'$ is finite,
-%\end{method}
-%
-%When $d'$ is infinite, other methods of estimation are required.
-
-%Then the ERM estimate is given by
-%\begin{align}
-    %\wmle 
-    %&= \argmax_{\w\in\W} \prod_{\z\in Z} \p{\z | \w} \p{\w}
-    %\\
-    %&= \argmin_{\w\in\W} \sum_{\z\in Z} \loss(\z ; \w) + \reg(\w)
-%\end{align}
-
-\cite{geiger1998graphical} and \citet{geiger2001stratified} introduced the class of \defn{stratified exponential families} (SEFs),
-which is defined to be the set of all algebraic subsets of $\Pexp$.
-The definition of an algebraic subset comes from algebraic geometry.
-It is rather technical, so we do not review it here.
-\citet{geiger2001stratified} include a number of theorems characterizing the properties of SEFs.
-The most important is that all graphical models with hidden variables are SEFs (but not CEFs).
-%SEFs correspond to graphical models with hidden variables.
-%The original presentation of SEFs was in terms of algebraic geometry
-\cite{ranganath2015deep} independently reinvented essentially the same concept in the form of \defn{deep exponential families} (DEFs).
-A DEF is the distribution resulting from placing EF priors on the natural parameters of an EF distribution.
-\citet{ranganath2015deep} suggest using variational methods to solve for the parameters of DEFs.
-Section \ref{sec:merge:vi} discusses variational methods in detail.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Bayesian classifiers}
-
-Assume that the data space $\Z$ is decomposed into $\X\times \Y$,
-where $\X$ is the space of features and $\Y$ the space of class labels.
-Our goal is to learn a distribution $\p{\y ; \x}$.
-We then classify according to rule
-\begin{equation}
-    \argmax_{\y\in\Y} \p{\y | \x}
-    \end{equation}
-By bayes theorem, we have that
-\begin{equation}
-    \p{\y | \x} = \frac{\p{\x | \y}\p{\y}}{\p{\x}}
-    .
-\end{equation}
-
-In naive bayes, we assume that the data can be decomposed into $d$ dimensions,
-and these dimensions are independent.
-That is,
-\begin{equation}
-    \p{\w | \z} = \prod_{i=1}^d \psup{(i)}{\w^{(i)} | \z^{(i)}}
-\end{equation}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{Ad-hoc approximations to the maximum likelihood}
-
-
+\citet{chan1994simple} consider the problem of estimating a position given sonar/radar traces.
+They approximate the RLM estimator with a closed form estimator that also manages to achieve the Cram\'er-Rao lower bound.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{Examples: non-quadratic empirical risk minimization}
+\section{Examples: approximate merging for RLM}
 
-When either the loss or regularization functions for ERM are non-quadratic,
-no closed form solution exists.
+%Estimators with closed form solutions (and hence exact merge functions) are rare in practice.
+For most modern machine learning algorithms,
+no exact merge function exists.
+
+Most work has focused on the special case when the parameter space $\W$ is vector valued;
+that is $\W=\R^d$.
+We begin our discussion here.
+Then we review more specialized work focusing on principle component analysis and submodular optimization problems.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Averaging}
+\subsection{Methods for vector parameters}
 \label{sec:merge:ave}
 
-The simplest and most popular non-interactive estimator is the averaging estimator:
+The simplest and most popular mergeable estimator is the \defn{averaging estimator}
 \begin{equation}
 \wave = \frac{1}{m}\sum_{i=1}^m \wmle_i
 .
 \end{equation}
-Previous analysis of $\wave$ makes a number of limiting assumptions.
-\citet{mcdonald2009efficient} analyze $\wave$ in the special case of L2 regularized maximum entropy models.
+The averaging estimator is well studied.
+\citet{mcdonald2009efficient} analyze $\wave$ in the special case of $L_2$ regularized maximum entropy models.
 They provide concentration inequalities for the estimation error,
 showing that the variance $\ltwo{\E\wave-\wave}$ reduces as $O((mn)^{-1/2})$,
 but that the bias $\ltwo{\wstar-\E\wave}$ reduces only as $O(n^{-1/2})$.
 Their analysis uses a martingale technique that requires the radius of the dataset be independent of the size of the dataset.
 This is a particularly limiting assumption as even the simple case of
 normally-distributed data does not satisfy it.
-\citet{zhang2012communication} provide a more general analysis showing that the mean squared error (MSE) $\E\ltwo{\wstar-\wave}{}^2$ decays as $O((mn)^{-1} + n^{-2})$.
+\citet{zhang2012communication} provide a more general analysis showing that the \defn{mean squared error} (MSE) $\E\ltwo{\wstar-\wave}{}^2$ decays as $O((mn)^{-1} + n^{-2})$.
 This matches the optimal MSE of $\wmle$ whenever $m<n$.
 Their analysis also requires limiting assumptions.
 For example, they assume the parameter space $\W$ is bounded.
@@ -1002,8 +1084,8 @@ the corresponding Hessian is too large to practically invert.
 %and \cite{hotelling1933analysis} first introduced the term principle components.
 In this section,
 we describe how PCA works on a single machine,
-show that two existing techniques for distributed PCA fit our framework,
-then describe the importance of fast cross validation techniques for PCA.
+show that two existing techniques for distributed PCA are mergeable,
+and describe the importance of fast cross validation techniques for PCA.
 
 Let $Z$ denote the $mn\times d$ input data matrix.
 The goal of PCA is to find a $d\times k$ matrix with $k \ltlt d$ such that the distance between $Z$ and $Z\w\pinv\w$ is minimized.
@@ -1012,6 +1094,7 @@ Formally,
 \begin{equation}
     \label{eq:pca:defn}
     \wpca = \argmin_{\w\in\R^{d\times k}} \ltwo{Z - Z\w\pinv\w}^2
+    .
 \end{equation}
 The optimization \eqref{eq:pca:defn} is non-convex, 
 but the solution can be calculated efficiently via the \defn{singular value decomposition} (SVD). 
