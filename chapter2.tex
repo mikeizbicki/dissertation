@@ -53,6 +53,9 @@
 \newcommand{\wpca}{\hat\w^\textit{pca}}
 \newcommand{\wlbk}{\hat\w^\textit{lbk}}
 \newcommand{\wexp}{\hat\w^\textit{exp}}
+\newcommand{\wmcmc}{\hat\w^\textit{mcmc}}
+\newcommand{\wcmc}{\hat\w^\textit{cmc}}
+\newcommand\sample[2]{\theta_{{#1},{#2}}}
 
 \newcommand{\ELBO}{\text{ELBO}}
 \newcommand{\Pdist}{\mathcal P}
@@ -1356,10 +1359,10 @@ BvM uses a simple model based on a parametric approximation and sufficient stati
 Next we discuss variational inference (VI).
 VI also makes a parametric approximation,
 but uses a more complex optimization procedure to choose the parameters.
-We shall see that the distributed methods for VI are closely related to those for ERM.
+We shall see that the distributed methods for VI are closely related to those for RLM.
 The final method is markov chain monte carlo (MCMC).
 MCMC uses sampling to approximate the posterior.
-The distributed methods share little in common with the optimization methods.
+The distributed MCMC methods share little in common with the optimization methods.
 %We can use bayes theorem to write the posterior as 
 %\begin{equation}
     %p(\theta | \z) = \frac{p(\z|\theta)p(\theta)}{p(\z)}
@@ -1645,25 +1648,90 @@ The method therefore fits our framework.
 \subsection{Markov chain monte carlo (MCMC)}
 \label{sec:merge:mcmc}
 
-\defn{Markov chain monte carlo} (MCMC) is a stochastic method for approximating the posterior of a distribution \citep{andrieu2003introduction}.
+\defn{Markov chain monte carlo} (MCMC) is a stochastic method for approximating the posterior of a distribution \citep[e.g.][]{andrieu2003introduction}.
 MCMC provides a way to generate samples from the posterior distribution,
 and these samples can be used to calculate the expectation and mode of the distribution.
-For example,
-
 MCMC is typically slower than variational methods but more accurate.
 As the number of MCMC samples approaches infinity,
 the approximation error of MCMC shrinks to zero;
 whereas the approximation error for variational methods is always some nonzero constant determined by the approximating distribution.
-In this section, we will see two distributed MCMC methods that fit our framework.
-A number of recent papers have developed approximate cross validation techniques for MCMC
+In this section, we will see \fixme{} distributed MCMC methods that fit our framework,
+and each of these methods implies a novel fast cross validation algorithm.
+Fast cross validation for MCMC samplers is an important problem with a growing body of work
 \citep{marshall2003approximate,
 bhattacharya2007importance,
 bornn2010efficient,
 held2010posterior,
 vehtari2012survey,
 li2016approximating}.
-None of these fast cross validation algorithms is suitable for the distributed environment,
+None of the existing fast cross validation algorithms is suitable for the distributed environment,
 unlike the methods induced by our framework.
+
+%The output of a MCMC sampler is a stream of samples $\theta_1,...,\theta_t$. 
+We now formally describe the problem of merging MCMC samples.
+As before, we are given a data set $Z$ that has been partitioned into $m$ equal sized sub-data sets $Z_1,...,Z_m$ each of size $n$.
+We assume that the $Z_i$ are conditionally independent given the parameters $\theta$.
+Then,
+\begin{equation}
+    p(\theta|Z) 
+    \propto p(\theta)p(Z|\theta)
+    = p(\theta)\prod_{i=1}^m p(Z_i|\theta)
+    \propto p(\theta)\prod_{i=1}^m p(\theta|Z_i)p(\theta)^{1/m}
+    = \prod_{i=1}^m p(\theta|Z_i)
+    %\propto p(\theta)\prod_{i=1}^m p(\theta|Z_i)p_i(\theta)
+    %= \prod_{i=1}^m p(Z_i|\theta)p(\theta)^{1/m}
+    ,
+\end{equation}
+The distribution $p(\theta|Z_i)$ is called the $i$th \defn{subposterior distribution}.
+We use an MCMC sampler to create a series of samples $\wmcmc_i=\sample{i}{1},...,\sample{i}{t}$ from each subposterior $i$.
+This can be done independently on $m$ separate machines without communication.
+Furthermore, any sequential MCMC sampler can be used,
+and the optimal choice will depend on the particular problem.
+The $\merge$ procedure takes as inputs samples from the $m$ subposteriors and generates samples from the full posterior.
+Note that $\merge$ cannot simply take the union of the samples of the subposteriors,
+as this would generate samples from $\sum_{i=1}^mp(\theta|Z_i)$ rather than $\prod_{i=1}^m p(\theta|Z_i)$.
+In general, the sum and product of distributions can be arbitrarily different from each other.
+
+\citet{scott2016bayes} introduced the simplest merge procedure in their \defn{consensus monte carlo} (CMC) algorithm.%
+\footnote{
+    The CMC method appears to be the earliest mergeable MCMC method despite the 2016 official publication date.
+    An early version of the CMC paper was first released online in 2013 and is cited by many other mergeable MCMC papers. 
+    Since the earlier papers are not on the arXiv or otherwise available online,
+    I have chosen to cite the official journal publication.
+}
+CMC generates a sample by a weighted average of the subposteriors' samples.
+Formally, the $j$th sample from the posterior is given by
+\begin{equation}
+    \theta_j^{cmc} = \left(\sum_{i=1}^m \Sigma_i\right)^{-1} \sum_{i=1}^m \Sigma_i \theta_{i,j}^{mcmc}
+    .
+\end{equation}
+Where $\Sigma_i$ is the sample covariance matrix of $Z_i$.
+Like the naive averaging estimator for optimization problems,
+CMC reduces the variance but not the bias of the samples.
+
+A second category of merge functions uses a nonparametric estimate of the subposterior density.
+\citet{neiswanger2014asymptotically} introduce the idea.
+
+The second category of samplers is based on \defn{subposterior distributions}.
+Nonparametric estimators have a number of difficulties.
+First, they suffer from the curse of dimensionality.
+As the dimensionality $d$ of $\theta$ increases, 
+the number of required samples increases exponentially.
+\fixme{2 more}
+\citet{wang2013parallelizing} use the Weirstrass transform to improve the nonparametricness of 
+\citet{wang2015parallelizing} introduce the \defn{parallel aggregation random trees} (PART) merging method.
+
+The final category of samplers is based on taking the median.
+\citet{minsker2014scalable} propose the \defn{median of subset posterior measures} method.
+This method is robust to outliers.
+They propose to use the Hellinger distance 
+The generalized median is defined to be
+\begin{equation}
+   % 
+\end{equation}
+\citet{srivastava2015wasp} propose the \defn{waserstein posterior} (WASP).
+
+
 
 %Recent work has focused on improving non-asymptotic bounds of MCMC 
 %\citep[e.g.][]{latuszynski2013nonasymptotic,andrieu2015convergence,adamczak2015exponential,andrieu2016establishing}.
@@ -1710,16 +1778,24 @@ where
     \prod_{i=1}^m\gaussian{z_i}{\bar\theta_{\{z_1,...,z_m\}}}{h^2\eye d}
 \end{align}
 
-\begin{theorem}
-    If $h \asymp T^{-1/d}$,
-    then
-    \begin{equation}
-        \mse{}
-        \E((\phat{\theta} - \p{\theta})^2)
-    \end{equation}
-\end{theorem}
+%\begin{theorem}
+    %If $h \asymp T^{-1/d}$,
+    %then
+    %\begin{equation}
+        %\mse{}
+        %\E((\phat{\theta} - \p{\theta})^2)
+    %\end{equation}
+%\end{theorem}
 
-\citet{meeds2015optimization}
+%\citet{xu2014distributed} proposes to share a small number of moments between each machine.
+%This results in the machines not being truely independent and so the CV estimates will be biased.
+
+%\citet{sisson2011likelihood} provides a tutorial on MCMC methods in likelihood free \defn{approximate bayesian optimization} (BAC).
+%
+%\citet{welling2009herding} introduced \defn{herding},
+%which is a method of generating samples without using randomness.
+%
+%\citet{meeds2015optimization}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
