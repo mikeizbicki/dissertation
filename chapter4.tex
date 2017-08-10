@@ -88,9 +88,9 @@
 \noindent
 The cover tree is a data structure for fast nearest neighbor queries in arbitrary metric spaces.
 Cover trees were first introduced by \cite{beygelzimer2006cover},
-and they have seen widespread use in the machine learning community since then.
-%(See Section \ref{sec:review}.)
-This chapter improves the cover tree's run time both in theory and practice.
+and they have seen widespread use in the machine learning community since then
+(Section \ref{sec:review}).
+This chapter improves the cover tree's runtime both in theory and practice.
 Our first contribution is to improve the cover tree's runtime bounds.
 As an example, 
 the original cover tree was able to find nearest neighbors in time $O(\cexp^{12}\log n)$,
@@ -107,7 +107,7 @@ the cover tree is the fastest technique available for nearest neighbor queries o
 %and a new notion of metric dimension called the hole constant.
 
 %and connects the cover tree to the divide and conquer framework described in Chapter 1. 
-%On the theoretical side, this chapter improves the analysis of the cover tree's run times.
+%On the theoretical side, this chapter improves the analysis of the cover tree's runtimes.
 %The original analysis was done in terms of the 
 
 Most work on nearest neighbor queries focuses on Euclidean space,
@@ -120,7 +120,7 @@ Section \ref{sec:measure} then provides a mathematically detailed discussion of 
 %the doubling dimension,
 %the hole dimension,
 %and the aspect ratio.
-These quantities are important to bound the run time of operations on the cover tree.
+These quantities are important to bound the runtime of operations on the cover tree.
 We review standard results that demonstrate that the expansion constant $\cexp$ is not robust to small changes in the dataset.
 We then review basic properties of the more robust doubling constant.
 Unfortunately, we show that the doubling constant is not suitable for measuring the difficulty of exact nearest neighbor queries because there exists a data set of size $n$ with doubling dimension 2 that requires $O(n)$ distance computations to find a nearest neighbor.
@@ -271,7 +271,7 @@ Then we introduce a novel third dimension called the hole dimension.
 We show in this section that the hole dimension is more robust than the expansion dimension,
 and in Section \ref{sec:original} the hole dimension is used to bound the runtime of exact nearest neighbor queries.
 This section concludes with a discussion of the aspect ratio of a metric space.
-The log of the aspect ration will bound the height of the cover tree (Lemma \ref{lemma:height} in Section \ref{sec:original}).
+The log of the aspect ratio will bound the height of the cover tree (Lemma \ref{lemma:height} in Section \ref{sec:original}).
 %Lemma \ref{lemma:height} in Section \ref{sec:original} shows that the log of the aspect ratio bounds the height of the cover tree.
 In this section, we provide a novel bound showing that under mild regularity conditions the aspect ratio of i.i.d.\ data is $O(n^3)$, 
 and thus the height of the cover tree is $O(\log n)$.
@@ -389,7 +389,7 @@ In the context of machine learning, the doubling dimension has found use both st
 Statistically, the doubling dimension is a standard tool for proving regret bounds.
 For example, \citet{luxburg2004distance} uses the doubling dimension to provide the first large margin bounds for classifiers in metric spaces,
 and Chapter 27 of \cite{shalev2014understanding} shows how to bound the Rademacher complexity of a classifier using the doubling dimension.
-A particularly apropos work in this vein is \citet{kontorovich2015bayes},
+A particularly apropos work in this vein is that of \citet{kontorovich2015bayes},
 which uses the doubling dimension to derive the first Bayes-consistent 1-nearest neighbor algorithm.
 Algorithmically, the doubling dimension is used to develop approximation algorithms.
 Chapter 32 of \cite{toth2017handbook} provides a survey of how the doubling dimension is used to approximate a variety of NP-hard problems.
@@ -697,6 +697,7 @@ We emphasize this point with three examples.
 \end{example}
 
 \begin{example}
+    \label{example:dc1}
     Let $Y=\{\frac 1 2, \frac 1 4, ..., \frac 1 {2^n}\}$,
     and $\dist{y_1}{y_2}=|y_1-y_2|$.
     Then the aspect ratio is $2^{n-1}$ (i.e.\ arbitrarily large),
@@ -727,7 +728,7 @@ The aspect ratio and the expansion number share the unattractive property that a
 Under mild assumptions, however, we can show that this is unlikely to happen.
 Specifically, let $\set X$ be a metric space, 
 and let $X=\{x_1,...,x_n\}\subset\set X$ be a sample of $n$ i.i.d.\ points from a distribution $\distribution D$ over $\set X$.
-Our goal is to show that the aspect ratio is polynomial in $n$.
+Our goal is to show that the aspect ratio is polynomially in $n$.
 We will later show that the log of the aspect ratio bounds the depth of the cover tree (see Lemma \ref{lemma:height}),
 and so the depth of the cover tree will be logarithmic in $n$.
 
@@ -877,7 +878,7 @@ An immediate consequence of Lemmas \ref{lemma:Ediam} and \ref{lemma:Ecodiam} is 
     \label{lemma:Easpect}
     Let $\set X$ and $X$ be defined as above.
     Assume that $\distribution D$ has finite expected distance and $B$-bounded density.
-    Then, $\E\aspect{} \le2B\mu n^3$.
+    Then, $\E\aspect{} \le4B\mu n^3$.
 \end{lemma}
 %\begin{proof}
     %Combining Lemmas \ref{lemma:Ediam} and \ref{Ecodiam} above gives
@@ -1052,8 +1053,8 @@ but somewhat harder to use in practice.
 No subsequent work uses this bound on dimension.
 The next advance came when \citet{karger2002finding} introduced the \defn{metric skip list} and the expansion dimension. 
 This data structure requires $O(n\log n)$ space, 
-can find nearest neighbors in time $O(\poly\cexp\log n)$,
-and insert new data in time $O(\poly\cexp\log n \log \log n)$.
+finds nearest neighbors in time $O(\poly\cexp\log n)$,
+and inserts new data in time $O(\poly\cexp\log n \log \log n)$.
 The expansion dimension is not as good a notion of dimensionality as the doubling dimension.
 %(see Sections \ref{sec:cdoub} and \ref{sec:cexp}).
 
@@ -1071,10 +1072,10 @@ The navigating net inspired a flurry of subsequent results.
 which also uses only linear space but is fully deterministic.
 The downside of the cover tree is that the analysis is in terms of the less robust expansion constants.
 \cite{ram2009linear} and \cite{curtin2015plug} improve the runtime bounds of cover trees and extend the use of cover trees to non-nearest neighbor problems.
-\cite{curtin2013tree} provides a generic framework for solving distance problems.
+\cite{curtin2013tree} provide a generic framework for solving distance problems.
 Of all the spacial data structures, 
 the cover tree has seen the most widespread adoption.
-This is likely due to he fast, easy to use reference implementation by John Langford.
+This is likely due to the fast, easy to use reference implementation by John Langford.
 \cite{moore2014fast} use cover trees for faster gaussian process posteriors.
 
 \fixme{add more examples of cover tree uses}
@@ -1132,8 +1133,10 @@ The cover tree data structure was first described by \cite{beygelzimer2006cover}
 The original presentation was in terms of an infinitely large tree,
 only a finite subset of which actually gets implemented.
 In this section we provide an alternative (but equivalent) definition that is more concrete.
-This presentation more closely matches what actually gets implemented in code and serves to highlight the differences between the original cover tree and the simplified cover tree presented in the next section.
-This section includes a novel algorithm for $\eann$ queries in cover trees that improves on the original query algorithm from \cite{beygelzimer2006cover}.
+This presentation more closely matches the implementation in code and serves to highlight the differences between the original cover tree and the simplified cover tree presented in the next section.
+%This section includes a novel algorithm for $\eann$ queries in cover trees that improves on the original query algorithm from \cite{beygelzimer2006cover}.
+In addition to presenting the original cover tree,
+we present a novel algorithm for $\eann$ queries on the original cover tree that improves the runtime of the algorithm developed by \citet{beygelzimer2006cover}.
 
 A \defn{cover tree} is a tree data structure where each node in the tree contains a single point in the underlying metric space.
 When needed for disambiguation, $\datapoint p$ will refer to the data point stored at node $p$;
@@ -1188,6 +1191,8 @@ and its exact value can be cached within the data structure.
 Before we present algorithms for manipulating the cover tree, 
 we present two lemmas that bound the shape of the tree.
 These lemmas are a direct consequence of the cover tree's invariants and motivate the invariants' selection.
+\citet{beygelzimer2006cover} present similar lemmas bounding the shape of the cover tree in terms of the expansion number.
+The bounds in this section, however, are in terms of the aspect ratio and doubling number.
 %This section can be safely skipped by the reader not interested in the details of the tree's runtime analysis.
 
 %%%%%%%%%%%%%%%%%%%%
@@ -1207,7 +1212,7 @@ These lemmas are a direct consequence of the cover tree's invariants and motivat
 \begin{lemma}
     \label{lemma:height}
     Let $p$ be any non-leaf node in a cover tree.
-    Denote by $\height{p}$ the number of edges between $p$ and its most distant leaf.
+    Denote by $\height{p}$ the maximum number of edges between $p$ and any of its descendants.
     We have that $\height{p} \le \log_2\aspect{X}$.
 \end{lemma}
 
@@ -1372,9 +1377,9 @@ returns a $(1+\varepsilon)$-ann of $x$ in $\data{P}$
 \begin{theorem}
     \label{theorem:findnnorig:runtime:approx}
     %Let $\varepsilon\ge2$.
-    %Then $\findnnorig(\{p\},x)$ has run time $O(\cdoub^4\log\aspect{})$.
+    %Then $\findnnorig(\{p\},x)$ has runtime $O(\cdoub^4\log\aspect{})$.
     %If the data is generated i.i.d.\ from a well behaved distribution,
-    %then the run time is $O(\cdoub^4\log n)$.
+    %then the runtime is $O(\cdoub^4\log n)$.
     %If $\varepsilon > 0$,
     %then $\findnnorig(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\cdoub^4\log\aspect{} + (1/\varepsilon)^{\log \cdoub})$.
     For any $\varepsilon\ge0$, $\findnnorig(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\chole^4\log\aspect{})$.
@@ -1570,9 +1575,9 @@ faster than $\findnnorig$
 \begin{theorem}
     \label{theorem:findnn:runtime:approx}
     Let $\varepsilon\ge1$.
-    Then $\findnn(\{p\},x,\varepsilon)$ has run time $O(\cdoub^5\log\aspect{})$.
+    Then $\findnn(\{p\},x,\varepsilon)$ has runtime $O(\cdoub^5\log\aspect{})$.
     %If the data is generated i.i.d.\ from a well behaved distribution,
-    %then the run time is $O(\cdoub^4\log n)$.
+    %then the runtime is $O(\cdoub^4\log n)$.
     %If $\varepsilon > 0$,
     %then $\findnn(\{p\},x,\varepsilon)$ finds a $\eann$ in time $O(\cdoub^4\log\aspect{} + (1/\varepsilon)^{\log \cdoub})$.
     %Furthermore, $\findnn(\{p\},x,0)$ finds an exact nearest neighbor in time $O(\chole^4\log\aspect{})$.
@@ -1851,7 +1856,7 @@ we show a bound of $O(\cdoub^3\log n)$.
 Notice that our bound for insertion is in terms of the doubling dimension,
 which is the strongest notion of intrinsic dimensionality available for metric spaces.
 In particular, Lemma \ref{lemma:chole} shows that $\cdoub \le \cexp$,
-and Example \ref{} shows that $\cdoub$ can be arbitrarily smaller than $\cexp$.
+and Example \ref{example:dc1} shows that $\cdoub$ can be arbitrarily smaller than $\cexp$.
 
 The algorithm for inserting points is split into two functions.
 The most important is $\ctinsertloop$ (Algorithm \ref{alg:ctinsertloop}).
@@ -1859,7 +1864,7 @@ Like $\findnn$, $\ctinsertloop$ recursively traverses a set of input trees to fi
 On each iteration,
 a set $Q_x$ is created that contains all the subtrees that will be descended.
 The global separating invariant requires that we traverse several subtrees simultaneously to ensure that the distance between $x$ is not too close to other nodes on the same level in a different subtree.
-(A simple depth first search (as done in Algorithm \ref{alg:insert} for the simplified cover tree) would not ensure this property.)
+(A simple depth first search as done in Algorithm \ref{alg:insert} for the simplified cover tree would not ensure this property.)
 %Interestingly, the maximum size of $Q_x$ is smaller in $\ctinsertloop$ than in $\findnn$,
 %so the runtime dependence on $\cdoub$ is somewhat better
 %(to the 3rd power instead of the 4th).
@@ -2071,7 +2076,7 @@ Algorithms \ref{alg:findnnorig} and \ref{alg:findnn} from Section \ref{sec:origi
 Unfortunately, \citet{izbicki2015faster} incorrectly stated that the simplified cover tree obeys the same runtime bounds as the original cover tree for nearest neighbor queries.
 This is not true in the worst case.  
 The proofs of Theorems \ref{theorem:findnnorig:runtime:approx} and \ref{theorem:findnnorig:runtime:approx2} critically depend on the global nature of the separating invariant to bound the size of $Q_x$ in each recursive call of $\findnnorig$ and $\findnn$.
-It is possible that an amortized or average case analysis could achieve similar run times,
+It is possible that an amortized or average case analysis could achieve similar runtimes,
 however the difficulty of such an analysis does not seem worth the effort.
 The experiments in Section \ref{sec:experiments} demonstrate that this theoretical difficulty is not an issue in practice as the simplified cover tree performs nearest neighbor queries faster than the original on real world problems.
 
@@ -2406,9 +2411,9 @@ and Figure \ref{fig:numdist}(b) shows that this slowdown is overshadowed by the 
 In this section we discuss parallelism on shared-memory, multiprocessor machines.
 Querying in parallel is easy.
 %Querying a cover tree in parallel is easy.
-Since the results of neighbor queries for a data point do not depend on other data points, we can:
-divide the points among the processors;
-then each processor traverses the tree independently.
+Since the results of neighbor queries for a data point do not depend on other data points, we can
+divide the points among the processors
+and have each processor traverse the tree independently.
 More difficult is constructing the tree in parallel.
 Our strategy is to split the data, create one cover tree on each processor, then merge these trees together.
 Previous work on parallelizing cover trees applied only to the GPU \citep{Kumar2010}.
@@ -2442,8 +2447,10 @@ It is important to do this insertion of \mkvar{leftovers} at the lowest level po
 %Extending \mkprocedure{merge} to work on nearest ancestor cover trees requires a similar procedure to how we modified \ctinsert.
 %Extending \mkprocedure{merge} to work on nearest ancestor cover trees requires the following rebalancing operations.
 The \mkprocedure{merge} function does not maintain the nearest ancestor invariant.
-A modified version of \mkprocedure{merge} that calls the \rebalance~function appropriately could.
-But for space reasons, we do not provide this modified algorithm.
+A modified version of \mkprocedure{merge} that calls the \rebalance~function appropriately could,
+however this would significantly complicate the procedure.
+Experimental evidence shows that this complication is not necessary.
+%But for space reasons, we do not provide this modified algorithm.
 In our experiments below, we use the provided \mkprocedure{merge} function in Algorithm \ref{alg:merge} to parallelize both simplified and nearest ancestor tree construction.
 In practice, this retains the benefits of the nearest ancestor cover tree because the nearest ancestor invariant is violated in only a few places.
 
@@ -2546,9 +2553,9 @@ and this effect is exaggerated when the tree is constructed in parallel.
 \label{sec:cache}
 
 One of the biggest sources of overhead in modern data structures is cache misses.
-Our last improvement is to make cover trees more cache efficient.
+Our last improvement is to make cover trees more cache efficient for queries.
 A simple way to reduce cache misses for tree data structures is to use the \emph{van Emde Boas} tree layout
-\cite{frigo1999}.
+\citep{frigo1999}.
 This layout arranges nodes in memory according to a depth first traversal of the tree.
 This arrangement creates a \emph{cache oblivious} data structure.
 That is, the programmer does not need any special knowledge about the cache sizes to obtain optimal speedup---the van Embde Boas tree layout works efficiently on any cache architecture.
@@ -2666,10 +2673,10 @@ Our implementation was written in Haskell and compiled with \texttt{ghc 7.8.4} a
 %\footnote{
 %Haskell has two disadvantages for performance sensitive numeric computing.
 %First, it is a garbage collected language.
-%In our tests, the garbage collector typically required between 5 to 10 percent of our program's run time.
+%In our tests, the garbage collector typically required between 5 to 10 percent of our program's runtime.
 %Second, Haskell only efficiently supports persistent data structures, and our cover tree is implemented persistently.
 %That is, we never change the value of a variable after creation; and all previous states of the program are continuously accessible in memory.
-%It is impossible to guess how persistence might affect the run time of our cover tree.
+%It is impossible to guess how persistence might affect the runtime of our cover tree.
 %%We implemented the cover tree in Haskell partly out of a desire to show that the language is capable of state-of-the-art performance on numerically intensive algorithms.
 %}
 All tests were run on an Amazon Web Services \texttt{c3.8x-large} instance with 60 GB of RAM and 32 Intel Xeon E5-2680 CPU cores clocked at 2.80GHz.
@@ -2710,7 +2717,7 @@ Neither the original implementation nor MLPack support parallelization.
     %Our packed cover tree has better cache performance than our unpacked cover tree, and usually has better cache performance than the other two implementations.
     (b)
     A stalled CPU cycle is when the CPU does no work because it must wait for a memory access. %can do no work processing an instruction because it must wait on data to be retrieved from memory.
-    Reducing the number of cache misses results in fewer stalled cycles, and so faster run times.
+    Reducing the number of cache misses results in fewer stalled cycles, and so faster runtimes.
     We used the Linux \mkprocedure{perf stat} utility to measure the \mkprocedure{cache-references}, \mkprocedure{cache-misses}, \mkprocedure{cycles}, and \mkprocedure{stalled-cycles-frontend} hardware counters.
     \mkprocedure{perf stat} uses a sampling strategy with negligible affect on program performance.
     %(a)
@@ -2720,7 +2727,7 @@ Neither the original implementation nor MLPack support parallelization.
     %\mkprocedure{perf stat} uses a sampling strategy that has a negligible affect on the program's actual performance.
     %(b)
     %A stalled CPU cycle is one where the CPU can do no work processing an instruction because it must wait on data to be retrieved from memory.
-    %Reducing the number of cache misses results in fewer stalled cycles, and so faster run times.
+    %Reducing the number of cache misses results in fewer stalled cycles, and so faster runtimes.
     %Measurements are from the \mkprocedure{cycles} and \mkprocedure{stalled-cycles-frontend} hardware counters.
     }
 \label{fig:cache}
@@ -2769,7 +2776,7 @@ the original cover tree implementation \citep{beygelzimer2006cover},
 a $k$d-tree and cover tree implemented in MLPack \citep{curtin2013mlpack},
 a $k$d-tree and ball tree implemented in Python's scikit learn \citep{scikit-learn},
 and a $k$d-tree implemented in R \citep{R}.
-The results are shown in Figures \ref{fig:allexp1} and \ref{allexp2}.
+The results are shown in Figures \ref{fig:allexp1} and \ref{fig:allexp2}.
 Without parallelization, our implementation is faster than most of the alternatives on most of the datasets.
 With parallelization it is faster than all of the alternatives on all of the datasets.
 
@@ -2814,7 +2821,7 @@ Computing graph kernels is relatively expensive, however, so research has focuse
 Such research makes graph kernels scale to \emph{larger graphs}, but does not help in the case where there are \emph{more graphs}.
 Our contribution is to use cover trees to reduce the number of required kernel computations, letting us scale to more graphs.
 The largest dataset in previous research contained about 1200 proteins.
-With our cover tree, we perform nearest neighbor queries on all one hundred thousand proteins currently registered in the Protein Data Bank \citep{Berman2000}.
+With our cover tree, we perform nearest neighbor queries on all 100,000 proteins currently registered in the Protein Data Bank \citep{Berman2000}.
 
 We use the random walk graph kernel in our experiment.
 It performs well on protein classification and is conceptually simple.
@@ -2837,7 +2844,7 @@ While considerably faster, it is still a relatively expensive distance computati
 %d(A,B) = \sqrt{k(A,A) + k(B,B) -2k(A,B)}
 %$$
 
-The Protein Data Bank \cite{Berman2000} contains information on the 3d primary structure of approximately one hundred thousand proteins.
+The Protein Data Bank \citep{Berman2000} contains information on the 3d primary structure of approximately one hundred thousand proteins.
 To perform our experiment, we follow a procedure similar to that used by the PROTEIN dataset used in the experiments in \citet{Vishwanathan2010}.
 This procedure constructs secondary structure graphs from the primary structures in the Protein Data Bank
 using the tool VLPG \citep{Schfer2012}.
@@ -2845,7 +2852,7 @@ The Protein Data Bank stores the 3d structure of the atoms in the protein in a P
 From this PDB file, we calculate the protein's secondary structure using the DSSP tool \citep{Joosten11}.
 Then, the tool VLPG \citep{Schfer2012} generates graphs from the resulting secondary structure.
 Some PDB files contain information for multiple graphs, and some do not contain enough information to construct a graph.
-In total, our dataset consists of 250,000 graphs, and a typical graph has between 5-120 nodes and 0.1-3 edges per node.
+In total, VLPG generates 250,000 graphs, and a typical graph has between 5-120 nodes and 0.1-3 edges per node.
 Figure \ref{fig:bio} shows the scaling behavior of all three cover trees on this dataset.
 On all of the data, the total construction and query cost are $29$\% that of the original cover tree.
 
@@ -2910,11 +2917,11 @@ As expected, the nearest ancestor cover tree performs the best.
 
 %The Earth Mover's Distance (EMD) is a distance metric between histograms.
 %It was developed specifically for image classification problems \cite{Rubner1998}.
-The Earth Mover's Distance (EMD) is a distance metric between histograms designed for image classification \cite{Rubner1998}.
-In our tests, we convert images into three dimensional histograms of the pixel values in LabCIE color space.
-LabCIE is a color space represents colors in three dimensions.
+The Earth Mover's Distance (EMD) is a distance metric between histograms designed for image classification \citep{Rubner1998}.
+In our tests, we convert images into 3d histograms of the pixel values in LabCIE color space.
+LabCIE is a color space that represents colors in three dimensions.
 It is similar to the more familiar RGB and CMYK color spaces,
-but the distances between colors more accurately match what humans perceive color distances to be.
+but the distances between colors more accurately match human perception.
 We construct the histogram such that each dimension has 8 equally spaced intervals, for a total of 512 bins.
 We then create a ``signature'' of the histogram by recording only the 20 largest of the 512 bins.
 
@@ -2923,8 +2930,8 @@ The EMD takes a base distance as a parameter.
 For an arbitrary base distance, EMD requires $O(b^3\log b)$ time where $b$ is the size of the histogram signature.
 Faster algorithms exist for specific base metrics.
 For example, with an $L_1$ base metric the EMD can be computed in time $O(b^2)$ \citep{Ling07}; and if the base metric is a so-called ``thresholded metric,'' we can get an order of magnitude constant factor speed up \citep{Pele2009}.
-We specifically chose the LabCIE color space because there is no known faster EMD algorithm.
-It will stress-test our cover tree implementation.
+We specifically chose the LabCIE color space because there is no known faster EMD algorithm,
+so it stress-tests our cover tree implementation.
 
 In this experiment, we use the Yahoo! Flickr Creative Commons dataset.
 The dataset contains 1.5 million images in its training set,
