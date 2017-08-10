@@ -39,6 +39,8 @@
 \newcommand{\gaussian}[3]{\mathcal N({#1};{#2},{#3})}
 
 \newcommand{\alg}{\mkprocedure{alg}}
+\newcommand{\alglocal}{\mkprocedure{alg\_local}}
+\newcommand{\Wlocal}{{\W^\textit{local}}}
 \newcommand{\f}{f}
 \newcommand{\walg}{{\hat\w^{\alg}}}
 \newcommand{\wprefix}{{\hat\w_\textit{prefix}}{}}
@@ -53,8 +55,10 @@
 \newcommand{\wpca}{\hat\w^\textit{pca}}
 \newcommand{\wlbk}{\hat\w^\textit{lbk}}
 \newcommand{\wexp}{\hat\w^\textit{exp}}
+\newcommand{\wdave}{\hat\w^\textit{dave}}
 \newcommand{\wmcmc}{\hat\w^\textit{mcmc}}
 \newcommand{\wcmc}{\hat\w^\textit{cmc}}
+\newcommand{\wdle}{\hat\w^\textit{dle}}
 \newcommand\sample[2]{\theta_{{#1},{#2}}}
 
 \newcommand{\ELBO}{\text{ELBO}}
@@ -65,31 +69,53 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{document}
-\chapter{Chapter 2}
-
-Many machine learning algorithms have divide-and-conquer training algorithms.
-
-%Our model of computation is closely related to the \emph{map reduce class} (MRC) introduced by \cite{karloff2010model}.
-%They define the class $MRC^i$
+\chapter{Mergeable learning algorithms}
 
 \noindent
-%A machine learning model consists of a set of data points $\Z$,
-%a set of parameters $\W$,
-%and a function $A : \{\Z\} \to \W$ that attempts to find the ``best'' set of parameters for the input data set.
-%We are given a set of $mn$ data points $Z$ a set of models $\set H$
-%A machine learning model consists of a set of parameters $\W$ and a loss function 
-%This chapter introduces the semigroup framework for machine learning and describes
+This chapter presents the first systematic study of mergeable machine learning algorithms.
+%Many recent papers have developed methods of merging machine learning models.
+%These merge algorithms are used to implement embarrassingly parallel learning algorithms using the MapReduce framework \citep{dean2008mapreduce}.
+%Much of this work has occurred in different subfields of machine learning.
+%This is the first systematic study of merge procedures.
+Section \ref{sec:notation} begins by formally defining mergeable learning algorithms 
+and showing how they are used in distributed machine learning with MapReduce \citep{dean2008mapreduce}.
+Section \ref{sec:cv} reviews cross validation and shows that mergeable learning algorithms have a distributed fast cross validation procedure. 
+We review other frameworks for fast cross validation,
+and show that none of these frameworks were designed for distributed learning.
+Next we describe many examples of merge procedures in the literature.
+We divide these merge procedures into three categories.
+Section \ref{sec:merge:cf} describes how to merge learning algorithms with closed form solutions.
+This includes exponential families, bayesian classifiers, and ridge regression.
+Most estimators, however, do not have closed form solutions.
+Section \ref{sec:merge:approx} describes merge procedures for general optimization problems,
+which typically lack a closed form solution.
+The procedures in this section apply to a large class of learning models,
+one of the most important being logistic regression.
+Finally, Section \ref{sec:merge:bayes} describes merge procedures for bayesian methods.
+It includes subsections on parametric estimation, variational inference, and markov chain monte carlo.
+In total, we review 32 papers that present merging algorithms.
+None of these papers presented fast cross validation algorithms,
+but we show that all of these methods have a fast cross validation algorithm.
+These 32 papers come from many subfields of machine learning,
+and are summarized in Table \ref{table:merge:summary}.
 
-%In the most general machine learning setting,
-%we are given a random variable $\Z$ and our goal is to esti
-%a machine learning problem is defined by a set $\Z$ of data points,
-%a set $\W$ of parameters,
-%and an algorithm $A : \Z \to \W$
-
-\noindent
-This chapter introduces the semigroup framework for machine learning.
-Section \ref{sec:notation} formally defines the framework and introduces the required notation.
-Section \ref{sec:par}
+\begin{table}[h]
+    \centering
+    %\begin{tabularx}{\textwidth}{clc}
+    \begin{tabular}{clc}
+    Section & Problem & Number of merge methods \\
+    \hline
+       \ref{sec:merge:cf} & closed form estimators & 3
+    \\ \ref{sec:merge:ave} & averaging methods & 9 
+    \\ \ref{sec:merge:pca} & principle component analysis & 2
+    \\ \ref{sec:merge:submodular} & submodular optimization & 6
+    \\ \ref{sec:merge:bvm} & parametric bayesian inference  & 1
+    \\ \ref{sec:merge:vi} & variational inference & 3 
+    \\ \ref{sec:merge:mcmc} & markov chain monte carlo & 8 
+    \end{tabular}
+    \caption{ Summary of the existing mergeable learning algorithms.}
+    \label{table:merge:summary}
+\end{table}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -133,7 +159,9 @@ we will denote the parameter estimate by $\walg=\alg(Z)$.
 \end{algorithm}
 
 We study a special class of estimators called \defn{mergeable estimators}.
-We say an estimator is mergeable if there exists a function $\merge : \{\W\} \to \W$ such that
+%We say an estimator $\alg$ is mergeable if it can be decomposed into two functions $\alglocal : \{\Z\}\to\Wlocal$ and $\merge : \{\Wlocal\} \to \W$ such that
+We say an estimator $\alg$ is mergeable if there exists a function $\merge : \{\W\} \to \W$ such that
+%there exists a function $\merge : \{\W\} \to \W$ such that
 for any collection of data sets $Z_1,...,Z_m$ satisfying $Z_i\subset\Z$,
 \begin{equation}
     \label{eq:notation:merge}
@@ -141,7 +169,7 @@ for any collection of data sets $Z_1,...,Z_m$ satisfying $Z_i\subset\Z$,
     .
 \end{equation}
 Many (but not all) existing estimators are mergeable,
-but the merging structure has not been explicitly studied.%
+but the merging structure has not previously been explicitly studied.%
 \footnote{
 %The only major work in machine learning is due to Risi Kondor.
     In the language of modern algebra,
@@ -161,10 +189,10 @@ but the merging structure has not been explicitly studied.%
     \citep{tesson2004monoids,tesson2006bridges}.
     In functional programming, algebra is widely used to structure code.
     For example, \citet{yorgey2012monoids} uses semigroups to structure a library for drawing graphics.
-    The elegance of this library largely inspired my study of mergeable estimators.
+    %The elegance of this library largely inspired my study of mergeable estimators.
 
     Category theory is a branch of mathematics closely related to algebra.
-    \citet{baez2010physics} provide an elementary introduction to category theory and argues that category theory provides a ``rosetta stone'' that facilitates the easy transferring of domain knowledge from one area (e.g. quantum mechanics) to another (e.g. computer science).
+    \citet{baez2010physics} provide an elementary introduction to category theory and argue that category theory provides a ``rosetta stone'' that facilitates the easy transferring of domain knowledge from one area (e.g. quantum mechanics) to another (e.g. computer science).
     The emerging field of probabilistic programming languages is based largely on an algebraic/category theoretic structure called the Giry monad \citep[e.g.][]{erwig2006functional,ramsey2002stochastic,pfeffer2009figaro,scibior2015practical}.
     \citet{mccullagh2002statistical} is a unique work in the statistical literature.
     This paper uses category theory to formally describe the definition of a statistical model.
@@ -201,10 +229,12 @@ Second, we show that many existing estimators are mergeable.
 For many of these estimators, the distributed learning procedure of Algorithm \ref{alg:dist} is well known.
 But for none of these algorithms was a distributed cross validation procedure previously known.
 Unlike the approximation in \eqref{eq:notation:alg},
-the approximation in \eqref{eq:notation:merge} can be exact,
-and is exact for the important class of estimators reviewed in Section \ref{sec:merge:exact}.
-For other models, we will be less precise about exactly what is meant by $\approx$.
-Different merge functions will satisfy different guarantees.
+the approximation in \eqref{eq:notation:merge} can be exact (see Section \ref{sec:merge:cf}).
+To measure the quality of approximation in non-exact models,
+we need a way to measure the quality of an estimator.
+%and is exact for the important class of estimators reviewed in Section \ref{sec:merge:exact}.
+%For other models, we will be less precise about exactly what is meant by $\approx$.
+%Different merge functions will satisfy different guarantees.
 
 %Many previously created estimators are mergeable,
 %but this is the first exhaustive study of their properties.
@@ -219,19 +249,41 @@ We define the \defn{true parameter} to be
 \end{equation}
 and assume for notational convenience that $\wstar$ is unique.
 When $\W$ is a normed space, we define the \defn{statistical error} to be
+%\begin{equation}
+$
+    \ltwo{\wstar-\what}
+    .
+$
+%\end{equation}
+It is common to use the triangle inequality to decompose the statistical error as
 \begin{equation}
     \ltwo{\wstar-\what}
+    \le
+    \ltwo{\wstar-\E\what}
+    +
+    \ltwo{\E\what-\what}
+    .
 \end{equation}
-We define \defn{true loss} to be
+We call the $\ltwo{\wstar-\E\what}$ the \defn{bias} of $\what$ and the $\ltwo{\E\what-\what}$ term the \defn{variance}%
+\footnote{
+    It is also common to call the term $\ltwo{\E\what-\what}^2$ the \defn{variance},
+    in which case $\ltwo{\E\what-\what}$ could be called the \defn{deviance}.
+}
+of $\what$.
+A well known problem in machine learning is the \defn{bias-variance tradeoff} wherein reducing the bias increases the variance and vice versa.
+This tradeoff is a common theme in the development of approximate merging procedures.
+We define the \defn{true loss} of a parameter vector $\what$ to be
 \begin{equation}
-    \riskstar = \E_{\z\in\Z}\Loss(\z;\wstar)
+    \riskstar = \E_{\z\in\Z}\Loss(\z;\what)
 \end{equation}
-and the \defn{empirical loss} of an estimator $f$ to be 
+and the \defn{empirical loss} of an estimator $\alg$ on dataset $Z$ to be 
 \begin{equation}
-    \riskemp{}^{,f} = \Loss(Z;\what^f)
+    \riskemp{} = \Loss(Z;\alg(Z))
     .
 \end{equation}
 We can measure the quality of an estimator by the difference between the true and empirical losses.
+For a good estimator, this difference should be small.
+Section \ref{sec:cv} reviews how cross validation can be used to estimate this difference.
 
 %we are given a set $Z\subseteq\Z$ of training data,
 %a set $\W$ of model parameters,
@@ -273,20 +325,28 @@ The RLM estimator is then
     \wrlm = \argmin_{\w\in\W} \sum_{\z\in\Z}\loss(\z;\w) + \lambda\reg(\w)
     .
 \end{equation}
-Standard results on the RLM estimator show that under mild conditions,
-$\ltwo{\wstar-\what^f}\le O(1/\sqrt{mn})$.
+Standard results on the RLM estimator show that if $|Z|=mn$,
+then $\ltwo{\wstar-\what^f}\le O(1/\sqrt{mn})$ under mild conditions on $f$
+\citep[e.g.][]{lehmann1999elements}.
+This rate of convergence is known to be optimal.
+Exact merge procedures for RLM problems automatically inherit the $O(1/\sqrt{mn})$ convergence rate.
+If an approximate merge procedure also has an $O(1/\sqrt{mn})$ convergence rate,
+then it is essentially just as good as the standard RLM procedure.
+We shall see that existing merge procedures are only able to achieve this rate under special conditions.
+In the Chapter 3, we present a novel algorithm called the optimal weighted average that achieves this optimal convergence rate in the most general setting.
 %There are two common interpretations of RLM.
 %In the Bayesian interpretation, the loss $\loss$ represents the negative log likelihood of a
-Most of the examples we will consider of mergeable estimators are variants of the RLM estimator.
+%Most of the examples we will consider of mergeable estimators are variants of the RLM estimator.
 A major challenge of RLM is choosing the optimization strength $\lambda$,
 which we discuss in the next subsection.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Model selection and fast/distributed cross validation}
+\label{sec:cv}
 
 Model selection is the process of selecting a good machine learning algorithm for a particular task.
-Unfortunately, the best model selection methods have high computational cost and so cannot be used in large scale learning systems.
+Unfortunately, the most accurate model selection methods have high computational cost and so cannot be used in large scale learning systems.
 Most research on large scale learning has focused only on accelerating the learning algorithm,
 with the model selection process receiving comparatively little attention.
 %Despite the importance of model selection,
@@ -298,10 +358,10 @@ A summary is shown in Table \ref{tab:cv}.
 We show in particular that cross validation has the best statistical properties,
 but that standard cross validation techniques are too slow for large scale data.
 We develop two new cross validation techniques that address this shortcoming.
-In particular, we show that for semigroup learning algorithms
+In particular, we show that for mergeable learning algorithms
 cross validation can be performed with only a constant computational overhead independent of the size of the problem,
 and that this cross validation can be distributed.
-Effectively, this results in ``free'' cross validation for all embarrassingly parallel learning algorithms.
+Effectively, this results in ``free'' cross validation estimate whenever we train a distributed model.
 
 \begin{table}[t]
     \centering
@@ -339,15 +399,15 @@ Because the distribution over $Z$ is unknown,
 the distribution over $f(Z)$ will also be unknown;
 so $\riskstar(f(Z))$ cannot be directly computed and must be estimated.
 Given an estimator $\riskhat{}^g \approx \riskstar$,
-we estimate the optimal model to be
+we can define an estimator of $f^*$ as
 \begin{equation}
     \label{eq:cv:hatfg}
     \hat f^g = \argmin_{f\in\set F} \riskhat^g(f(Z))
     .
 \end{equation}
 The minimization \eqref{eq:cv:hatfg} is highly nonconvex,
-and a number of techniques have been proposed to solve it.
-In the popular but naive \defn{grid search} technique,
+and a number of algorithms have been proposed to solve it.
+In the popular but naive \defn{grid search} algorithm,
 the space of functions $\set F$ is discretized into a finite grid $F\subset\set F$,
 and the optimization is performed over $F$.
 Grid search tends to work well when $\set F$ is one dimensional,
@@ -413,6 +473,8 @@ although in practice it is common to use about 10\% of the data in the validatio
 The validation set method shares the favorable computational properties of SRM,
 but is easier to use because there is no need to derive a bound on the excess risk.
 When the bound is loose, as is often the case in practice, the validation set method will also have improved statistical performance.
+Whenever the learning algorithm is parallelizable,
+then both SRM and the validation set method are parallelizable as well.
 %The main advantage of the validation set method is computational,
 %as the function $f$ needs to be evaluated only once.
 %Many modern machine learning applications use an expensive learning procedure and a large data set,
@@ -423,24 +485,24 @@ The full procedure is shown in Algorithm \ref{alg:boot}.
 The idea is to use repeated subsampling to create many overlapping train/validation test splits,
 then average the results.
 This averaging reduces the variance of the error estimate.
-The computational complexity is linear in the number of resampling iterations,
+The runtime is linear in the number of resampling iterations $k$,
 which is too expensive for large scale problems.
 \citet{kleiner2012big} and \citet{kleiner2014scalable} introduce the \defn{bag of little bootstraps} (BLB) as an efficiently computatable alternative to the bootstrap.
 The BLB subsamples some small fraction of the data set in each iteration before performing the full bootstrap test.
 This increases the bias of the estimator but makes it suitable for large scale problems.
 As there are no data dependencies between each of the iterations,
-both the standard bootstrap and BLB are easy to parallelize.
+both the standard bootstrap and BLB are easy to parallelize even when the learning algorithm is not parallelizable.
 
 \begin{algorithm}[t]
     \caption{bootstrap(learning algorithm $f$, data set $Z$, number of samples $t$)}
     \label{alg:boot}
     \vspace{0.1in}
     \begin{algorithmic}[1]
-        \For {$i=1$ \TO $t$}
+        \For {$i=1$ \TO $k$}
             \State let $Z^{(i)}$ be a sample of $mn$ data points from $Z$ with replacement
             \State let $\riskhat^{(i)} = \Loss(Z-Z^{(i)},f(Z^{(i)}))$
         \EndFor
-        \State \Return $\riskboot = \frac 1 t \sum_{i=1}^t \riskhat^{(i)}$
+        \State \Return $\riskboot = \frac 1 k \sum_{i=1}^k \riskhat^{(i)}$
     \end{algorithmic}
 \end{algorithm}
 
@@ -538,7 +600,7 @@ In other words, when learning an embarrassingly parallel model on a distributed 
 we can also perform cross validation with essentially no computational overhead.
 The only difference between the distributed cross validation and distributed learning algorithms is that in the second round of communication, 
 each machine (rather than only the master) computes the model $\w_{-i}$.
-As these machines were sitting idle in Algorithm \ref{alg:dist},
+As these machines were sitting idle in the distributed training procedure in Algorithm \ref{alg:dist},
 having them perform work does not increase the runtime.
 The runtime of the cross validation procedure is increased slightly by the fact that an additional round of communication is needed where the master averages the validation errors calculated on each machine.
 
@@ -575,16 +637,20 @@ but we have shown that our fast cross validation framework is suitable for the d
 Both the bootstrap and cross validation are strictly better than the validation set method of error estimation,
 but 
 standard no-free-lunch results \citep[e.g.\ Chapter 8 of][]{shalev2014understanding} ensure that there is no universally best method for estimating an estimator's true error for all distributions.
-One of the limitations of the $\distcv$ method is that the number of folds must be the same as the number of processors.
-This will be relatively small compared to the number of data points.
-Conveniently, this turns out to be a good number of folds to use in practice.
+On real world datasets, however, $k$-fold cross validation seems to work better and is the method of choice.
 \citet{kohavi1995study} empirically compare the bootstrap to $k$-fold cross validation,
 and determine that on real world datasets $k$-fold cross validation has the best performance.
 When computational requirements are ignored,
 it is tempting to make $k$ as large as possible.
-This is not statistically optimal, however.
-\citet{rao2008dangers} shows that as $k$ increases beyond a certain threshold, 
-the bias of the estimator increases as well.
+%This is not statistically optimal, however.
+One of the limitations of the $\distcv$ method is that the number of folds must be the same as the number of processors.
+This will be relatively small compared to the number of data points.
+Conveniently, this turns out to be a good number of folds to use in practice.
+\citet{rao2008dangers} shows that for very small $k$ values,
+increasing $k$ improves the estimation of the model's accuracy;
+but as $k$ increases beyond a certain threshold, 
+the error of cross validation increases as well.
+Thus the $\distcv$ method is both computationally cheap and statistically effective for real world data.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -601,6 +667,7 @@ the bias of the estimator increases as well.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Examples: estimators with closed form solutions}
+\label{sec:merge:cf}
 
 We now show that many popular machine learning algorithms are mergeable.
 We begin by looking at models whose $\merge$ function is exact.
@@ -678,10 +745,12 @@ and the parameter estimate is given by
 \end{align}
 The $-\log h(\z)$ term in \eqref{eq:ef:loss} does not depend on the parameter $\w$ and so does not appear in the optimization \eqref{eq:ef:erm}.
 
-When the parameter space $\W$ equals the containing hilbert space $\set H$ equals $\R^d$,
+%When the parameter space $\W$ equals the containing hilbert space $\set H$ equals $\R^d$,
+In the special case when $\W=\set H=\R^d$,
 the distribution is said to be in the \defn{linear exponential family} (LEF).%
 \footnote{The LEF is sometimes called the \defn{full exponential family} (FEF) when the parameters are identifiable.}
-The parameter estimate \eqref{eq:ef:erm} then has closed form solution
+Let $Z$ be a dataset with $mn$ elements.
+Then the parameter estimate \eqref{eq:ef:erm} has closed form solution
 \begin{equation}
     \label{eq:lef:erm}
     \wexp
@@ -689,8 +758,8 @@ The parameter estimate \eqref{eq:ef:erm} then has closed form solution
     ,
 \end{equation}
 which follows from setting the derivative of the objective in \eqref{eq:ef:erm} to zero and solving for $\w$.
-Recall that the data set $Z$ has $mn$ elements,
-which is where the $1/mn$ factor comes from in \eqref{eq:lef:erm}.
+%Recall that the data set $Z$ has $mn$ elements,
+%which is where the $1/mn$ factor comes from in \eqref{eq:lef:erm}.
 Because the equation for $\wexp$ can be given in closed form,
 an exact merge procedure exists.
 Decompose the data set $Z$ into $m$ data sets $Z_1,...,Z_m$ each of size $n$.
@@ -709,13 +778,15 @@ and the merge procedure is then
     %\left(\deriv{}{\w}\psi\right)^{-1} 
     \psi'^{-1} 
     \left(
-        %\frac{1}{m} \sum_{i=1}^m \deriv{}{\w}\psi \left(\wmle_i\right)
-        \frac{1}{m} \sum_{i=1}^m \psi' \left(\wmle_i\right)
+        %\frac{1}{m} \sum_{i=1}^m \deriv{}{\w}\psi \left(\wrlm_i\right)
+        \frac{1}{m} \sum_{i=1}^m \psi' \left(\wrlm_i\right)
     \right)
     .
 \end{equation}
 Substituting \eqref{eq:lef:erm:local} into \eqref{eq:lef:merge} gives the standard MLE \eqref{eq:lef:erm}.
 That is, the merge function is exact.
+For the linear exponential family, 
+we can therefore parallelize training and perform fast cross validation.
 %Notice that \eqref{eq:lef:merge} simplifies to \eqref{eq:ef:erm},
 %so the learning function for LEF's is an exact semigroup homomorphism.
 
@@ -725,12 +796,12 @@ we say the distribution is in the \defn{curved exponential family} (CEF).
 The CEF was introduced by \citet{efron1975defining} and \citet{amari1982differential}.
 \citet{amari2016information} provides a modern treatment of the CEF from the perspective of information geometry.
 The CEF is used to represent dependency relationships between random variables,
-and a particularly important subset of the CEF is the set undirected graphical models with no hidden variables.
+and a particularly important subset of the CEF is the set of undirected graphical models with no hidden variables.
 \citet{liu2012distributed} prove that no exact merge procedure exists for CEF distributions.
 
 When the parameter space $\W$ is an algebraic variety,
 then the distribution is in the \defn{stratified exponential family} (SEF).
-\cite{geiger1998graphical} and \citet{geiger2001stratified} introduced SEFs and show that they are equivalent to directed or undirected graphical models with hidden variables.
+\cite{geiger1998graphical} and \citet{geiger2001stratified} introduced SEFs and show that the SEF is equivalent to the set of directed or undirected graphical models with hidden variables.
 They further show that
 \begin{equation}
     \label{eq:ef:hierarchy}
@@ -749,7 +820,7 @@ A distribution is in the DEF if it is the distribution resulting from placing EF
 %Section \ref{sec:merge:vi} discusses variational methods in detail.
 Although exact merge procedures do not exist for the CEF, SEF, or DEF,
 approximate merge procedures can be used.
-\fixme{We defer the discussion to Sections \ref{}.}
+See Section \ref{sec:merge:approx} for examples of approximate merge procedures.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -761,7 +832,7 @@ and parameter estimation of the classifier is just parameter estimation of the u
 Whenever the distribution has a mergeable learning algorithm,
 then the generative classifier does as well.
 Fast cross validation methods for generative classifiers seem to be ``folklore knowledge'' in the statistical community,
-I know of no earlier publications earlier than \cite{izbicki2013algebraic} that describe a fast cross validation method.
+but I know of no publications earlier than \cite{izbicki2013algebraic} that describe a fast cross validation method.
 
 Formally, in \defn{classification} we assume that the data space $\Z=\X\times \Y$,
 where $\X$ is the space of features and $\Y$ is a finite set of class labels.
@@ -793,8 +864,8 @@ and so \eqref{eq:gen:opt1} can be rewritten as
 The $1/p(\x)$ factor is dropped as it does not affect the optimization.
 To learn a generative classifier,
 we need to learn the parameters of the distributions $p(y)$ and $p(\x|y)$.
-Whenever these distributions have mergeable learning algorithms 
-(e.g. they are in the linear exponential family),
+Whenever these distributions have mergeable learning algorithms,
+%(e.g.\ they are in the linear exponential family),
 then the generative classifier does as well.
 
 The \defn{naive bayes} model is an important special case of a generative classifier that makes the following simplifying assumptions:
@@ -815,35 +886,37 @@ Substituting into \eqref{eq:gen:opt2} gives the naive bayes classification rule
 \end{equation}
 The distribution $p(y)$ is typically assumed to be the categorical distribution,
 and the distributions $p(\x^{(i)}|y)$ are typically assumed to be univariate categorical distributions for discrete data or univariate normal distributions for continuous data.
-As all of these distributions are in the linear exponential family,
-naive bayes is a mergeable learning algorithm.
-
-%The \defn{naive bayes classifier} is old and simple.
-%It was widely used before the 2000s,
-%but \citet{ng2002discriminative} showed that naive bayes works well only on very small data sets.
-%Logistic regression is a better choice for large data sets.
-
+All of these distributions are in the linear exponential family,
+so naive bayes has an exact mergeable learning algorithm.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Ridge regression}
 \label{sec:merge:ridge}
 
-%This combination of loss and norm have good computational and theoretical properties,
-%which makes ridge regression one of the most widely used and studied statistical algorithms.
-%The important property of ridge regression for our purposes is that it can be solved for exactly in an embarrassingly parallel fashion.
-%Ridge regression 
-
+Ridge regression is one of the earliest learning algorithms,
+but it is still widely studied and used.
+For example, \citet{meng2014lsrn}, \citet{wang2016deco}, and \citet{gascón2017privacy} propose distributed learning algorithms.
+%\citet{szabo2015twostage,szabo2016learning} uses ridge regression to solve the distribution regression problem (which is a generalization of multiple instance learning).
 Fast cross validation procedures for ridge regression have been known at least since \citet{golub1979generalized}.
-More recent work \citep[e.g.][]{pahikkala2006fast,an2007fast} show fast cross validation methods in the kernelized case.
-Our single machine cross validation method can be seen as a generalization of this work.
-Furthermore, no existing ridge regression fast cross validation method supports the distributed environment.
-Despite the simplicity, ridge regression remains an actively studied problem.
-\cite{wang2016deco} propose a distributed algorithm for the case when $d > mn$.
-\cite{meng2014lsrn} propose a distributed solver that works in all cases.
-\cite{gascón2017privacy} proposes a distributed solver that maintains differential privacy guarantees.
-\cite{zhang2013divide,zhang2015divide} dnc kernel rr.
-\cite{szabo2015twostage,szabo2016learning} uses kernel ridge regression to solve the distribution regression problem (which is a generalization of multiple instance learning).
+%No work has created a distributed cross validation algorithm.
+In this section, we show another folklore result that ridge regression has an exact merge procedure.
+This has the immediate consequence of showing that the fast cross validation procedure can be parallelized,
+which was previously unknown.
+
+%\cite{wang2016deco} propose a distributed algorithm for the case when $d > mn$.
+%\cite{meng2014lsrn} propose a distributed solver that works in all cases.
+%\cite{gascón2017privacy} proposes a distributed solver that maintains differential privacy guarantees.
+%\cite{zhang2013divide,zhang2015divide} dnc kernel rr.
+%More recent work \citep[e.g.][]{pahikkala2006fast,an2007fast} show fast cross validation methods in the kernelized case.
+%Our single machine cross validation method can be seen as a generalization of this work.
+%Furthermore, no existing ridge regression fast cross validation method supports the distributed environment.
+%Despite the simplicity, ridge regression remains an actively studied problem.
+%\cite{wang2016deco} propose a distributed algorithm for the case when $d > mn$.
+%\cite{meng2014lsrn} propose a distributed solver that works in all cases.
+%\cite{gascón2017privacy} proposes a distributed solver that maintains differential privacy guarantees.
+%\cite{zhang2013divide,zhang2015divide} dnc kernel rr.
+%\cite{szabo2015twostage,szabo2016learning} uses kernel ridge regression to solve the distribution regression problem (which is a generalization of multiple instance learning).
 
 The \defn{regression problem} is closely related to classification as presented in the previous section.
 The data space $\Z=\X\times \Y$, and the goal is to learn an unknown function $\hat y : \set X \to \set Y$.
@@ -912,63 +985,138 @@ which is independent of the number of data points per machine $n$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Ad-hoc approximations to the RLM}
-
-The RLM estimator has the advantage that it asymptotically achieves the Cram\'er-Rao lower bound.
-When the loss function $\loss$ and regularizer $\reg$ are not the squared $L_2$ norm,
-however, no closed form solution exists for the RLM.
-Computing the RLM in these cases is relatively computationally expensive and in particular no exact merge procedure is possible.
-To solve the computational difficulty, 
-many alternative estimators with closed form solutions have been proposed for specific problems.
-For most of these procedures, no explicit distributed or fast cross validation algorithms have been developed.
-But because they all have merge procedures,
-these distributed and fast cross validation algorithms can be derived for free.
-
-\citet{chan1994simple} consider the problem of estimating a position given sonar/radar traces.
-They approximate the RLM estimator with a closed form estimator that also manages to achieve the Cram\'er-Rao lower bound.
+%\subsection{Ad-hoc approximations to the RLM}
+%
+%\fixme{}
+%
+%The RLM estimator has the advantage that it asymptotically achieves the Cram\'er-Rao lower bound.
+%When the loss function $\loss$ and regularizer $\reg$ are not the squared $L_2$ norm,
+%however, no closed form solution exists for the RLM.
+%Computing the RLM in these cases is relatively computationally expensive and in particular no exact merge procedure is possible.
+%To solve the computational difficulty, 
+%many alternative estimators with closed form solutions have been proposed for specific problems.
+%For most of these procedures, no explicit distributed or fast cross validation algorithms have been developed.
+%But because they all have merge procedures,
+%these distributed and fast cross validation algorithms can be derived for free.
+%
+%\citet{chan1994simple} consider the problem of estimating a position given sonar/radar traces.
+%They approximate the RLM estimator with a closed form estimator that also manages to achieve the Cram\'er-Rao lower bound.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Examples: approximate merging for RLM}
+\label{sec:merge:approx}
 
-%Estimators with closed form solutions (and hence exact merge functions) are rare in practice.
-For most modern machine learning algorithms,
-no exact merge function exists.
-
-Most work has focused on the special case when the parameter space $\W$ is vector valued;
-that is $\W=\R^d$.
-We begin our discussion here.
-Then we review more specialized work focusing on principle component analysis and submodular optimization problems.
+RLM is by far the most commonly used learning method.
+Unfortunately, for most RLM problems no closed form solution exists.
+Therefore, no exact merging procedure exists. 
+In many settings, however, approximate merge methods are good enough,
+and a variety of approximate merging methods have been created.
+We divide these methods into three categories:
+(i) averaging based merge procedures,
+(ii) merge procedures for the principle component analysis (PCA) problem,
+and (iii) merge procedures for submodular losses.
+%For each of these categories,
+%we discuss the quality of approximation possible.
+%We divide these methods into five categories.
+%The first two categories are averaging methods and one-step estimators.
+%These are general methods that work in the common scenario where the parameter space $\W$ is a subset of some vector space.
+%A typical application is logistic regression.
+%The third category is methods specific to principle component analysis (PCA).
+%All the methods from the first two categories can be applied to PCA,
+%but PCA has additional structure that allows for further improvement.
+%The fourth category is methods for submodular loss functions.
+%
+%A common feature of the first four categories is that the merge functions do not depend on the data,
+%but only on 
+%Impossibility results have shown that in this scenario,
+%no optimal merge function is possible \citep{liu2012distributed}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Methods for vector parameters}
+\subsection{Averaging based methods}
 \label{sec:merge:ave}
+The averaging based merge procedures are the simplest and most general methods.
+Most of these procedures require only that the parameter space $\W$ have vector space structure.
+This is common in many problems,
+the standard example being logistic regression.
+This section presents 9 merge methods 
+\citep{merugu2003privacy,mcdonald2009efficient,zinkevich2010parallelized,zhang2012communication,zhang2013divide,liu2014distributed,battey2015distributed,han2016bootstrap,jordan2016communication,lee2015communication}.
+Each of these methods implies a novel fast cross validation procedure,
+and I am not aware of any previous fast cross validation methods that apply in the general setting of these merge operations.
+A common theme of these merge procedures is that they do not depend on the data.
+In the next chapter, we present a novel improvement to these estimators that does depend on the data 
+and so has better approximation guarantees.
 
-The simplest and most popular mergeable estimator is the \defn{averaging estimator}
+%Each method in this section will use a common notation.
+%We assume the data set $Z$ has $mn$ data points and has been partitioned into $m$ datasets $Z_1,...,Z_m$ each with $n$ data points.
+%The 
+
+The simplest and most popular mergeable estimator is the \defn{naive averaging estimator}
 \begin{equation}
-\wave = \frac{1}{m}\sum_{i=1}^m \wmle_i
+\wave = \frac{1}{m}\sum_{i=1}^m \wrlm_i
 .
 \end{equation}
-The averaging estimator is well studied.
-\citet{mcdonald2009efficient} analyze $\wave$ in the special case of $L_2$ regularized maximum entropy models.
+%This estimator is well studied.
+Naive averaging was first studied by \citet{mcdonald2009efficient} for the case $L_2$ regularized maximum entropy models.
 They provide concentration inequalities for the estimation error,
-showing that the variance $\ltwo{\E\wave-\wave}$ reduces as $O((mn)^{-1/2})$,
+showing that the variance $\ltwo{\E\wave-\wave}$ reduces at the optimal rate of $O((mn)^{-1/2})$,
 but that the bias $\ltwo{\wstar-\E\wave}$ reduces only as $O(n^{-1/2})$.
-Their analysis uses a martingale technique that requires the radius of the dataset be independent of the size of the dataset.
-This is a particularly limiting assumption as even the simple case of
-normally-distributed data does not satisfy it.
-\citet{zhang2012communication} provide a more general analysis showing that the \defn{mean squared error} (MSE) $\E\ltwo{\wstar-\wave}{}^2$ decays as $O((mn)^{-1} + n^{-2})$.
-This matches the optimal MSE of $\wmle$ whenever $m<n$.
+%Their analysis uses a martingale technique that requires the radius of the dataset be independent of the size of the dataset.
+%This is a particularly limiting assumption as even the simple case of
+%normally-distributed data does not satisfy it.
+Subsequent work has focused on merge methods that improve both the bias and the variance.
+
+Under more stringent assumptions,
+it can be shown that the bias of $\wave$ will reduce at a faster rate.
+In particular, when the bias of $\wrlm_i$ shrinks faster than $O(n^{1/2})$,
+then naive averaging can be an effective merge procedure.
+\citet{zhang2012communication} show that the \defn{mean squared error} (MSE) $\E\ltwo{\wstar-\wave}{}^2$ decays as $O((mn)^{-1} + n^{-2})$.
+This matches the optimal MSE of $\wrlm$ whenever $m<n$.
 Their analysis also requires limiting assumptions.
 For example, they assume the parameter space $\W$ is bounded.
 This assumption does not hold under the standard Bayesian interpretation of L2 regularization as a Gaussian prior of the parameter space.
-They further make strong convexity and 8\emph{th} order smoothness assumptions which guarantee that $\wmle_i$ is a ``nearly unbiased estimator'' of $\wstar$.
+They further make strong convexity and 8\emph{th} order smoothness assumptions which guarantee that $\wrlm_i$ is a ``nearly unbiased estimator'' of $\wstar$.
 Most recently, \citet{rosenblatt2016optimality} analyze $\wave$ in the asymptotic regime as the number of data points $n\to\infty$.
 This analysis is more general than previous analyses, but it does not hold in the finite sample regime.
-Our analysis of OWA in Section \ref{sec:anal} requires no assumptions of boundedness or convexity, holds in the finite sample regime, and shows OWA reducing both bias and variance.
-
+%Our analysis of OWA in Section \ref{sec:anal} requires no assumptions of boundedness or convexity, holds in the finite sample regime, and shows OWA reducing both bias and variance.
 \citet{zinkevich2010parallelized} show that if the training sets partially overlap each other (instead of being disjoint), then the resulting estimator will have lower bias.
+
+\citet{zhang2013divide} show how to reduce bias in the special case of kernel ridge regression.
+By a careful choice of regularization parameter $\lambda$,
+they cause $\wrlm_i$ to have lower bias but higher variance,
+so that the final estimate of $\wave$ has both reduced bias and variance.
+%This suggests that once the proper regularization parameter is known,
+%there is no need for a bias reduction at all.
+This suggests that a merging procedure that reduces bias is not crucial to good performance if we set the regularization parameter correctly.
+Typically there is a narrow range of good regularization parameters,
+and finding a $\lambda$ in this range is expensive computationally.
+Our $\distcv$ method in Algorithm \ref{alg:distcv} can be used to more quickly tune this parameter.
+%We show experimentally in Section \ref{sec:exp} that our method has significantly reduced sensitivity to $\lambda$.
+%Therefore, it is computationally cheaper to find a good $\lambda$ for our method than for the other methods discussed in this section.
+
+\citet{battey2015distributed} and \citet{lee2015communication} independently develop methods to reduce the bias for the special case of lasso regression.%
+\footnote{
+    Both \citet{battey2015distributed} and \citet{lee2015communication} originally appeared on arXiv at the same time in 2015, but only \citet{lee2015communication} has been officially published.
+}
+In the lasso, the loss function is the squared loss (as in ridge regression),
+but the regularization function is the $L_1$ norm (instead of the squared $L_2$ norm).
+The idea is to use an estimator with low bias and high variance to train a model on each local data set $Z_i$.
+Then, when the results are averaged,
+the bias will remain low,
+and the high variance will be reduced.
+They propose using the following \defn{debiased lasso estimator} (DLE) on each dataset:
+\begin{equation}
+    \wdle_i = \wrlm_i + \frac 1 n \hat\Theta \trans X (y - X\wrlm_i)
+    ,
+\end{equation}
+where $\hat\Theta$ is an approximate inverse of the empirical covariance $\hat\Sigma=\trans X X$.
+The resulting \defn{debiased average} (DAVE) estimator is
+\begin{equation}
+    \wdave = \frac 1 m \sum_{i=1}^m \wdle
+    .
+\end{equation}
+The bias and variance of this estimator both shrink at the optimal rate of $O((nm)^{-1/2}$.
 
 \citet{zhang2012communication} provide a debiasing technique that works for any estimator.
 It works as follows.
@@ -983,11 +1131,11 @@ Then the bootstrap average estimator is
 %where
 %\begin{equation}
 %\begin{aligned}
-%\waver = \frac{1}{m}\sum_{i=1}^m \wmler_i
+%\waver = \frac{1}{m}\sum_{i=1}^m \wrlmr_i
 %,
 %\text{~~~~~and~~~~~}
 %%\\
-%\wmler_i = \argmax_\w \sum_{(\x,y)\in Z_i^r} \loss(y,\trans\x\w) + \lambda \reg(\w)
+%\wrlmr_i = \argmax_\w \sum_{(\x,y)\in Z_i^r} \loss(y,\trans\x\w) + \lambda \reg(\w)
 %.
 %\\
 %,
@@ -1001,69 +1149,22 @@ When the loss function is convex, $\wboot$ enjoys a mean squared error (MSE) tha
 Theorem 2 implies that the MSE of $\wowa$ decays as $O((mn)^{-1})$ under more general conditions.
 There are two additional limitations to $\wboot$.
 First, the optimal value of $r$ is not obvious and setting the parameter requires cross validation on the entire data set.
-Our proposed $\wowa$ estimator has a similar parameter $\lambda_2$ that needs tuning,
-but this tuning happens on a small fraction of the data and always with the L2 regularizer.
+%Our proposed $\wowa$ estimator has a similar parameter $\lambda_2$ that needs tuning,
+%but this tuning happens on a small fraction of the data and always with the L2 regularizer.
 So properly tuning $\lambda_2$ is more efficient than $r$.
 Second, performing a bootstrap on an unbiased estimator increases the variance.
 This means that $\wboot$ could perform worse than $\wave$ on unbiased estimators.
-Our $\wowa$ estimator, in contrast, will perform at least as well as $\wave$ with high probability, as seen in Figure \ref{fig:contour}.
-In Section \ref{sec:exp}, we show that $\wowa$ has better empirical performance than $\wboot$.
+%Our $\wowa$ estimator, in contrast, will perform at least as well as $\wave$ with high probability, as seen in Figure \ref{fig:contour}.
+%In Section \ref{sec:exp}, we show that $\wowa$ has better empirical performance than $\wboot$.
 
-\citet{liu2014distributed} propose a more Bayesian approach inspired by \citet{merugu2003privacy}.
-Instead of averaging the model's parameters,
-they directly ``average the models'' with the following KL-average estimator:
-\begin{equation}
-    \label{eq:klave}
-\wkl = \argmin_{\w\in\W} \sum_{i=1}^m \kl[\bigg]{p(\cdot;\wmle_i)}{p(\cdot;\w)}
-.
-\end{equation}
-Liu and Ihler show theoretically that this is the best merge function in the class of functions that do not depend on the data.
-Since OWA's merge depends on the data, however, this bound does not apply.
-The main disadvantage of KL-averaging is computational.
-The minimization in \eqref{eq:klave} is performed via a bootstrap sample from the local models,
-which is computationally expensive.
-%This method has three main advantages.
-%First, it is robust to reparameterizations of the model.
-%Second, it is statistically optimal for the class of non-interactive algorithms.
-%(We show in the next section that this optimality bound does not apply to our $\wowa$ estimator due to our semi-interactive setting.)
-%Third, this method is general enough to work for any model,
-%whereas our proposed OWA method works only for linear models.
-%The main downside of the KL-average is that the minimization has a prohibitively high computational cost.
-Let $n^{kl}$ be the size of the bootstrap sample.
-Then Liu and Ihler's method has MSE that shrinks as $O((mn)^{-1}+(nn^{kl})^{-1})$.
-This implies that the bootstrap procedure requires as many samples as the original problem to get a MSE that shrinks at the same rate as the averaging estimator.
-\citet{han2016bootstrap} provide a method to reduce the MSE to $O((mn)^{-1}+(n^2n^{kl})^{-1})$ using control variates, but the procedure remains prohibitively expensive.
-Their experiments show the procedure scaling only to datasets of size $mn\approx10^4$,
-whereas our experiments involve a dataset of size $mn\approx10^8$.
-
-%An alternative definition of the $\wave$ estimator is
+\citet{jordan2016communication} propose to reduce bias by incoporating second order information into the average.
+In particular, they develop an approach that uses a single approximate Newton step in the merge procedure.
+%The optimal newton step would be given by
 %\begin{equation}
-%\wave = \argmin_\w \frac{1}{m}\sum_{i=1}^m \ltwo{\wmle_i-\w}^2
+    %\wave - \nabla_{\wave}^2\Loss(Z;\wave)^{-1} \nabla_{\wave} \Loss(Z;\wave)
+    %.
 %\end{equation}
-%It is easy to show that the two definitions are equivalent with standard calculus.
-
-Surprisingly, \citet{zhang2013divide} show that in the special case of kernel ridge regression,
-a reduction in bias is not needed to have the MSE of $\wave$ decay at the optimal sequential rate.
-By a careful choice of regularization parameter $\lambda$,
-they cause $\wmle_i$ to have lower bias but higher variance,
-so that the final estimate of $\wave$ has both reduced bias and variance.
-%This suggests that once the proper regularization parameter is known,
-%there is no need for a bias reduction at all.
-This suggests that a merging procedure that reduces bias is not crucial to good performance if we set the regularization parameter correctly.
-Typically there is a narrow range of good regularization parameters,
-and finding a $\lambda$ in this range is expensive computationally.
-We show experimentally in Section \ref{sec:exp} that our method has significantly reduced sensitivity to $\lambda$.
-Therefore, it is computationally cheaper to find a good $\lambda$ for our method than for the other methods discussed in this section.
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection{One step estimators}
-
-\citet{lee2015communication} and \citet{battey2015distributed} independently develop closed form formulas for debiasing L1 regularized least squares regressions.
-They combine these debiased estimators with the averaging estimator to create a non-interactive estimator that reduces both bias and variance at the optimal rate.
-OWA's advantage over these methods is that it is that it can be applied to a much larger class of problems.
-
-\citet{jordan2016communication} develop an approach that uses a single approximate Newton step in the merge procedure.
+%Computing the hessian matrix $\nabla_{\wave}^2\Loss(Z;\wave)^{-1}$ is computationally difficult,
 As long as the initial starting point (they suggest using $\wave$) is within $O(\sqrt{1/n})$ of the true parameter vector,
 then this approach converges at the optimal rate.
 %They suggest using $\wave$ as the starting point.
@@ -1071,9 +1172,37 @@ When implementing Jordan et al.'s approach, we found it suffered from two practi
 First, Newton steps can diverge if the starting point is not close enough.
 We found in our experiments that $\wave$ was not always close enough.
 Second, Newton steps require inverting a Hessian matrix.
-In Section 6, we consider a problem with dimension $d\approx7\times10^5$;
+In the experiments of Chapter 3, we consider a problem with dimension $d\approx7\times10^5$;
 the corresponding Hessian is too large to practically invert.
 %For these reasons, we do not compare against \citet{jordan2016communication} in our experiments.
+
+\citet{liu2014distributed} propose a more Bayesian approach inspired by \citet{merugu2003privacy}.
+Instead of averaging the model's parameters,
+they directly ``average the models'' with the following KL-average estimator:
+\begin{equation}
+    \label{eq:klave}
+\wkl = \argmin_{\w\in\W} \sum_{i=1}^m \kl[\bigg]{p(\cdot;\wrlm_i)}{p(\cdot;\w)}
+.
+\end{equation}
+Liu and Ihler show theoretically that this is the best merge function in the class of functions that do not depend on the data.
+%Since OWA's merge depends on the data, however, this bound does not apply.
+The main disadvantage of KL-averaging is computational.
+The minimization in \eqref{eq:klave} is performed via a bootstrap sample from the local models,
+which is computationally expensive.
+This method has three main advantages.
+First, it is robust to reparameterizations of the model.
+Second, it is statistically optimal for the class of non-interactive algorithms.
+%(We show in the next section that this optimality bound does not apply to our $\wowa$ estimator due to our semi-interactive setting.)
+Third, this method is general enough to work for any model,
+even if the parameter space $\W$ is not a vector space.
+%whereas our proposed OWA method works only for linear models.
+The main downside of the KL-average is that the minimization has a prohibitively high computational cost.
+Let $n^{kl}$ be the size of the bootstrap sample.
+Then Liu and Ihler's method has MSE that shrinks as $O((mn)^{-1}+(nn^{kl})^{-1})$.
+This implies that the bootstrap procedure requires as many samples as the original problem to get a MSE that shrinks at the same rate as the averaging estimator.
+\citet{han2016bootstrap} provide a method to reduce the MSE to $O((mn)^{-1}+(n^2n^{kl})^{-1})$ using control variates, but the procedure remains prohibitively expensive.
+Their experiments show the procedure scaling only to datasets of size $mn\approx10^4$,
+whereas our experiments involve a dataset of size $mn\approx10^8$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1087,7 +1216,8 @@ the corresponding Hessian is too large to practically invert.
 %and \cite{hotelling1933analysis} first introduced the term principle components.
 In this section,
 we describe how PCA works on a single machine,
-show that two existing techniques for distributed PCA are mergeable,
+show that two existing techniques for distributed PCA are mergeable
+\citep{qu2002principal,liang2013distributed},
 and describe the importance of fast cross validation techniques for PCA.
 
 Let $Z$ denote the $mn\times d$ input data matrix.
@@ -1190,7 +1320,7 @@ The maximization of submodular functions has become an important technique in th
 %\citet{mirzasoleiman2016distributed} provide a detailed survey of recent applications in machine learning.
 Applications in machine learning include clustering, sparse nonparametric regression, image segmentation, document summarization, and social network modeling \citep[see references within][]{mirzasoleiman2016distributed}.
 The last five years has seen work focused on scaling up submodular optimization via distributed algorithms.
-Six of these papers fit our semigroup framework
+Six of these methods create mergeable estimators that fit our framework
 \citep{mirzasoleiman2013distributed,barbosa2015power,malkomes2015fast,bhaskara2016greedy,barbosa2016new,mirzasoleiman2016distributed}
 and so induce fast cross validation procedures.
 This is the first work addressing fast cross validation in submodular learning algorithms.
@@ -1334,6 +1464,7 @@ It seems likely, however, that a bound analogous to the continuous bound provide
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Examples: Bayesian Methods}
+\label{sec:merge:bayes}
 
 %Bayesian machine learning methods estimate the \defn{posterior distribution} $\p{\theta|Z}$ of a parameter $\theta$ given data set $Z$.
 %We assume that our data set is sampled from some distribution $p(\z|\w)$,
@@ -1383,6 +1514,7 @@ The distributed MCMC methods share little in common with the optimization method
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Bernstein-von Mises}
+\label{sec:merge:bvm}
 
 When the posterior distribution $p(\theta|Z_i)$ has a parametric form in the exponential family,
 then the local posteriors can easily be combined (Section \ref{sec:merge:ef}).
@@ -1438,13 +1570,14 @@ this method reduces the variance but not the bias of the model parameters $\hat\
 Variational inference (VI) is a popular method for approximating intractable posterior distributions \citep{jordan1999introduction,blei2017variational}. 
 %\cite{jordan1999introduction} and \cite{blei2017variational} provide detailed introductions.
 %In this section we present VI as a form of ERM and three methods for distributed VI that fit our framework.
-There are three existing methods of distributed VI that fit our framework.
+There are three existing methods of distributed VI that fit our framework \citep{broderick2013streaming,campbell2014approximate,neiswanger2015embarrassingly}.
 To describe these methods,
-we will present VI as a special case of ERM.
+we will present VI as a special case of RLM.
 This is a non-standard presentation of VI,
-but it highlights the similarities between distributed VI methods and the distributed ERM methods already presented.
-In particular, we will see that the distributed VI methods are several years behind the distributed ERM methods,
-and the distributed ERM methods can be directly applied to VI for improved performance.%
+but it highlights the similarities between distributed VI methods and the distributed RLM methods already presented.
+In particular, the 9 mergeable RLM estimators of Section \ref{sec:merge:ave} can be applied directly to the VI problem.
+These estimators have several advantages over the VI-specific merging procedures,
+including explicit regret bounds.%
 \footnote{
     It seems to be a trend that the optimization techniques used in variational methods lag behind the state-of-the-art non-bayesian learning approaches by several years.
     For example:
@@ -1454,13 +1587,13 @@ and the distributed ERM methods can be directly applied to VI for improved perfo
     but they only applied in special cases and still lagged behind the non-bayesian optimization research.
     (2) Differentially private empirical risk minimization has been known since \citet{chaudhuri2011differentially}, with privacy preserving models existing in special cases earlier \citep{chaudhuri2009privacy}.
     Differential privacy appears to have only been applied to variational inference so far in three papers \citep{karwa2015private,park2016variational,jalko2016differentially},
-    all of which are currently under review and remain published only on the arXiv.
+    all of which are currently under review and remain published only on arXiv.
     (3) Essentially no papers on variational inference provide learning guarantees (either finite sample or asymptotic) on the quality of the learned parameters,
     whereas hundreds (if not thousands) of these results exist for the ERM case.
 }
 As far as I know, there is no existing work on fast cross validation procedures for variational methods.
-We will derive three new fast cross validation methods based on the distributed VI methods,
-and \fixme{} new fast cross validation methods based on the distributed ERM methods.
+%We will derive three new fast cross validation methods based on the distributed VI methods,
+%and \fixme{} new fast cross validation methods based on the distributed ERM methods.
 
 Variational inference uses optimization to create a deterministic approximation to the posterior that is easy to compute.
 Given a surrogate family of distributions $Q = \{ q(\theta|\w) : \w\in\W \}$,
@@ -1650,13 +1783,23 @@ The method therefore fits our framework.
 
 \defn{Markov chain monte carlo} (MCMC) is a stochastic method for approximating the posterior of a distribution \citep[e.g.][]{andrieu2003introduction}.
 MCMC provides a way to generate samples from the posterior distribution,
-and these samples can be used to calculate the expectation and mode of the distribution.
+and these samples can be used to calculate the expectation or mode of the distribution.
 MCMC is typically slower than variational methods but more accurate.
 As the number of MCMC samples approaches infinity,
 the approximation error of MCMC shrinks to zero;
-whereas the approximation error for variational methods is always some nonzero constant determined by the approximating distribution.
-In this section, we will see \fixme{} distributed MCMC methods that fit our framework,
-and each of these methods implies a novel fast cross validation algorithm.
+whereas the approximation error for variational methods is always at least some nonzero constant determined by the approximating distribution.
+Because MCMC is computationally expensive,
+many techniques have been developed to scale MCMC to large datasets. 
+In this section, we will see that seven of these methods involve a merge procedure
+\citep{
+wang2013parallelizing,
+minsker2014scalable,
+neiswanger2014asymptotically,
+wang2015parallelizing, 
+white2015piecewise,
+srivastava2015wasp,
+nemeth2016merging,
+scott2016bayes}.
 Fast cross validation for MCMC samplers is an important problem with a growing body of work
 \citep{marshall2003approximate,
 bhattacharya2007importance,
@@ -1671,8 +1814,9 @@ unlike the methods induced by our framework.
 We now formally describe the problem of merging MCMC samples.
 As before, we are given a data set $Z$ that has been partitioned into $m$ equal sized sub-data sets $Z_1,...,Z_m$ each of size $n$.
 We assume that the $Z_i$ are conditionally independent given the parameters $\theta$.
-Then,
+Then the posterior distribution can be written as
 \begin{equation}
+    \label{eq:mcmc:ptz}
     p(\theta|Z) 
     \propto p(\theta)p(Z|\theta)
     = p(\theta)\prod_{i=1}^m p(Z_i|\theta)
@@ -1683,22 +1827,26 @@ Then,
     ,
 \end{equation}
 The distribution $p(\theta|Z_i)$ is called the $i$th \defn{subposterior distribution}.
-We use an MCMC sampler to create a series of samples $\wmcmc_i=\sample{i}{1},...,\sample{i}{t}$ from each subposterior $i$.
-This can be done independently on $m$ separate machines without communication.
-Furthermore, any sequential MCMC sampler can be used,
-and the optimal choice will depend on the particular problem.
+We use an MCMC sampler to create a series of $t$ samples $\sample{i}{1},...,\sample{i}{t}$ from each subposterior $i$.
+The number of samples generated by each machine ($t$) need not have any relationship to the number of data points stored on each machine ($n$).
+Generating these samples can be done independently on $m$ separate machines without communication.
+Furthermore, any sequential MCMC sampler can be used.
+The optimal choice of sampler will depend on the particular problem.
 The $\merge$ procedure takes as inputs samples from the $m$ subposteriors and generates samples from the full posterior.
-Note that $\merge$ cannot simply take the union of the samples of the subposteriors,
-as this would generate samples from $\sum_{i=1}^mp(\theta|Z_i)$ rather than $\prod_{i=1}^m p(\theta|Z_i)$.
-In general, the sum and product of distributions can be arbitrarily different from each other.
+%Note that $\merge$ cannot simply take the union of the samples of the subposteriors,
+%as this would generate samples from $\sum_{i=1}^mp(\theta|Z_i)$ rather than $\prod_{i=1}^m p(\theta|Z_i)$.
+%In general, the sum and product of distributions can be arbitrarily different from each other.
 
-\citet{scott2016bayes} introduced the simplest merge procedure in their \defn{consensus monte carlo} (CMC) algorithm.%
+There are three families of merge procedures for MCMC.
+The simplest family directly merges the samples from the subposterior distributions.
+The \defn{consensus monte carlo} (CMC) algorithm introduced by \citet{scott2016bayes}% 
 \footnote{
     The CMC method appears to be the earliest mergeable MCMC method despite the 2016 official publication date.
     An early version of the CMC paper was first released online in 2013 and is cited by many other mergeable MCMC papers. 
-    Since the earlier papers are not on the arXiv or otherwise available online,
+    Since the earlier papers are not on arXiv or otherwise available online,
     I have chosen to cite the official journal publication.
 }
+is the primary example.
 CMC generates a sample by a weighted average of the subposteriors' samples.
 Formally, the $j$th sample from the posterior is given by
 \begin{equation}
@@ -1708,75 +1856,120 @@ Formally, the $j$th sample from the posterior is given by
 Where $\Sigma_i$ is the sample covariance matrix of $Z_i$.
 Like the naive averaging estimator for optimization problems,
 CMC reduces the variance but not the bias of the samples.
+If we construct a pseudo-parameter vector $\wmcmc_i=(\sample{i}{1},...,\sample{i}{r})$ by concatenating the samples from the subposteriors,
+then we can use all the techniques of merging RLM parameters to merge samples as well.
+None of the RLM merge procedures (other than averaging) have been applied to MCMC, 
+so it is unclear if they would offer any benefit.
 
 A second category of merge functions uses a nonparametric estimate of the subposterior density.
-\citet{neiswanger2014asymptotically} introduce the idea.
-
-The second category of samplers is based on \defn{subposterior distributions}.
-Nonparametric estimators have a number of difficulties.
-First, they suffer from the curse of dimensionality.
-As the dimensionality $d$ of $\theta$ increases, 
-the number of required samples increases exponentially.
-\fixme{2 more}
-\citet{wang2013parallelizing} use the Weirstrass transform to improve the nonparametricness of 
-\citet{wang2015parallelizing} introduce the \defn{parallel aggregation random trees} (PART) merging method.
-
-The final category of samplers is based on taking the median.
-\citet{minsker2014scalable} propose the \defn{median of subset posterior measures} method.
-This method is robust to outliers.
-They propose to use the Hellinger distance 
-The generalized median is defined to be
+This results in significantly more complicated merge functions.
+These merge functions trade better statistical performance for worse computational performance.
+Instead of merging the samples directly,
+an approximate posterior distribution is created by multiplying the nonparametric estimates of the subposteriors.
+MCMC samples are then generated by sampling from the approximate posterior.
+The first method in this catgory was given by \citet{neiswanger2014asymptotically} 
+and called the \defn{nonparametric density product estimator} (NDPE).
+%\cite{neiswanger2014asymptotically} also present asymptotically efficient estimators.
+NDPE uses the samples from subposterior $i$ to approximate the subposterior density using the \defn{kernel density estimator} (KDE) with a Gaussian kernel:
 \begin{equation}
-   % 
+    \label{eq:mcmc:pkde}
+    \pkde{\theta|Z_i}
+    %=
+    %\frac{1}{n}\sum_{\z\in Z_i}
+    %\frac{1}{h}k(\theta,\z)
+    =
+    \frac{1}{n}\sum_{j=1}^t
+    \gaussian{\theta}{\sample{i}{j}}{h^2 \eye d}
+    ,
 \end{equation}
-\citet{srivastava2015wasp} propose the \defn{waserstein posterior} (WASP).
+where $\eye d$ is the $d$ dimensional identity matrix and $h$ is a global bandwidth parameter for the gaussian kernel.
+The full posterior is then approximated by substituting \eqref{eq:mcmc:pkde} into \eqref{eq:mcmc:ptz}:
+\begin{align}
+    \label{eq:mcmc:pndpe}
+    %\pnp{\theta|Z}
+    p^{ndpe}(\theta|Z)
+    &\propto
+    \prod_{i=1}^m \pkde{\theta|Z_i}
+    %\\&
+    =
+    \frac{1}{n^m}
+    \prod_{i=1}^m 
+    \sum_{j=1}^t
+    \gaussian{\theta}{\sample{i}{j}}{h^2 \eye d}
+    %\\
+    %&\propto
+    %\sum_{z_1\in Z_1}
+    %\dots
+    %\sum_{z_m\in Z_m}
+    %\gaussian{\theta}{z_{\{z_1,...,z_m\}}}{h^2 \eye d}
+%\end{align}
+%where
+%\begin{align}
+    %\bar\theta_{\{z_1,...,z_m\}} 
+    %&= 
+    %\frac{1}{m}\sum_{z_i\in\{z_1,...,z_m\}} z_i
+    %,
+    %\\
+    %w_{\{z_1,...,z_m\}} 
+    %&=
+    %\prod_{i=1}^m\gaussian{z_i}{\bar\theta_{\{z_1,...,z_m\}}}{h^2\eye d}
+\end{align}
+Naively sampling from \eqref{eq:mcmc:pndpe} is computationally expensive as there $n^m$ mixture components.
+Many of these components turn are redundant, however, 
+and the NDPE samples from a mixture of only $mt$ components,
+which is tractable.
+The advantage of nonparametric estimators is that they are unbiased when $n$ is fixed and $m\to\infty$,
+but the disadvantage is that they take a long time to converge.
+\citet{neiswanger2014asymptotically} also propose the \defn{semiparametric density product estimator} (SDPE). 
+SDPE approximates the subposterior distributions as the product of a gaussian distribution and the KDE of \eqref{eq:mcmc:pkde}.
+SDPE exhibits both faster convergence and asymptotic efficiency.
+\citet{wang2013parallelizing} propose an improvement to the SDPE called the \defn{weierstrass sampler} (WS).%
+\footnote{
+    \citet{wang2013parallelizing} has an earlier citation date than \citet{neiswanger2014asymptotically}, but was actually created later.
+    \citet{neiswanger2014asymptotically} first appeared on arXiv in 2013 and later was published in a journal in 2014.
+    The improvements of \citet{wang2013parallelizing} were released on arXiv between these two dates.
+}
+The WS method approximates the subposteriors using the weierstrass transform of the KDE,
+which is the convolution (instead of the product) of a gausian distribution and KDE.
+\citet{nemeth2016merging} report that using a gaussian process to approximate the subposteriors has improved empirical performance compared to both the SDPE and WS methods,
+although they provide little theoretical justification for this claim.
+\citet{wang2015parallelizing} introduce the \defn{parallel aggregation random trees} (PART) merging method.
+The PART algorithm uses a $k$d-tree to nonparametrically represent the subposterior distributions. 
+This has the advantage are that there is no kernel hyperparameter that needs tuning.
+The PART algorithm is the only method that provides finite sample guarantees on the quality of the emitted samples.
+Finally, \citet{white2015piecewise} study the NPDE method in the more general setting of \defn{approximate baysian computation} (ABC) where the likelihood function $p(\z|\theta)$ is either unknown or too expensive to compute.
 
+The final category of samplers is based on taking the geometric median or mean of the subposteriors.
+The earliest example in this category is due to \citet{minsker2014scalable} 
+and called the \defn{median of subposterior measures} (MSM).
+The MSM embeds the subposteriors into a reproducing kernel hilbert space.
+The approximated posterior is the median of the subposteriors with respect to the distance function in the hilbert space.
+\citet{srivastava2015wasp} propose the \defn{waserstein posterior} (WASP) method.
+WASP returns the barycenter of the subposterior distributions with respect to the wasserstein distance (the continuous analog of the earth mover distance).
+WASP shows that this problem can be formulated as a sparse linear program and so solved efficiently in practice.
+
+%MSM selects the median of the subposteriors based on the hellinger distance.
+%The hellinger distance is a standard distance metric between probability distributions.
+%Given two distributions over $\R^d$ with density $p$ and $q$,
+%the hellinger distance is defined to be
+%\begin{equation}
+    %h(p,q) = \sqrt{\frac 1 2 \int_{\R^d} \left(\sqrt{p(\x)} + \sqrt{q(\x)}\right)^2 \dd \x}
+    %.
+%\end{equation}
+%The wasserstein distance is defined to be
+%\begin{equation}
+%\end{equation}
+%and is better known as the \defn{earth mover distance} (EMD) which the probability distributions are discrete.
+%The WASP method 
+%\begin{equation}
+    %p^{wasp}(\theta|Z) = \argmin_p w
+%\end{equation}
+%They show how to formulate \eqref{} as a sparse linear program,
+%which makes WASP fast to calculate in practice.
 
 
 %Recent work has focused on improving non-asymptotic bounds of MCMC 
 %\citep[e.g.][]{latuszynski2013nonasymptotic,andrieu2015convergence,adamczak2015exponential,andrieu2016establishing}.
-
-\cite{neiswanger2014asymptotically} also present asymptotically efficient estimators.
-We can write the kernel density estimate of the posterior as
-\begin{equation}
-    \pkde{\theta|Z}
-    =
-    \frac{1}{Z}\sum_{z\in Z}
-    \frac{1}{h}k(\theta,z)
-    =
-    \frac{1}{Z}\sum_{z\in Z}
-    \gaussian{\theta}{z}{h^2 \eye d}
-    ,
-\end{equation}
-where $\eye d$ is the $d$ dimensional identity matrix.
-\begin{align}
-    \pnp{\theta|Z}
-    &=
-    \prod_{i=1}^m \pkde{\theta|Z_i}
-    \\
-    &=
-    \frac{1}{n^m}
-    \prod_{i=1}^m 
-    \sum_{z\in Z_i}
-    \gaussian{\theta}{z}{h^2 \eye d}
-    \\
-    &\propto
-    \sum_{z_1\in Z_1}
-    \dots
-    \sum_{z_m\in Z_m}
-    \gaussian{\theta}{z_{\{z_1,...,z_m\}}}{h^2 \eye d}
-\end{align}
-where
-\begin{align}
-    \bar\theta_{\{z_1,...,z_m\}} 
-    &= 
-    \frac{1}{m}\sum_{z_i\in\{z_1,...,z_m\}} z_i
-    ,
-    \\
-    w_{\{z_1,...,z_m\}} 
-    &=
-    \prod_{i=1}^m\gaussian{z_i}{\bar\theta_{\{z_1,...,z_m\}}}{h^2\eye d}
-\end{align}
 
 %\begin{theorem}
     %If $h \asymp T^{-1/d}$,
