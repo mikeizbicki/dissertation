@@ -1,59 +1,70 @@
-\documentclass[../main.tex]{subfiles}
+\documentclass[thesis.tex]{subfiles}
  
 \begin{document}
 \chapter{Introduction}
+\label{chapter:intro}
 
+\noindent
+Machine learning has seen many recent successes due to the availability of large datasets.
+For example, Facebook collects more than 200 terabytes of user information per day \citep{facebook2014}.
+This information includes text messages sent between users,
+photos uploaded by users,
+and the webpages that users visit.
+Machine learning algorithms use this data to
+predict who a user is friends with offline \citep{curtiss2013unicorn},
+identify users in uploaded images \citep{taigman2014deepface},
+%automatically provide text captions for images \citep{},
+and determine which ads are the most profitable to display \citep{he2014practical}.
+These learning algorithms run on an estimated ``hundreds of thousands'' of servers located at six data centers around the world \citep{facebookFAQ}.
+Developing algorithms that work at this scale is one of the central problems of modern machine learning research.
 
-%\defn{Parallel learning algorithms} use multiple process
+A standard approach to scaling machine learning is to use parallel algorithms.
+Designing parallel algorithms is difficult because they must tuned for the
 
-Many datasets are too large to fit in the memory of a single machine.
-To analyze them, we must partition the data onto many machines and use distributed algorithms.
-Existing distributed learning algorithms fall into one of two categories:
-
-\defn{Interactive distributed algorithms} require many rounds of communication between machines.
+Many families of parallel algorithms have been studied.
+The most common is the family of \defn{interactive learning algorithms}.
+These algorithms use many rounds of communication between the processing units.
+When communication is cheap 
+(e.g.\ the processors are multiple CPUs on a shared memory computer)
+these algorithms work well.
 Representative examples include \citet{boyd2011distributed}, \citet{li2014scaling}, \cite{ma2015adding}, and \cite{zhao2017scope}. 
-These algorithms resemble standard iterative algorithms where each iteration is followed by a communication step. 
-The appeal of interactive algorithms is that they enjoy the same statistical performance as standard sequential algorithms.
-That is, given $m$ machines each with $n$ data points of dimension $d$, interactive algorithms have statistical error that decays as $O(\sqrt{d/mn})$.
 But, interactive algorithms have three main disadvantages.
 First, these algorithms are slow when communication latency is the bottleneck.
-An extreme example occurs in the \emph{federated learning} environment proposed by \cite{mcmahan2017communication}, which uses cell phones as the computational nodes. 
+An extreme example occurs in the \defn{federated learning} environment proposed by \cite{mcmahan2017communication}, which uses cell phones as the computational nodes. 
 Second, these algorithms require special implementations.
 They do not work with off-the-shelf statistics libraries provided by (for example) Python, R, and Matlab.
 Third, because of the many rounds of communication, any sensitive information in the data is likely to leak between machines.
 
-\defn{Non-interactive distributed algorithms} require only a single round of communication.
-Each machine independently solves the learning problem on a small subset of data,
-then a master machine merges the solutions together.
+This thesis studies a particular subset of parallel algorithms called mergeable algorithms.
+In a mergeable algorithm,
+each machine independently solves the learning problem on a small subset of data.
+Then a master machine merges the solutions together.
 These algorithms solve all the problems of interactive ones:
 they are fast when communication is the main bottleneck;
 they are easy to implement with off-the-shelf statistics packages;
 and they are robust to privacy considerations.
-The downside is worse statistical performance.
-The popular averaging estimator has worst case performance $O(\sqrt{d/n})$ completely independent of the number of machines $m$. 
-A growing body of work improves the analysis of the averaging estimator under special conditions 
-(e.g.
-\citet{mcdonald2009efficient},
-\citet{zhang2012communication},
-\citet{zhang2013divide},
-and
-\citet{rosenblatt2016optimality})
-and develops more robust non-interactive estimators
-(e.g.
-\citet{zinkevich2010parallelized},
-\citet{liu2014distributed},  
-\citet{lee2015communication}, 
-\citet{battey2015distributed},
-\citet{han2016bootstrap},
-and \citet{jordan2016communication}).
-Existing estimators either work on only a limited class of models or have computationally intractable merge procedures.
+Many previous researchers have studied mergable learning algorithms for specific contexts,
+but this work has often occurred independently of other related work.
+Chapter \ref{chapter:merge} presents the first systematic study of mergeable learning algorithms.
+Then, we show that learning algorithms have a fast cross validation algorithm.
 
-\cite{karloff2010model} introduce the \defn{map reduce class} model of computation as an alternative to the PRAM model for analyzing algorithms.
-Specifically, they define $MRC^i$ to be the class of functions computable on a MapReduce architecture with $O(\log^i n)$ rounds of computation.
-Our model of computation is a subset of $MRC^0$,
-however we require exactly one round of computation rather than a constant number of rounds.
+Regularized loss minimization (RLM) is one of the most important learning paradigms.
+It includes important models such as logistic regression, kernel algorithms, and neural networks.
+Existing mergeable algorithms for RLM have limitations.
+In particular, they either have poor statistical performance or poor computational performance.
+Chapter \ref{chapter:owa} presents the first mergeable RLM algorithm that has booth good statistical and computational performance.
+The key insight is that the merge procedure depends on the data.
 
-\fixme{Differential privacy}
+Chapter \ref{chapter:covertree} discusses a data structure called the cover tree.
+The cover tree was introduced by \citet{beygelzimer2006cover},
+and is a data structure that makes non-parametric learning faster.
+The most common example is faster nearest neighbor queries.
+An advantage of cover trees is that they work in arbitrary metric spaces.
+
+%\cite{karloff2010model} introduce the \defn{map reduce class} model of computation as an alternative to the PRAM model for analyzing algorithms.
+%Specifically, they define $MRC^i$ to be the class of functions computable on a MapReduce architecture with $O(\log^i n)$ rounds of computation.
+%Our model of computation is a subset of $MRC^0$,
+%however we require exactly one round of computation rather than a constant number of rounds.
 
 \end{document}
 

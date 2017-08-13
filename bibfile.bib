@@ -1,4 +1,58 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% big data
+
+@article{curtiss2013unicorn,
+  title={Unicorn: A system for searching the social graph},
+  author={Curtiss, Michael and Becker, Iain and Bosman, Tudor and Doroshenko, Sergey and Grijincu, Lucian and Jackson, Tom and Kunnatur, Sandhya and Lassen, Soren and Pronin, Philip and Sankar, Sriram and others},
+  journal={Proceedings of the VLDB Endowment},
+  volume={6},
+  number={11},
+  pages={1150--1161},
+  year={2013},
+  publisher={VLDB Endowment}
+}
+
+@inproceedings{taigman2014deepface,
+  title={Deepface: Closing the gap to human-level performance in face verification},
+  author={Taigman, Yaniv and Yang, Ming and Ranzato, Marc'Aurelio and Wolf, Lior},
+  booktitle={Proceedings of the IEEE conference on computer vision and pattern recognition},
+  pages={1701--1708},
+  year={2014}
+}
+
+@misc{facebook2014,
+  author = {Vagata, Pamela and Wilfong, Kevin},
+  title = {Scaling the Facebook data warehouse to 300 PB},
+  howpublished={\url{https://code.facebook.com/posts/229861827208629/scaling-the-facebook-data-warehouse-to-300-pb/}},
+  year={2014}
+}
+
+@misc{facebookFAQ,
+  author = {Facebook Datacenter FAQ, {}},
+  howpublished={\url{http://www.datacenterknowledge.com/the-facebook-data-center-faq/}}
+}
+
+@inproceedings{he2014practical,
+  title={Practical lessons from predicting clicks on ads at facebook},
+  author={He, Xinran and Pan, Junfeng and Jin, Ou and Xu, Tianbing and Liu, Bo and Xu, Tao and Shi, Yanxin and Atallah, Antoine and Herbrich, Ralf and Bowers, Stuart and others},
+  booktitle={Proceedings of the Eighth International Workshop on Data Mining for Online Advertising},
+  pages={1--9},
+  year={2014},
+  organization={ACM}
+}
+
+@article{silver2016mastering,
+  title={Mastering the game of Go with deep neural networks and tree search},
+  author={Silver, David and Huang, Aja and Maddison, Chris J and Guez, Arthur and Sifre, Laurent and Van Den Driessche, George and Schrittwieser, Julian and Antonoglou, Ioannis and Panneershelvam, Veda and Lanctot, Marc and others},
+  journal={Nature},
+  volume={529},
+  number={7587},
+  pages={484--489},
+  year={2016},
+  publisher={Nature Research}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % theory
 
 @article{ladner1980parallel,
@@ -511,8 +565,6 @@
   month = 	 {09--12 May},
   publisher = 	 {PMLR},
   pdf = 	 {http://proceedings.mlr.press/v38/szabo15.pdf},
-  url = 	 {http://proceedings.mlr.press/v38/szabo15.html},
-  abstract = 	 {We focus on the distribution regression problem: regressing to a real-valued response from a probability distribution. Although there exist a large number of similarity measures between distributions, very little is known about their generalization performance in specific learning tasks. Learning problems formulated on distributions have an inherent two-stage sampled difficulty: in practice only samples from sampled distributions are observable, and one has to build an estimate on similarities computed between sets of points. To the best of our knowledge, the only existing method with consistency guarantees for distribution regression requires kernel density estimation as an intermediate step (which suffers from slow convergence issues in high dimensions), and the domain of the distributions to be compact Euclidean. In this paper, we provide theoretical guarantees for a remarkably simple algorithmic alternative to solve the distribution regression problem: embed the distributions to a reproducing kernel Hilbert space, and learn a ridge regressor from the embeddings to the outputs. Our main contribution is to prove the consistency of this technique in the two-stage sampled setting under mild conditions (on separable, topological domains endowed with kernels). As a special case, we answer a 15-year-old open question: we establish the consistency of the classical set kernel [Haussler, 1999; Gaertner et. al, 2002] in regression, and cover more recent kernels on distributions, including those due to [Christmann and Steinwart, 2010].}
 }
 
 @article{zhang2015divide,
@@ -973,8 +1025,6 @@ publisher = {Curran Associates, Inc.}
   month = 	 {13--15 Jun},
   publisher = 	 {PMLR},
   pdf = 	 {http://proceedings.mlr.press/v35/kannan14.pdf},
-  url = 	 {http://proceedings.mlr.press/v35/kannan14.html},
-  abstract = 	 {We consider algorithmic problems in the setting in which the input data has been partitioned arbitrarily on many servers. The goal is to compute a function of all the data, and the bottleneck is the communication used by the algorithm. We present algorithms for two illustrative problems on massive data sets: (1) computing a low-rank approximation of a matrix A=A^1 + A^2 + \ldots + A^s, with matrix A^t stored on server t and (2) computing a function of a vector a_1 + a_2 + \ldots + a_s, where server t has the vector a_t; this includes the well-studied special case of computing frequency moments and separable functions, as well as higher-order correlations such as the number of subgraphs of a specified type occurring in a graph. For both problems we give algorithms with nearly optimal communication, and in particular the only dependence on n, the size of the data, is in the number of bits needed to represent indices and words (O(\log n)). }
 }
 
 @article{garber2015fast,
@@ -2437,21 +2487,21 @@ publisher = {Curran Associates, Inc.}
 @InProceedings{abraham2015approximate,
   author =	{Ittai Abraham and Shiri Chechik and Robert Krauthgamer and Udi Wieder},
   title =	{{Approximate Nearest Neighbor Search in Metrics of Planar Graphs}},
-  booktitle =	{Approximation, Randomization, and Combinatorial Optimization. Algorithms and Techniques (APPROX/RANDOM 2015)},
+  booktitle =	{Approximation, Randomization, and Combinatorial Optimization.} 
   pages =	{20--42},
-  series =	{Leibniz International Proceedings in Informatics (LIPIcs)},
-  ISBN =	{978-3-939897-89-7},
-  ISSN =	{1868-8969},
-  year =	{2015},
-  volume =	{40},
-  editor =	{Naveen Garg and Klaus Jansen and Anup Rao and Jos{\'e} D. P. Rolim},
-  publisher =	{Schloss Dagstuhl--Leibniz-Zentrum fuer Informatik},
-  address =	{Dagstuhl, Germany},
-  URL =		{http://drops.dagstuhl.de/opus/volltexte/2015/5292},
-  URN =		{urn:nbn:de:0030-drops-52923},
-  doi =		{10.4230/LIPIcs.APPROX-RANDOM.2015.20},
-  annote =	{Keywords: Data Structures, Nearest Neighbor Search, Planar Graphs, Planar Metrics, Planar Separator}
+  year =	{2015}
 }
+#series =	{Leibniz International Proceedings in Informatics (LIPIcs)},
+#ISBN =	{978-3-939897-89-7},
+#ISSN =	{1868-8969},
+#volume =	{40},
+#editor =	{Naveen Garg and Klaus Jansen and Anup Rao and Jos{\'e} D. P. Rolim},
+#publisher =	{Schloss Dagstuhl--Leibniz-Zentrum fuer Informatik},
+#address =	{Dagstuhl, Germany},
+#URL =		{http://drops.dagstuhl.de/opus/volltexte/2015/5292},
+#URN =		{urn:nbn:de:0030-drops-52923},
+#doi =		{10.4230/LIPIcs.APPROX-RANDOM.2015.20},
+#annote =	{Keywords: Data Structures, Nearest Neighbor Search, Planar Graphs, Planar Metrics, Planar Separator}
 
 @article{curtin2015plug,
   title={Plug-and-play dual-tree algorithm runtime analysis.},
@@ -2822,7 +2872,6 @@ year = {2009}
 
 @inproceedings{Gieseke2014,
     Author = {Fabian Gieseke and Justin Heinermann and Cosmin Oancea and Christian Igel},
-    Url = {http://jmlr.org/proceedings/papers/v32/gieseke14.pdf},
     Title = {Buffer k-d Trees: Processing Massive Nearest Neighbor Queries on GPUs},
     Pages = {172-180},
     Editor = {Tony Jebara and Eric P. Xing},
@@ -2858,9 +2907,6 @@ isbn = {0-521-49603-9},
 @book{amari2016information,
   title={Information Geometry and Its Applications},
   author={Amari, S.},
-  isbn={9784431559788},
-  series={Applied Mathematical Sciences},
-  url={https://books.google.com/books?id=UkSFCwAAQBAJ},
   year={2016},
   publisher={Springer Japan}
 }
@@ -2902,7 +2948,6 @@ isbn = {0-521-49603-9},
     address = {Vienna, Austria},
     year = {2008},
     note = {{ISBN} 3-900051-07-0},
-    url = {http://www.R-project.org},
 }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

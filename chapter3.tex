@@ -5,8 +5,8 @@
 \pgfplotsset{width=7cm,compat=1.8}
 \definecolor{darkgreen}{RGB}{0,127,0}
 
-\definecolor{werm}{RGB}{0,0,0}
-\definecolor{wermi}{RGB}{230,159,0}
+\definecolor{wrlm}{RGB}{0,0,0}
+\definecolor{wrlmi}{RGB}{230,159,0}
 \definecolor{wave}{RGB}{86,180,233}
 \definecolor{wboot}{RGB}{204,121,167}
 \definecolor{wowa}{RGB}{0,158,115}
@@ -37,54 +37,34 @@
 
 \begin{document}
 
-\chapter{Merging via optimization}
+\chapter{The optimal weighted average}
+\label{chapter:owa}
 
-%\begin{abstract}
-We present the \emph{optimal weighted average} (OWA) distributed estimator for linear models. 
-OWA achieves statistically optimal learning rates even on non-convex problems.
-Depending on the computational model, OWA requires either only one or two rounds of communication.
+\noindent
+This chapter presents a new merge procedure called the \defn{optimal weighted average} (OWA). 
+%Depending on the computational model, OWA requires either only one or two rounds of communication.
 %In this method, local models are first trained on each of the compute nodes;
-The algorithm first trains local models on each of the compute nodes;
-then a master machine merges the models using a second round of optimization. 
-This second optimization uses only a small fraction of the data, 
-and so has negligible computational and communication cost.
-Compared with similar distributed estimators that merge locally trained models,
-OWA either has stronger statistical guarantees, 
-is applicable to more models,
-or has a more computationally efficient merging procedure.
-%\end{abstract}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\section{INTRODUCTION}
-
-Many datasets are too large to fit in the memory of a single machine.
-To analyze them, we must partition the data onto many machines and use distributed algorithms.
-Existing distributed learning algorithms fall into one of two categories:
-%Existing distributed algorithms can be classified as either interactive or non-interactive depending on their communication complexity.
-%In this paper we propose an algorithm that exhibits the benefits of both types.
-
-
-%Non-interactive learning alg
-%The popular large scale learning system Vowpal Wabbit combines both types of algorithms to achieve good real world performance.
-%A non-interactive algorithm is run first to provide a good warm start to a subsequent interactive algorithm \citep{agarwal2014reliable}.
-
-In this paper, we propose a novel non-interactive estimator called the \emph{optimal weighted average} (OWA).
-%OWA requires only one round of communication,
-%but the merge procedure performs a second optimization over the data. 
-%The key insight of OWA is to use a second round of optimization over the data in the merge procedure.
-OWA's merge procedure uses a second round of optimization over the data.
-(All previous merge procedures do not depend on the data.)
-This data dependent merge procedure has four advantages:
-(i) OWA achieves the optimal error of $O(\sqrt{d/mn})$ in a general setting and with a simple analysis.
-In particular, we do not require a convex loss function.
+%The algorithm first trains local models on each of the compute nodes;
+%then a master machine merges the models using a second round of optimization. 
+%This second optimization uses only a small fraction of the data, 
+%and so has negligible computational and communication cost.
+OWA improves on the ``averaging based'' merge procedures of Section \ref{sec:merge:ave} from the previous chapter.
+%In particular:
+%OWA either has stronger statistical guarantees, 
+%is applicable to more models,
+%or is more computationally efficient. 
+The key idea of OWA is to use a second round of optimization over the data while merging.
+All previous averaging based merge procedures do not depend on the data.
+This data dependent merge has three advantages:
+(i) OWA achieves the optimal statistical error of $O(\sqrt{d/mn})$ in a general setting and with a simple analysis.
+In particular, OWA does not require a convex loss function.
 (ii) This second optimization uses a small number of data points projected onto a small dimensional space. 
 It therefore has low computational and communication overhead.
-(iii) OWA is easily implemented in a MapReduce architecture with standard packages.
-Our implementation uses only a few dozen lines of Python.
-(iv) OWA is robust to the regularization strength used in the first round of optimization.
+%(iii) OWA is easily implemented in a MapReduce architecture with standard packages.
+%Our implementation uses only a few dozen lines of Python.
+(iii) OWA is robust to the regularization strength used in the first round of optimization.
 In practice, this means that OWA does not require communication between nodes even in the model selection step of learning.
-No previous one-round estimator has considered the cost of communication during model selection.
+No previous mergeable estimator has considered the cost of communication during model selection.
 %In the second round of communication, the machines send only a small amount of data.
 %So OWA retains the speed advantages of non-interactive estimators.
 %The algorithm has two tunable parameters that let the user trade better statistical performance for worse communication complexity.
@@ -94,20 +74,17 @@ No previous one-round estimator has considered the cost of communication during 
 %The amount of information communicated in the second round is small, however,
 %so our algorithm retains the speed advantages of non-interactive algorithms.
 
-%In the next section, we formally describe the OWA algorithm.
-Section 2 formally describes our problem setting, and
-Section 3 describes the OWA algorithm.
+Section \ref{sec:owa:problem} formally describes our problem setting, and
+Section \ref{sec:owa:alg} describes the OWA merge procedure.
 We take special care to show how OWA can be implemented with off-the-shelf optimizers.
-Section 4 provides a simple proof that OWA achieves the optimal $O(\sqrt{d/mn})$ error. %under mild conditions.
-Our main condition is that the single machine parameter vectors have a ``sufficiently Gaussian'' distribution.
+Section \ref{sec:owa:proofs} provides a simple proof that OWA achieves the optimal $O(\sqrt{d/mn})$ error. %under mild conditions.
+Our main condition is that the single machine parameter vectors have a ``sufficiently gaussian'' distribution.
 This is a mild condition known to hold in many situations of interest.
 In order to clarify the constant factors involved in our algorithm,
 we also introduce a novel measure of the smoothness of a loss function.
 %We also introduce a novel way to quantify the smoothness of a loss function.
-Section 5 compares OWA to existing distributed algorithms.
-We highlight how the analysis of existing algorithms requires more limiting assumptions than OWA's.
 %and show in detail why existing non-interactive regret bounds do not apply to OWA.
-Section 6 shows empirically that OWA performs well on synthetic and real world advertising data.
+Section \ref{sec:owa:experiments} shows empirically that OWA performs well on synthetic and real world advertising data.
 We demonstrate that OWA is robust to the strength of regularization,
 which is one of the reasons it performs well in practice.
 
@@ -117,7 +94,7 @@ which is one of the reasons it performs well in practice.
 
 %Performance bounds come in two flavors: statistical and information theoretic.
 %On the statistical side, \citet{liu2014distributed} show that for any non-interactive distributed estimator $\what$,
-%the quantity $\ltwo{\what-\werm}{}^2$ decays as $\Omega(\gamma^2 \I^{-1}/n^2)$.
+%the quantity $\ltwo{\what-\wrlm}{}^2$ decays as $\Omega(\gamma^2 \I^{-1}/n^2)$.
 %Here $\gamma$ is the statistical curvature of the model and $\I$ is the Fisher information.
 %Furthermore, they show that their KL-averaging estimator $\wkl$ matches this bound.
 %One consequence of this bound is that no non-interactive learner can achieve the optimal $O(\sqrt{d/mn})$ error on models with nonzero statistical curvature.
@@ -141,17 +118,12 @@ which is one of the reasons it performs well in practice.
 %Surprisingly, \citet{braverman2015communication} show that the minimax optimal error rate for least squares regression requires $\Omega(m\cdot\min\{n,d\})$ bits of communication (independent of $k$) independent of the setting.
 %This is important because sparsity does not reduce the amount of communication required, and this bound does apply in our setting.
 %Recall that the communication cost of OWA is $O(dm^2+m^2n/d)$, which is looser than the lower bound.
-%\section{THE OWA ALGORITHM}
-%
-%This section first formally introduces the problem of communication efficient distributed estimation,
-%then describes our proposed OWA distributed estimator.
-%
-%\subsection{Problem Setting}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \vspace{-0.1in}
-\section{PROBLEM SETTING}
+\section{Problem Setting}
+\label{sec:owa:problem}
 
 \vspace{-0.05in}
 Let $\Y\subseteq\mathbb{R}$ be the space of response variables,
@@ -166,65 +138,67 @@ nor do we require that $\loss$ be convex with respect to $\w$.
 Let $Z\subset\X\times\Y$ be a dataset of $mn$ i.i.d.\ observations.
 Finally, let $\reg : \W \to \mathbb{R}$ be a regularization function (typically the L1 or L2 norm)
 and $\lambda\in\mathbb{R}$ be the regularization strength.
-Then the regularized empirical risk minimizer (ERM) is
+Then the \defn{regularized loss minimizer} (RLM) is
 \begin{equation}
-\label{eq:werm}
-%\werm=\argmax_\w \sum_{i=1}^{mn} g(y_i-\trans\x_i\w)
-\werm=\argmax_{\w\in\W} \sum_{(\x,y)\in Z} \loss(y,\trans\x\w)
+\label{eq:wrlm}
+%\wrlm=\argmax_\w \sum_{i=1}^{mn} g(y_i-\trans\x_i\w)
+\wrlm=\argmax_{\w\in\W} \sum_{(\x,y)\in Z} \loss(y,\trans\x\w)
 + \lambda \reg(\w)
 .
 \end{equation}
-%In the remainder of this paper, it should be understood that all ERMs are regularized.
+%In the remainder of this paper, it should be understood that all RLMs are regularized.
 %
 Assume that the dataset $Z$ has been partitioned onto $m$ machines so that each machine $i$ has dataset $Z_i$ of size $n$, and all the $Z_i$ are disjoint.
-Then each machine calculates the local ERM
+Then each machine calculates the local RLM
 \begin{equation}
-\label{eq:wermi}
-\werm_i = \argmax_{\w\in\W} \sum_{(\x,y) \in Z_i} \loss(y,\trans\x\w)
+\label{eq:wrlmi}
+\wrlm_i = \argmax_{\w\in\W} \sum_{(\x,y) \in Z_i} \loss(y,\trans\x\w)
 + \lambda \reg(\w)
 .
 \end{equation}
-Solving for $\werm_i$ requires no communication with other machines.
-Our goal is to merge the $\werm_i$s into a single improved estimate.
-A baseline merging procedure is the averaging estimator:
+Solving for $\wrlm_i$ requires no communication with other machines.
+Our goal is to merge the $\wrlm_i$s into a single improved estimate.
+
+We now recall some facts from Chapter 2 about measuring the quality of merged estimators.
+Section \ref{sec:merge:ave} presented a number of existing baseline merge procedures.
+The simplest is the naive averaging estimator:
 \begin{equation}
-\wave = \frac{1}{m}\sum_{i=1}^m \werm_i
+\wave = \frac{1}{m}\sum_{i=1}^m \wrlm_i
 .
 \end{equation}
-This estimator is well studied.
-%, and in Section \ref{sec:relwork} we compare this previous work to our own.
-Recall that the quality of an estimator $\what$ can be measured by the estimation error $\ltwo{\what-\wstar}$. 
+OWA will improve on naive averaging by taking a weighted average.
+A careful choice of weights improves the statistical quality of the estimator.
+The quality of an estimator $\what$ can be measured by the estimation error $\ltwo{\what-\wstar}$. 
 We can use the triangle inequality to decompose this error as
 \begin{equation}
 %\ltwo{\wave-\wstar} \le \ltwo{\wave-\E\wave}+ \ltwo{\E\wave - \wstar } .
 \ltwo{\what-\wstar} \le \ltwo{\what-\E\what}+ \ltwo{\E\what - \wstar } .
 \end{equation}
-We refer to $\ltwo{\what-\E\what}$ as the variance of the estimator and $\ltwo{\E\what-\what}$ as the bias.
+We refer to $\ltwo{\what-\E\what}$ as the variance of the estimator and $\ltwo{\E\what-\wstar}$ as the bias.
 %$\ltwo{\wstar-\wave}$ can be decomposed into bias $\ltwo{\wstar - \E\wave}$ and variance $\ltwo{\E\wave-\wave}$ components.
-\citet{mcdonald2009efficient} show that the $\wave$ estimator has lower variance than the estimator $\werm_i$ trained on a single machine, but the same bias.
-\citet{zhang2012communication} extend this analysis to show that if $\werm_i$ is a ``nearly unbiased estimator'' then the mean squared error (MSE) $\E\ltwo{\wstar-\wave}{}^2$ decays as $O((mn)^{-1} + n^{-2})$.
+\citet{mcdonald2009efficient} show that the $\wave$ estimator has lower variance than the estimator $\wrlm_i$ trained on a single machine, but the same bias.
+\citet{zhang2012communication} extend this analysis to show that if $\wrlm_i$ is a ``nearly unbiased estimator'' then the mean squared error (MSE) $\E\ltwo{\wstar-\wave}{}^2$ decays as $O((mn)^{-1} + n^{-2})$.
 %Our goal is to design an estimator that reduces both variance and bias.
 Both results require $\loss$ to be convex in addition to other technical assumptions.
 Our goal is to design a merging procedure that has good error bounds in a more general setting.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\vspace{-0.1in}
-\section{THE OWA ESTIMATOR}
+\section{The  OWA Algorithm}
+\label{sec:owa:alg}
 
-\vspace{-0.05in}
 %We propose a modification to the averaging estimator called the \emph{optimal weighted average} (OWA). 
-The \emph{optimal weighted average} (OWA) estimator uses a second round of optimization to calculate the optimal linear combination of the $\werm_i$s.
+The \defn{optimal weighted average} (OWA) merge procedure uses a second round of optimization to calculate the optimal linear combination of the $\wrlm_i$s.
 %Using these optimal weights, we reduce bias at a rate of $O(\sqrt{1-m/d})$.
 This second optimization occurs over a small fraction of the dataset,
 so its computational and communication cost is negligible.
 
-\subsection{Warmup: The Full OWA}
+\subsection{Warmup: the full OWA estimator}
 
 To motivate the OWA estimator,
 we first present a less efficient estimator that uses the full dataset for the second round of optimization.
-%The idea of our proposed solution is to find the best linear combination of the $\werm_i$s using a second round of optimization.
-Define the matrix $\matW : \mathbb{R}^{d\times m}$ to have its $i$th column equal to $\werm_i$. 
+%The idea of our proposed solution is to find the best linear combination of the $\wrlm_i$s using a second round of optimization.
+Define the matrix $\matW : \mathbb{R}^{d\times m}$ to have its $i$th column equal to $\wrlm_i$. 
 Now consider the estimator
 \begin{equation}
 \wowafull = \matW \vfull
@@ -238,18 +212,20 @@ Now consider the estimator
 \lambda \reg(\matW\vv)
 .
 \end{equation}
-Notice that $\wowafull$ is just the empirical risk minimizer when the parameter space $\W$ is restricted to the subspace $\Wowa=\vecspan\{\werm_i\}_{i=1}^m$.
-In other words, the $\vfull$ vector contains the optimal weights to apply to each $\werm_i$ when averaging.
+Notice that $\wowafull$ is just the regularized loss minimizer when the parameter space $\W$ is restricted to the subspace $\Wowa=\vecspan\{\wrlm_i\}_{i=1}^m$.
+In other words, the $\vfull$ vector contains the optimal weights to apply to each $\wrlm_i$ when averaging.
 Figure \ref{fig:contour} shows graphically that no other estimator in $\Wowa$ can have lower regularized empirical loss than $\wowafull$.
 
-\begin{wrapfigure}{R}{0.5\textwidth}
-\vspace{-0.25in}
-\hspace{-0.1in}
+%\begin{wrapfigure}{R}{0.5\textwidth}
+%\vspace{-0.25in}
+%\hspace{-0.1in}
+\begin{figure}[t]
+    \centering 
 \begin{tikzpicture}
     [
     dot/.style = {minimum width=0.15cm,inner sep=0pt,line width=0pt,fill,circle,black,font=\small}
-    , xscale=0.85
-    , yscale=0.65
+    %, xscale=0.85
+    %, yscale=0.65
     ]
 \small
 \draw[gray] plot [smooth cycle,tension=1] coordinates {(-0.5,-0.75) (-1.05,1) (-0.1,-0.1) (0.75,-0.5) (0.45,-0.7) };
@@ -259,7 +235,7 @@ Figure \ref{fig:contour} shows graphically that no other estimator in $\Wowa$ ca
 \draw[thick] (-2.2,2.15) -- (5.2,1.03);
 
 \node[dot] (wstar) at (-0.28,-0.25) {};
-\node at (0.05,-0.65) {$\werm$};
+\node at (0.05,-0.65) {$\wrlm$};
 
 %\node[dot] (wstarproj) at (0.1,1.8) {};
 %\draw (wstar) -- (wstarproj);
@@ -270,9 +246,9 @@ Figure \ref{fig:contour} shows graphically that no other estimator in $\Wowa$ ca
 \node[dot] (wave) at (3.8,1.25) {};
 \node at (4.0,1.7) {$\wave$};
 \node[dot] (wave) at (2.80,1.40) {};
-\node at (3.1,1.85) {$\werm_1$};
+\node at (3.1,1.85) {$\wrlm_1$};
 \node[dot] (wave) at (4.75,1.10) {};
-\node at (4.9,1.55) {$\werm_2$};
+\node at (4.9,1.55) {$\wrlm_2$};
 %\node[dot] (wave) at (3.8,1.25) {};
 
 \node[dot] at (-1.35,2.03) {};
@@ -293,20 +269,21 @@ Figure \ref{fig:contour} shows graphically that no other estimator in $\Wowa$ ca
     %Since $\Wowa$ has low dimension, this optimization needs relatively little data to ensure that with high probability $\wowa$ has lower empirical loss than $\wave$.
 }
 \label{fig:contour}
-\end{wrapfigure}
+\end{figure}
 
-\subsection{The OWA Estimator}
+\subsection{The OWA estimator}
 
 Calculating the weights $\vfull$ directly is infeasible because it requires access to the full dataset.
 Fortunately, we do not need to consider all the data points for an accurate estimator.
 In a linear model, the number of data points needed is proportional to the dimensionality of the underlying space.
 The parameter space $\Wowa$ is $m$-dimensional, so we need only $O(m)$ samples.
-In general, $m <\!\!< n \approx O(d)$, so this second optimization requires only a tiny fraction of the original data.
+In general, $m <\!\!< n$, 
+so this second optimization requires only a tiny fraction of the original data.
 %The dimensionality of the data is typically much larger than the number of machines (i.e. $m <\!\!< d)$.
 This intuition motivates the OWA estimator.
 Let $\Zowa_i\subset Z_i$ be a set of $\nowa$ data points uniformly sampled from $Z_i$ without replacement,
 and let $\Zowa$ be the union of the $\Zowa_i$s.
-Then the OWA estimator is defined as
+Then the OWA estimator is defined to be
 \begin{equation}
 \label{eq:wowa}
 \wowa = \matW \vowa,
@@ -319,13 +296,13 @@ Then the OWA estimator is defined as
 .
 \end{equation}
 
-%\begin{figure}
+\begin{figure}[t]
 %\begin{minipage}{\textwidth}
 
 %\begin{tabular}{lr}
-\begin{wrapfigure}{R}{0.475\textwidth}
-\vspace{-0.30in}
-\begin{minipage}{0.475\textwidth}
+%\begin{wrapfigure}{R}{0.475\textwidth}
+%\vspace{-0.30in}
+%\begin{minipage}{0.475\textwidth}
 \begin{algorithm}[H]
 \caption{Calculating $\wowa$ in one round}
 \label{alg:distributed}
@@ -334,8 +311,8 @@ Then the OWA estimator is defined as
     \State \hspace{-0.1in}~~~~~each machine $i$ already has dataset $Z_i$
     \State \hspace{-0.1in}~~~~~the master machine additionally has $\Zowa$
     \State \hspace{-0.1in}Round 1, each machine $i$ independently:
-    \State \hspace{-0.1in}~~~~~calculates $\werm_i$ using \eqref{eq:wermi}
-    \State \hspace{-0.1in}~~~~~transmits $\werm_i$ to the master
+    \State \hspace{-0.1in}~~~~~calculates $\wrlm_i$ using \eqref{eq:wrlmi}
+    \State \hspace{-0.1in}~~~~~transmits $\wrlm_i$ to the master
     \State \hspace{-0.1in}The master calculates $\wowa$ using \eqref{eq:wowa} %and \eqref{eq:ahat}
     \State \hspace{-0.1in}~~~~~(optionally) master uses approximation \eqref{eq:approxreg}
 \end{algorithmic}
@@ -354,10 +331,10 @@ Then the OWA estimator is defined as
     \State \hspace{-0.1in}Preconditions:
     \State \hspace{-0.1in}~~~~~each machine $i$ already has dataset $Z_i$
     \State \hspace{-0.1in}Round 1, each machine $i$ independently:
-    \State \hspace{-0.1in}~~~~~calculates $\werm_i$ using \eqref{eq:wermi}
-    \State \hspace{-0.1in}~~~~~broadcasts $\werm_i$ to all other machines
+    \State \hspace{-0.1in}~~~~~calculates $\wrlm_i$ using \eqref{eq:wrlmi}
+    \State \hspace{-0.1in}~~~~~broadcasts $\wrlm_i$ to all other machines
     \State \hspace{-0.1in}Round 2, each machine $i$ independently:
-    \State \hspace{-0.1in}~~~~~constructs $\matW=(\werm_1,...,\werm_m)$
+    \State \hspace{-0.1in}~~~~~constructs $\matW=(\wrlm_1,...,\wrlm_m)$
     \State \hspace{-0.1in}~~~~~samples a dataset $\Zowa_i\subset Z_i$ of size $\nowa$
     \State \hspace{-0.1in}~~~~~calcs $\Zproj_i=\{(\trans\x\matW,y) : (\x,y)\in\Zowa\}$
     \State \hspace{-0.1in}~~~~~sends $\Zproj_i$ to a master machine
@@ -366,17 +343,18 @@ Then the OWA estimator is defined as
 \end{algorithmic}
 \label{fig:alg2}
 \end{algorithm}
-\end{minipage}
-\vspace{-0.20in}
-\end{wrapfigure}
+%\end{minipage}
+%\vspace{-0.20in}
+%\end{wrapfigure}
 %\end{tabular}
 %\end{minipage}
-%\end{figure}
+\end{figure}
 
-We present two algorithms for calculating $\wowa$.
+We present two algorithms for calculating $\wowa$ in a distributed setting.
+These algorithms are minor specializations of the general distributed learning algorithm for mergeable estimators (Algorithm \ref{alg:dist}).
 Algorithm \ref{fig:alg1} uses only a single round of communication, 
-but requires that a predesignated master machine already have a copy of the $\Zowa$ dataset.
-Each machine calculates $\werm_i$ independently,
+but it requires that a predesignated master machine already have a copy of the $\Zowa$ dataset.
+Each machine calculates $\wrlm_i$ independently,
 then transfers the result to the master.
 The master then has all the information needed to solve \eqref{eq:wowa}. 
 A total of $O(dm)$ bits are transfered to the server.
@@ -388,7 +366,7 @@ The only difference between the two algorithms is the way the master machine mer
 If the master machine does not already have a copy of $\Zowa$,
 then we must transfer a copy to the master. 
 Algorithm \ref{fig:alg2} is a two round version of OWA that exploits the structure of the $\wowa$ estimator to transmit this data efficiently.
-In the first round, each machine calculates $\werm_i$ independently.
+In the first round, each machine calculates $\wrlm_i$ independently.
 The result is then broadcast to every other machine, instead of just the master.
 A total of $O(dm^2)$ bits are transmitted in this round.
 (The parameter vector has $d$ dimensions,
@@ -408,7 +386,7 @@ So the total data transmitted in both rounds is $O(dm^2 + m^3n/d)$.
 %which transmits only $O(dm)$ bits.
 %But we claim this is not a problem for two reasons.
 %First, this worse dependence on $m$ is not significant in practice because $m$ is much smaller than $n$ and $d$.
-%We show in our experiments that when the problem is large enough to take a full day to solve for the $\werm_i$s on the first round, the second round takes only several minutes.
+%We show in our experiments that when the problem is large enough to take a full day to solve for the $\wrlm_i$s on the first round, the second round takes only several minutes.
 %Second, with a slight modification to the problem setting, we can reduce the communication complexity to match the $O(dm)$ bound of the averaging estimator.
 %In the original problem setting, we assume that the data points have already been communicated to the machines. 
 %In particular, the $O(dm)$
@@ -420,7 +398,7 @@ So the total data transmitted in both rounds is $O(dm^2 + m^3n/d)$.
 \label{sec:lambda2}
 
 Equations \ref{eq:vfull} and \ref{eq:wowa} cannot be solved directly using off-the-shelf optimizers because existing optimizers do not support the non-standard regularization term $\reg(\matW\vv)$.
-%This regularization is in principle no more difficult to optimize than the term $\reg(\w)$ from Equation $\ref{eq:werm}$;
+%This regularization is in principle no more difficult to optimize than the term $\reg(\w)$ from Equation $\ref{eq:wrlm}$;
 %it is simply not implemented.
 In practice, it is sufficient to approximate this term by L2 regularization directly on the $\vv$ vector:
 \begin{equation}
@@ -437,7 +415,7 @@ We provide two justifications for this approximation:
 When we want the parameter vector $\w$ to be sparse 
 (and so the regularizer $\reg$ is the L1 norm), 
 we have no reason to believe that the $\vv$ vector should be sparse.
-The desired sparsity is induced by the regularization when solving for $\werm_i$s and maintained in any linear combination of the $\werm_i$s.
+The desired sparsity is induced by the regularization when solving for $\wrlm_i$s and maintained in any linear combination of the $\wrlm_i$s.
 \item
 As the size of the dataset increases, the strength of the regularizer decreases.
 In this second optimization, the dimensionality of the problem is small,
@@ -450,14 +428,15 @@ This will be a fast procedure, however, because there are only $m\nowa <\!\!< mn
 they have dimensionality $m<\!\!<d$,
 and the L2 regularized problem is much easier to solve than the L1 problem.
 Furthermore, this cross validation can be computed locally on the master machine without any communication.
-The experiments in Section \ref{sec:exp} provide an example where the first round of optimization to compute the $\werm_i$s takes about a day, but the second round of optimization (including cross validation over $\lambda_2$) takes only several minutes.
+The experiments in Section \ref{sec:exp} provide an example where the first round of optimization to compute the $\wrlm_i$s takes about a day, but the second round of optimization (including cross validation over $\lambda_2$) takes only several minutes.
 %With this minor modification, our distributed estimator can be implemented using any existing optimizer.
 %Our experimental results in Section \ref{sec:exp} use this modified version of $\hat\vv$.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{ANALYSIS}
+\section{Analysis}
 \label{sec:anal}
+\label{sec:owa:proofs}
 
 In this section, we outline the argument that OWA's generalization error $\Lossstar(\wowa)-\Lossstar(\wstar)$ and estimation error $\ltwo{\wowa-\wstar}$ both decay as $O(\sqrt{d/mn})$.
 Full proofs of all theorems can be found in the supplemental material.
@@ -467,7 +446,7 @@ Full proofs of all theorems can be found in the supplemental material.
 %
 Our analysis depends on the single machine estimators obeying the following mild condition.
 
-%\newtheorem*{sgt}{The Sub-Gaussian Tail (SGT) Condition}
+%\newtheorem*{sgt}{The Sub-gaussian Tail (SGT) Condition}
 %\begin{sgt}
 \begin{definition}
 We say that an estimator $\what$ that has been trained on $n$ data points of dimension $d$ satisifies the \emph{sub-gaussian tail (SGT) condition} if,
@@ -485,7 +464,7 @@ $\ltwo{\what-\wstar} \le O( \sqrt{dt/n} ).$
 %\end{sgt}
 \end{definition}
 
-%Sub-Gaussian distributions have recently become an important tool in the analysis of high dimensional statistics.
+%Sub-gaussian distributions have recently become an important tool in the analysis of high dimensional statistics.
 %\cite{vershynin2010introduction} provides an accessible tutorial of these results.
 
 The SGT condition is a high-level condition that is well established in the statistical literature.
@@ -498,11 +477,11 @@ Chapter 7 of \citet{lehmann1999elements} provides an elementary introduction to 
 Lehman requires only that $\loss$ be three times differentiable, that the data points be i.i.d., and that $\wstar$ be identifiable.
 More recent results establish the SGT condition in the non-asymptotic regime $n<\infty$.
 %The simplest results place distributional assumptions on the data.
-%For example, \citet{negahban2009unified} considers the case when the data points are sub-Gaussian, the likelihood satisfies a ``restricted strong convexity condition,'' and the regularizer is decomposable.
+%For example, \citet{negahban2009unified} considers the case when the data points are sub-gaussian, the likelihood satisfies a ``restricted strong convexity condition,'' and the regularizer is decomposable.
 %Their resulting theorems are actually much stronger than the SGT condition:
 %They prove that the dependence on the dimension $d$ in Equation \ref{eq:sgt} can be replaced by the number of non-zero elements in the optimal parameter vector $\wstar$.
 %For sparse models, this is a major improvement.
-%%\citet{sivakumar2015beyond} provides similar bounds when the data are only sub-exponential (which is more general than sub-Gaussian).
+%%\citet{sivakumar2015beyond} provides similar bounds when the data are only sub-exponential (which is more general than sub-gaussian).
 The strongest non-asymptotic results known to the authors are due to \citet{spokoiny2012parametricestimation}.
 %Spokoiny does not place any distributional assumption on the data,
 %captures sparsity information through dependence on the Fisher information,
@@ -513,13 +492,13 @@ The full explanation of the bracketing device is rather technical,
 so we do not present it here.
 Instead, we highlight that Spokoiny's results do not require a convex loss or even that the data be i.i.d. 
 
-The first lemma is an easy consequence of the SGT condition for the $\werm_i$s.
+The first lemma is an easy consequence of the SGT condition for the $\wrlm_i$s.
 It formalizes the key idea that $\Wowa$ is a good subspace to optimize over because it contains a point close to the true parameter vector.
 %\clearpage
 
 \begin{lemma}
 \label{lemma:wwstar}
-Assume the $\werm_i$s satisfy the SGT condition.
+Assume the $\wrlm_i$s satisfy the SGT condition.
 Let $\proj{\Wowa}\wstar$ denote the vector in $\Wowa$ with minimum distance to $\wstar$.
 %That is, $\proj{\Wowa}\wstar$ is the vector minimizing \eqref{eq:wwstar}.
 Let $t>0$. 
@@ -534,16 +513,48 @@ Then with probability at least $1-\exp(-t)$,
 \end{equation}
 \end{lemma}
 
+\begin{proof}
+Using independence of the $\wrlm_i$s and the SGT condition, we have that
+\begin{align}
+%~~~~~~~~~~~~~&\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!
+%\prob{\min_{\w\in\Wowa} \ltwo{\w-\wstar} \le O(\sqrt{dt/mn})}
+    \prob{\ltwo{\proj{\Wowa}\wstar-\wstar} \le O(\sqrt{dt/mn})}
+%\\
+\ge &
+\prob{\min_{i=1...m} \ltwo{\wrlm_i-\wstar} \le O(\sqrt{dt/mn})}
+\\
+=&
+1-\prob{\min_{i=1...m} \ltwo{\wrlm_i-\wstar} > O(\sqrt{dt/mn})}
+\\
+= &
+1-\left(\prob{\ltwo{\wrlm_1-\wstar} > O(\sqrt{dt/mn})}\right)^m
+\\
+= &
+1-\left(1-\prob{\ltwo{\wrlm_1-\wstar} \le O(\sqrt{dt/mn})}\right)^m\!\!\!
+\\
+\ge &
+1-\big(1-(1-\exp(-t/m))\big)^m
+\\
+= &
+1-\exp(-t)
+\label{eq:lemres}
+.
+\end{align}
+\end{proof}
+
 Our next lemma shows that $\wowa$ is a good approximation of $\wowafull$ as long as $\nowa=mn/d$. 
 In linear models, the number of dimensions used typically grows proportionally to the number of data points, so this lemma formalizes the intuition that relatively little data is needed in the second optimization.
-%Throughout this section, we will assume that the $\werm_i$s, $\vowa$, and $\vfull$ estimators all satisfy the SGT condition.
+%Throughout this section, we will assume that the $\wrlm_i$s, $\vowa$, and $\vfull$ estimators all satisfy the SGT condition.
 In this lemma, we require that both $\vfull$ and $\vowa$ satisfy the SGT condition.
 Recall from Equations \ref{eq:vfull} and \ref{eq:wowa} that both estimators are trained on a projected data set with dimension $\min(m,d)$.
 So the SGT conditions for $\vfull$ and $\vowa$ state that with probability at least $1-\exp(-t)$,
 \vspace{-0.15in}
 \begin{equation}
     \ltwo{\vfull-\vstar} \le O(\min(m,d)t/mn),
-    \text{~~~~~and~~~~~}
+\end{equation}
+    %\text{~~~~~and~~~~~}
+    and
+\begin{equation}
     \ltwo{\vowa-\vstar} \le O(\min(m,d)t/m\nowa),
 \end{equation}
 where $\vstar$ is the parameter vector in $\Wowa$ that minimizes $\Lossstar$.
@@ -561,6 +572,45 @@ Let $\nowa=mn/d$.
 Let $t>0$.
 Then with probability at least $1-\exp(-t)$, $\ltwo{\wowafull-\wowa}\le O(dt/mn)$.
 \end{lemma}
+\begin{proof}
+    %The estimator $\vfull$ is trained on $mn$ data points of dimension $\min(m,d)$.
+    By the SGT condition for $\vfull$, we have that
+    \begin{equation}
+        \label{eq:lwfw1}
+        %\ltwo{\wowafull-\wowastar} \le O(\sqrt{mt/mn}) = O(\sqrt{t/n}) = O(\sqrt{dt/mn}).
+        \ltwo{\vfull-\vstar} \le O(\sqrt{\min(m,d)t/mn}) = O(\sqrt{dt/mn}).
+    \end{equation}
+    %Similarly, $\vowa$ is trained on $m\nowa$ data points of dimension $\min(m,d)$.
+    Similarly, by the SGT condition for $\vowa$, we have that
+    So,
+    \begin{equation}
+        \label{eq:lwfw2}
+        \ltwo{\vowa-\vstar} \le O(\sqrt{\min(m,d)t/m\nowa}) = O(\sqrt{mt/m\nowa}) = O(\sqrt{dt/mn}).
+    \end{equation}
+    The result follows by combining Equations \ref{eq:lwfw1} and \ref{eq:lwfw2} using the triangle inequality:
+    \begin{equation}
+        \ltwo{\wowafull-\wowastar} = \ltwo{\vfull-\vowa} \le \ltwo{\vowa-\vstar} + \ltwo{\vstar-\vowa} 
+        \le O(\sqrt{dt/mn})
+        .
+    \end{equation}
+    %\begin{equation}
+        %\ltwo{\wowafull-\wowa}
+        %\le
+        %\ltwo{\wowafull-\wowastar}+\ltwo{\wowafull-\wowastar}
+        %\le O(\sqrt{dt/mn}).
+    %\end{equation}
+    %We have by the triangle inequality and the SGT conditions that
+    %\begin{align}
+        %\ltwo{\wowafull-\wowa}
+        %&\le
+        %\ltwo{\wowafull-\wowastar}+\ltwo{\wowafull-\wowastar}
+        %\\
+        %&\le
+        %O(\sqrt{mt/mn}) + O(\sqrt{mt/m\nowa})
+        %\\
+        %&=O(\sqrt{dt/mn})
+    %\end{align}
+\end{proof}
 
 In order to connect the results of Lemmas 1 and 2 to the generalization error of our estimator,
 we need to introduce a smoothness condition on the true loss function $\Lossstar$.
@@ -590,7 +640,7 @@ we need to introduce a smoothness condition on the true loss function $\Lossstar
 %so in the limit as $n\to\infty$, $\Lossstar(\proj{\Wowa}\wstar)-\Lossstar(\wstar)\to0$ and $\beta\to0$.
 We can now present our first main result.
 \begin{theorem}
-Assume the $\werm_i$s, $\vfull$, and $\vowa$ all satisfy the SGT condition.
+Assume the $\wrlm_i$s, $\vfull$, and $\vowa$ all satisfy the SGT condition.
 Further assume that $\Lossstar$ is $\beta$-Lipschitz.
 Let $\nowa=mn/d$.
 %Further assume that $\Lossstar$ is $\beta$-Lipschitz 
@@ -618,6 +668,44 @@ Then with probability at least $1-\exp(-t)$,
 %\end{equation}
 %\end{enumerate}
 \end{theorem}
+
+\begin{proof}
+We have that
+\begin{align}
+    \Lossstar(\wowafull) - \Lossstar(\wstar)
+    & \le \Lossstar(\wowafull) - \Lossstar(\matW\vstar) + \Lossstar(\matW\vstar) - \Lossstar(\wstar)
+    \\
+    & \le \Lossstar(\matW\vfull) - \Lossstar(\matW\vstar) + \Lossstar(\proj{\Wowa}\wstar) -\Lossstar(\wstar)
+    \\
+    %& \le \Lossstar(\wowafull) - \Lossstar(\wowastar) + \beta\ltwo{\proj{\Wowa}\wstar -\wstar}
+    & \le \beta\ltwo{\matW\vfull - \matW\vstar} + \beta\ltwo{\proj{\Wowa}\wstar -\wstar}
+    \\
+    & \le \beta\ltwo{\vfull - \vstar} + \beta\ltwo{\proj{\Wowa}\wstar -\wstar}
+    \\
+    & \le O(\beta\sqrt{dt/mn})
+    \label{eq:thm2pt1}
+    .
+\end{align}
+The last line follows by applying the SGT condition with respect to $\wowafull$ on the left term and Lemma \ref{lemma:wwstar} on the right term.
+We then have that
+\begin{align}
+    \Lossstar(\wowa)-\Lossstar(\wstar)
+    &\le
+    \Lossstar(\wowa)-\Lossstar(\wowafull)
+    +
+    \Lossstar(\wowafull)-\Lossstar(\wstar)
+    \\
+    &\le
+    \beta\ltwo{\wowa-\wowafull}
+    +
+    \Lossstar(\wowafull)-\Lossstar(\wstar)
+    \\
+    &\le
+    O(\sqrt{dt/mn}).
+\end{align}
+The last line follows from Lemma \ref{lemma:wowafullwowa} on the left term and Eq. $\eqref{eq:thm2pt1}$ on the right term.
+\end{proof}
+
 The use of Lipschitz continuity in Theorem 1 sacrifices generality for interpretability.
 While many losses are $\beta$-Lipschitz (e.g. log loss, hinge loss, and sigmoid loss),
 many other losses are not (e.g. squared loss and exp loss).
@@ -681,7 +769,7 @@ In particular, models using the log loss, hinge loss, sigmoid loss, squared loss
 
 \begin{theorem}
 \label{theorem:wowafull}
-Assume the $\werm_i$s, $\vfull$, and $\vowa$ all satisfy the SGT condition.
+Assume the $\wrlm_i$s, $\vfull$, and $\vowa$ all satisfy the SGT condition.
 %Further assume that $\Loss$ is locally quadratically bracketed in $R=\{\wowa,\wowafull\}$.
 Further assume that $\Loss$ is locally quadratically bracketed in $R=\{\matW\vstar,\proj{\Wowa}\wstar\}$.
 %Further assume that $\Lossstar$ is locally $\beta$-Lipschitz and locally $\alpha$-strongly convex.
@@ -709,6 +797,49 @@ Then with probability at least $1-\exp(-t)$,
 \end{equation}
 \end{theorem}
 
+\begin{proof}
+%Let $\proj{\Wowa}\wstar$ denote the vector in $\Wowa$ with minimum distance to $\wstar$.
+%That is, $\proj{\Wowa}\wstar$ is the vector minimizing \eqref{eq:wwstar}.
+By local quadratic bracketing, we have that
+\begin{align*}
+\qlo\ltwo{\matW\vstar-\wstar}^2
+\le
+%\Loss(\wowafull) - \Loss(\wstar)
+\Loss(\matW\vstar) - \Loss(\wstar)
+%\\
+\le
+\Loss(\proj{\Wowa}\wstar) - \Loss(\wstar)
+%\\
+\le
+\qhi\ltwo{\proj{\Wowa}\wstar-\wstar}^2
+.
+\end{align*}
+Simplifying and applying Lemma \ref{lemma:wwstar} gives
+\begin{equation}
+    \label{eq:wowafullminuswowastar}
+%\ltwo{\wowafull-\wstar} 
+\ltwo{\matW\vstar-\wstar} 
+\le \sqrt{{\qhi}/{\qlo}}\ltwo{\proj{\Wowa}\wstar-\wstar}
+\le O(\sqrt{(\qhi/\qlo)(dt/mn)})
+.
+\end{equation}
+Applying the triangle inequality, Equation \eqref{eq:wowafullminuswowastar}, and Lemma \ref{lemma:wowafullwowa} gives
+\begin{align}
+    \ltwo{\wowa-\wstar}
+    &\le
+    \ltwo{\wowa-\wowafull}+\ltwo{\wowafull-\matW\vstar}+\ltwo{\matW\vstar-\wstar}
+    \\&\le
+    %O(\sqrt{dt/mn})
+    %+
+    O(\sqrt{(\qhi/\qlo)(dt/mn)})
+    .
+\end{align}
+The last line follows from Lemma 2 on the left, the SGT condition%
+%for $\vfull$ 
+in the middle,
+and \eqref{eq:wowafullminuswowastar} on the right.
+\end{proof}
+
 %In the theorem above, we select $R=\{\matW\vstar,\proj{\Wowa}\wstar\}$.
 Our choice of $R$ in Theorem 2 gives us a reasonable interpretation of the ratio $\qhi/\qlo$ as a generalized condition number.
 We know from the SGT condition and Lemma 1 that as the number of data points per machine $n$ goes to infinity,
@@ -716,7 +847,7 @@ then the distances $\ltwo{\matW\vstar-\wstar}$ and $\ltwo{\proj{\Wowa}\wstar}$ g
 The lower and upper bounding quadratic functions then converge to the 2nd order Taylor approximation of $\Lossstar$ at $\wstar$.
 The ratio $\qhi/\qlo$ is then the condition number of the Hessian of $\Lossstar$ at $\wstar$.
 
-We claim that the convergence rate in $\eqref{eq:thm2}$ is optimal because up to the constant factor $\qhi/\qlo$, it matches the convergence rate of the single machine oracle $\werm$.
+We claim that the convergence rate in $\eqref{eq:thm2}$ is optimal because up to the constant factor $\qhi/\qlo$, it matches the convergence rate of the single machine oracle $\wrlm$.
 
 %\begin{proof}
 %We have that
@@ -732,7 +863,7 @@ We claim that the convergence rate in $\eqref{eq:thm2}$ is optimal because up to
 %
 %\begin{theorem}
 %\label{theorem:wowa}
-%Assume the Hessian Condition and that both the $\werm_i$s and $\vowa$ satisfy the SGT condition.
+%Assume the Hessian Condition and that both the $\wrlm_i$s and $\vowa$ satisfy the SGT condition.
 %Let $\nowa=mn/d$ and $t>0$.
 %Then we have with probability at least $1-\exp(-t)$, 
 %\begin{equation}
@@ -787,19 +918,18 @@ We claim that the convergence rate in $\eqref{eq:thm2}$ is optimal because up to
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{EXPERIMENTS}
-\label{sec:exp}
-
+\section{Experiments}
+\label{sec:owa:experiments}
 
 We evaluate OWA on synthetic and real-world logistic regression tasks.
 %The first task uses synthetic data.
 %The second task uses real world ad-click data. % from the Tencent search engine.
 %The first is synthetic data and the second real world ad-click data.
 In each experiment, we compare $\wowa$ with four baseline estimators:
-the naive estimator using the data from only a single machine $\werm_i$;
+the naive estimator using the data from only a single machine $\wrlm_i$;
 the averaging estimator $\wave$;
 the bootstrap estimator $\wboot$;
-and the oracle estimator of all data trained on a single machine $\werm$.
+and the oracle estimator of all data trained on a single machine $\wrlm$.
 The $\wboot$ estimator has a parameter $r$ that needs to be tuned.
 %We make an effort to present the $\wboot$ estimator in the best light possible.
 In all experiments we evaluate $\wboot$ with $r \in \{0.005,0.01,0.02,0.04,0.1,0.2\}$,
@@ -847,8 +977,8 @@ and as we shall see $\wowa$ still tends to perform better.
 #2
     ]
 
-\addplot[werm,no marks] table [x index=0,y index=5] {#1};
-\addplot[wermi,no marks] table [x index=0,y index=7] {#1};
+\addplot[wrlm,no marks] table [x index=0,y index=5] {#1};
+\addplot[wrlmi,no marks] table [x index=0,y index=7] {#1};
 \addplot[wave,no marks] table [x index=0,y index=9] {#1};
 \addplot[wboot,thick,no marks] table [x index=0,y index=#4] {#1};
 \addplot[wowa,very thick,no marks] table [x index=0,y index=55] {#1};
@@ -868,13 +998,13 @@ and as we shall see $\wowa$ still tends to perform better.
 &\hspace{-0.5cm}\mklambdaplot
     {dat/logl1-auto-logl2-auto-spike-log-1000-100-star.pdf.csv}
     {,ymin=10^-2,ymax=10^1}
-    { \node at (3,2.3) {\tiny\textcolor{wermi}{$\werm_i$}};
-      \draw[->,wermi] (2.7,2.25) -- (2.6,2.10);
+    { \node at (3,2.3) {\tiny\textcolor{wrlmi}{$\wrlm_i$}};
+      \draw[->,wrlmi] (2.7,2.25) -- (2.6,2.10);
       \node at (1.5,2.3) {\tiny\textcolor{wave}{$\wave$}};
       \draw[->,wave] (1.4,2.25) -- (1.45,1.85);
       \node at (2.8,1.4) {\tiny\textcolor{wboot}{$\wboot$}};
       \draw[->,thick,wboot] (2.8,1.5) -- (2.9,1.72);
-      \node at (1.3,1.4) {\tiny$\werm$};
+      \node at (1.3,1.4) {\tiny$\wrlm$};
       \draw[->] (1.2,1.3) -- (1.3,1.15);
       \node at (0.6,0.3) {\tiny\textcolor{wowa}{$\wowafull$}};
       \draw[->,wowa,dotted,thick] (0.6,0.45) -- (0.7,0.6);
@@ -886,8 +1016,8 @@ and as we shall see $\wowa$ still tends to perform better.
 &\hspace{-0.5cm}\mklambdaplot
     {dat/logl1-autoreg-logl2-auto-spike-log-1000-1000-star.pdf.csv}
     {,ymin=10^0,ymax=10^2}
-    %{ \node at (2,2.8) {\tiny\textcolor{wermi}{$\werm_i$}};
-      %\draw[->,wermi] (1.8,2.95) -- (1.8,3.3);
+    %{ \node at (2,2.8) {\tiny\textcolor{wrlmi}{$\wrlm_i$}};
+      %\draw[->,wrlmi] (1.8,2.95) -- (1.8,3.3);
     {}
     {15}
 &\hspace{-0.5cm}\mklambdaplot
@@ -910,8 +1040,8 @@ and as we shall see $\wowa$ still tends to perform better.
     the middle figure in a medium dimension regime,
     and the right figure in a high dimension regime.
     $\wowa$ scales well with the number of machines in all cases.
-    %In particular, it scales with $m$ at the same rate as $\werm$, whereas $\wave$ and $\wboot$ do not scale well with $m$ on this synthetic data.
-    Surprisingly, $\wowa$ outperforms the oracle estimator trained on all of the data $\werm$ in some situations.
+    %In particular, it scales with $m$ at the same rate as $\wrlm$, whereas $\wave$ and $\wboot$ do not scale well with $m$ on this synthetic data.
+    Surprisingly, $\wowa$ outperforms the oracle estimator trained on all of the data $\wrlm$ in some situations.
     %This is likely due to the additional regularization introduced by the OWA algorithm,
     %as seen in Figure \ref{fig:lambda}.
     \vspace{-0.1in}
@@ -943,7 +1073,7 @@ The primary advantage of synthetic data is that we know the model's true paramet
 So for each estimator $\what$ that we evaluate, we can directly calculate the error $\ltwo{\what-\wstar}$.
 We run two experiments on the synthetic data.
 In both experiments, we use the L1 regularizer to induce sparsity in our estimates of $\wstar$.
-Results are qualitatively similar when using a Laplace, Gaussian, or uniform prior on $\wstar$, and with L2 regularization.
+Results are qualitatively similar when using a Laplace, gaussian, or uniform prior on $\wstar$, and with L2 regularization.
 %Our estimators will be biased because the model is misspecified.
 %(L1 regularization corresponds to a Laplace prior on the parameter vector.)
 %The true model for L1 regularization has a Laplace prior on $\wstar$.
@@ -958,7 +1088,7 @@ For each value of $m$, we generate 50 datasets and report the average of the res
 Our $\wowa$ estimator was trained with $\nowa=128$.
 The results are shown in Figure \ref{fig:synscale}.
 As the analysis predicted, the performance of $\wowa$ scales much better than $\wave$ and $\wboot$.
-Surprisingly, in the low dimensional regimes, $\wowa$ outperforms the single machine oracle $\werm$.
+Surprisingly, in the low dimensional regimes, $\wowa$ outperforms the single machine oracle $\wrlm$.
 
 One issue that has been overlooked in the literature on non-interactive distributed estimation is how to best set $\lambda$.
 There are two natural choices. %ways to use cross validation.% and grid search.
@@ -966,7 +1096,7 @@ The first is: for each $\lambda$ in the grid, perform the full training procedur
 Then select the $\lambda$ with lowest cross validation error.
 Unfortunately, this requires many rounds of communication (one for each $\lambda$ we are testing).
 This extra communication largely negates the main advantage of non-interactive learners.
-The second is: each machine independently uses cross validation to select the $\lambda$ that best fits the data locally when calculating $\werm_i$.
+The second is: each machine independently uses cross validation to select the $\lambda$ that best fits the data locally when calculating $\wrlm_i$.
 In our experiments we use this second method due to three advantages.
 First, there is no additional communication because model selection is a completely local task.
 Second, existing optimizers have built-in model selection routines which make the process easy to implement.
@@ -980,7 +1110,7 @@ Our second experiment shows the importance of proper $\lambda$ selection.
 We evaluate the performance of the estimators with $\lambda$ varying from $10^{-4}$ to $10^4$ on a grid of 80 points.
 Figure \ref{fig:lambda} shows the results. 
 The $\wowa$ estimator is more robust to the choice of $\lambda$ than the other distributed estimators.
-%Surprisingly, $\wowa$ even outperforms the oracle $\werm$ in some regimes.
+%Surprisingly, $\wowa$ even outperforms the oracle $\wrlm$ in some regimes.
 %This is likely due to additional regularization induced by the approximation in Equation \ref{eq:approxreg}.
 
 \vspace{-0.1in}
@@ -992,7 +1122,7 @@ The goal is to predict whether a user will click on an ad from the Tencent inter
 This dataset was previously used to evaluate the performance of $\wboot$ \citep{zhang2012communication}.
 This dataset is too large to fit on a single machine,
 so we must use distributed estimators,
-and we do not provide results of the oracle estimator $\werm$ in our figures.
+and we do not provide results of the oracle estimator $\wrlm$ in our figures.
 There are 235,582,879 distinct data points,
 each of dimension 741,725.
 The data points are sparse, so we use the L1 norm to encourage sparsity in our final solution.
@@ -1056,8 +1186,8 @@ This time is negligible compared to the approximately 1 day it took to train the
     %, enlarge y limits=0
 #2
     ]
-\addplot[werm,no marks] table [x index=3,y index=5] {#1};
-\addplot[wermi,no marks] table [x index=3,y index=7] {#1};
+\addplot[wrlm,no marks] table [x index=3,y index=5] {#1};
+\addplot[wrlmi,no marks] table [x index=3,y index=7] {#1};
 \addplot[wave,no marks] table [x index=3,y index=9] {#1};
 \addplot[wboot,thick,no marks] table [x index=3,y index=17] {#1};
 \addplot[wowa,very thick,no marks] table [x index=3,y index=55] {#1};
@@ -1079,13 +1209,13 @@ This time is negligible compared to the approximately 1 day it took to train the
     {dat.rev/logl1-star-logl2-autoreg-spike-log-1000-100-20.pdf.csv}
     %{}
     {,ymin=10^-2,ymax=10^2,ytick={0.01,0.1,1,10,100}}{
-    \node at (2,2.1) {\tiny\textcolor{wermi}{$\werm_i$}};
-    \draw[->,wermi] (2,2.0) -- (2.1,1.7);
+    \node at (2,2.1) {\tiny\textcolor{wrlmi}{$\wrlm_i$}};
+    \draw[->,wrlmi] (2,2.0) -- (2.1,1.7);
     \node at (3.0,1.95) {\tiny\textcolor{wave}{$\wave$}};
     \draw[->,wave] (3.0,1.9) -- (3.05,1.45);
     \node at (3,0.8) {\tiny\textcolor{wboot}{$\wboot$}};
     \draw[->,thick,wboot] (2.8,0.9) -- (2.75,1.05);
-    \node at (0.7,2.35) {$\werm$};
+    \node at (0.7,2.35) {$\wrlm$};
     \draw[->] (0.6,2.2) -- (0.5,1.8);
     \node at (0.55,0.9) {\tiny\textcolor{wowa}{$\wowa$}};
     \draw[->,thick,wowa] (0.7,0.8) -- (0.95,0.8);
@@ -1108,11 +1238,11 @@ This time is negligible compared to the approximately 1 day it took to train the
 \end{tabular}
 }
 \caption{
-    OWA is robust to the regularization strength used to solve $\werm_i$.
-    %Surprisingly, additional regularization introduced by OWA lets it outperform the oracle estimator $\werm$ in some cases.
-    Our theory states that as $m\to d$, we have that $\Wowa\to\W$, and so $\wowa\to\werm$.
+    OWA is robust to the regularization strength used to solve $\wrlm_i$.
+    %Surprisingly, additional regularization introduced by OWA lets it outperform the oracle estimator $\wrlm$ in some cases.
+    Our theory states that as $m\to d$, we have that $\Wowa\to\W$, and so $\wowa\to\wrlm$.
     This is confirmed in the middle experiment.
-    In the left experiment, $m<d$, but $\wowa$ still behaves similarly to $\werm$.
+    In the left experiment, $m<d$, but $\wowa$ still behaves similarly to $\wrlm$.
     In the right experiment, $\wowa$ has similar performance as $\wave$ and $\wboot$ but over a wider range of $\lambda$ values.
     \vspace{-0.1in}
     }
@@ -1232,10 +1362,8 @@ Here, $\wowa$ performs especially well with low $m$.
 %Here, $\wowa$ performs especially well in the low $m$ setting.
 For large $m$, $\wowa$ continues to slightly outperform $\wboot$ without the need for an expensive model selection procedure to determine the $r$ parameter.
 
-\vspace{-0.1in}
-\section{CONCLUSION}
+\section{Conclusion}
 
-\vspace{-0.05in}
 We introduced OWA, a non-interactive distributed estimator for linear models.
 OWA is easy to implement and has optimal statistical guarantees that hold under general conditions.
 We showed experimentally that OWA outperforms other non-interactive estimators,
@@ -1250,175 +1378,10 @@ and in particular that OWA exhibits a weaker dependence on the regularization st
 %In order to extend OWA to the non-linear setting, we need a method for projecting the data onto the parameter space for the second round of optimization.
 %The best procedure for this projection is non-obvious.
 %An interesting question posed by our experiments is:
-%why does $\wowa$ behave better than $\werm$ in some circumstances?
+%why does $\wowa$ behave better than $\wrlm$ in some circumstances?
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\clearpage
-
-\section*{SUPPLEMENTAL MATERIAL}
-\subsection*{Proof of Lemma 1}
-%\begin{proof}
-Using independence of the $\werm_i$s and the SGT condition, we have that
-\begin{align}
-%~~~~~~~~~~~~~&\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!\!
-%\prob{\min_{\w\in\Wowa} \ltwo{\w-\wstar} \le O(\sqrt{dt/mn})}
-    \prob{\ltwo{\proj{\Wowa}\wstar-\wstar} \le O(\sqrt{dt/mn})}
-%\\
-\ge &
-\prob{\min_{i=1...m} \ltwo{\werm_i-\wstar} \le O(\sqrt{dt/mn})}
-\\
-=&
-1-\prob{\min_{i=1...m} \ltwo{\werm_i-\wstar} > O(\sqrt{dt/mn})}
-\\
-= &
-1-\left(\prob{\ltwo{\werm_1-\wstar} > O(\sqrt{dt/mn})}\right)^m
-\\
-= &
-1-\left(1-\prob{\ltwo{\werm_1-\wstar} \le O(\sqrt{dt/mn})}\right)^m\!\!\!
-\\
-\ge &
-1-\big(1-(1-\exp(-t/m))\big)^m
-\\
-= &
-1-\exp(-t)
-\label{eq:lemres}
-.
-\end{align}
-%\end{proof}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection*{Proof of Lemma 2}
-%\begin{proof}
-    %The estimator $\vfull$ is trained on $mn$ data points of dimension $\min(m,d)$.
-    By the SGT condition for $\vfull$, we have that
-    \begin{equation}
-        \label{eq:lwfw1}
-        %\ltwo{\wowafull-\wowastar} \le O(\sqrt{mt/mn}) = O(\sqrt{t/n}) = O(\sqrt{dt/mn}).
-        \ltwo{\vfull-\vstar} \le O(\sqrt{\min(m,d)t/mn}) = O(\sqrt{dt/mn}).
-    \end{equation}
-    %Similarly, $\vowa$ is trained on $m\nowa$ data points of dimension $\min(m,d)$.
-    Similarly, by the SGT condition for $\vowa$, we have that
-    So,
-    \begin{equation}
-        \label{eq:lwfw2}
-        \ltwo{\vowa-\vstar} \le O(\sqrt{\min(m,d)t/m\nowa}) = O(\sqrt{mt/m\nowa}) = O(\sqrt{dt/mn}).
-    \end{equation}
-    The result follows by combining Equations \ref{eq:lwfw1} and \ref{eq:lwfw2} using the triangle inequality:
-    \begin{equation}
-        \ltwo{\wowafull-\wowastar} = \ltwo{\vfull-\vowa} \le \ltwo{\vowa-\vstar} + \ltwo{\vstar-\vowa} 
-        \le O(\sqrt{dt/mn})
-        .
-    \end{equation}
-    %\begin{equation}
-        %\ltwo{\wowafull-\wowa}
-        %\le
-        %\ltwo{\wowafull-\wowastar}+\ltwo{\wowafull-\wowastar}
-        %\le O(\sqrt{dt/mn}).
-    %\end{equation}
-    %We have by the triangle inequality and the SGT conditions that
-    %\begin{align}
-        %\ltwo{\wowafull-\wowa}
-        %&\le
-        %\ltwo{\wowafull-\wowastar}+\ltwo{\wowafull-\wowastar}
-        %\\
-        %&\le
-        %O(\sqrt{mt/mn}) + O(\sqrt{mt/m\nowa})
-        %\\
-        %&=O(\sqrt{dt/mn})
-    %\end{align}
-%\end{proof}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection*{Proof of Theorem 1}
-%\begin{proof}
-We have that
-\begin{align}
-    \Lossstar(\wowafull) - \Lossstar(\wstar)
-    & \le \Lossstar(\wowafull) - \Lossstar(\matW\vstar) + \Lossstar(\matW\vstar) - \Lossstar(\wstar)
-    \\
-    & \le \Lossstar(\matW\vfull) - \Lossstar(\matW\vstar) + \Lossstar(\proj{\Wowa}\wstar) -\Lossstar(\wstar)
-    \\
-    %& \le \Lossstar(\wowafull) - \Lossstar(\wowastar) + \beta\ltwo{\proj{\Wowa}\wstar -\wstar}
-    & \le \beta\ltwo{\matW\vfull - \matW\vstar} + \beta\ltwo{\proj{\Wowa}\wstar -\wstar}
-    \\
-    & \le \beta\ltwo{\vfull - \vstar} + \beta\ltwo{\proj{\Wowa}\wstar -\wstar}
-    \\
-    & \le O(\beta\sqrt{dt/mn})
-    \label{eq:thm2pt1}
-    .
-\end{align}
-The last line follows by applying the SGT condition with respect to $\wowafull$ on the left term and Lemma \ref{lemma:wwstar} on the right term.
-We then have that
-\begin{align}
-    \Lossstar(\wowa)-\Lossstar(\wstar)
-    &\le
-    \Lossstar(\wowa)-\Lossstar(\wowafull)
-    +
-    \Lossstar(\wowafull)-\Lossstar(\wstar)
-    \\
-    &\le
-    \beta\ltwo{\wowa-\wowafull}
-    +
-    \Lossstar(\wowafull)-\Lossstar(\wstar)
-    \\
-    &\le
-    O(\sqrt{dt/mn}).
-\end{align}
-The last line follows from Lemma \ref{lemma:wowafullwowa} on the left term and Eq. $\eqref{eq:thm2pt1}$ on the right term.
-%\end{proof}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\subsection*{Proof of Theorem 2}
-%\begin{proof}
-%Let $\proj{\Wowa}\wstar$ denote the vector in $\Wowa$ with minimum distance to $\wstar$.
-%That is, $\proj{\Wowa}\wstar$ is the vector minimizing \eqref{eq:wwstar}.
-By local quadratic bracketing, we have that
-\begin{align*}
-\qlo\ltwo{\matW\vstar-\wstar}^2
-\le
-%\Loss(\wowafull) - \Loss(\wstar)
-\Loss(\matW\vstar) - \Loss(\wstar)
-%\\
-\le
-\Loss(\proj{\Wowa}\wstar) - \Loss(\wstar)
-%\\
-\le
-\qhi\ltwo{\proj{\Wowa}\wstar-\wstar}^2
-.
-\end{align*}
-Simplifying and applying Lemma \ref{lemma:wwstar} gives
-\begin{equation}
-    \label{eq:wowafullminuswowastar}
-%\ltwo{\wowafull-\wstar} 
-\ltwo{\matW\vstar-\wstar} 
-\le \sqrt{{\qhi}/{\qlo}}\ltwo{\proj{\Wowa}\wstar-\wstar}
-\le O(\sqrt{(\qhi/\qlo)(dt/mn)})
-.
-\end{equation}
-Applying the triangle inequality, Equation \eqref{eq:wowafullminuswowastar}, and Lemma \ref{lemma:wowafullwowa} gives
-\begin{align}
-    \ltwo{\wowa-\wstar}
-    &\le
-    \ltwo{\wowa-\wowafull}+\ltwo{\wowafull-\matW\vstar}+\ltwo{\matW\vstar-\wstar}
-    \\&\le
-    %O(\sqrt{dt/mn})
-    %+
-    O(\sqrt{(\qhi/\qlo)(dt/mn)})
-    .
-\end{align}
-The last line follows from Lemma 2 on the left, the SGT condition%
-%for $\vfull$ 
-in the middle,
-and \eqref{eq:wowafullminuswowastar} on the right.
-%\end{proof}
-
+%\bibliography{bibfile}
 
 \end{document}
 
