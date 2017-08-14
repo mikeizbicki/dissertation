@@ -3,27 +3,32 @@
     \noindent
     This thesis improves the scalability of machine learning by studying \defn{mergeable learning algorithms}.
     These mergeable algorithms have the following embarrassingly parallel learning procedure:
-    Given a set of $m$ processors each with $n$ data points,
-    first train a local model $\what_i$ on the local data;
-    then merge the $\what_1,...,\what_m$ models together to create the final model.
-    Mergeable learning is popular because it requires little communication.
-    This makes it fast and have strong privacy guarantees.
+    divide the dataset onto many different machines;
+    each machine independently learns a local model on its data;
+    finally a master machine merges the local models together.
+    %Given a set of $m$ processors each with $n$ data points,
+    %first train a local model $\what_i$ on the local data;
+    %then merge the $\what_1,...,\what_m$ models together to create the final model.
+    Mergeable algorithms are popular because they are fast and have strong privacy guarantees.
 
-    Our first contribution is a novel fast cross validation framework suitable for any mergeable algorithm.
+    Our first contribution is a novel fast cross validation procedure suitable for any mergeable algorithm.
     While standard fast cross validation has runtime linear in the number of folds $k$,
     our fast procedure has a constant runtime independent of the number of folds.
-    That is, cross validation has the same asymptotic runtime as training.
-    Furthermore, our technique works in the distributed environment and is widely applicable to many models.
-    In particular, we show that $\nummerge$ recently proposed learning algorithms are mergeable and therefore fit our cross validation framework. 
+    Our technique works in the distributed environment and is widely applicable to many models.
+    We show that $\nummerge$ recently proposed learning algorithms are mergeable and therefore fit our cross validation framework. 
     These learning algorithms come from many subfields of machine learning:
-    e.g. density estimation, empirical risk minimization, submodular optimization, variational inference, and markov chain monte carlo.
+    density estimation, regularized loss minimization, submodular optimization, variational inference, and markov chain monte carlo.
     %For many of these models, no prior fast cross validation procedure was known.
 
     We also provide two new mergeable learning algorithms.
-    In the context of empirical risk minimization,
+    In the context of regularized loss minimization,
     existing merge procedures either have high bias or expensive runtimes.
-    We introduce the \defn{optimal weighted average} (OWA) merge procedure which achieves low bias in a computationally efficient manner.
-    We also study a merge procedure for the \defn{cover tree} data structure,
-    which improves the efficiency of nonparametric estimators such as nearest neighbor classification.
+    We introduce the \defn{optimal weighted average} (OWA) merge procedure,
+    which achieves low bias and is computationally cheap.
+    We also study the \defn{cover tree} data structure for fast nearest neighbor queries.
+    %which improves the efficiency of nonparametric estimators such as nearest neighbor classification.
+    We show that learning algorithms based on the cover tree are mergeable.
+    In doing so, we improve both the theoretical guarantees of the cover tree and its practical runtime.
+    We use experiments on large scale ad-click, genomics, and image classification tasks to empirically validate these new algorithms.
 
 \end{abstract}

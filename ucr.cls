@@ -561,17 +561,17 @@ $\:\overline{~~~~ \mbox{\rule{0in}{0.16in}\small ~\hspace{2.03in} Committee Chai
 \begin{center}
 {\fmfont
 {\expandafter\uppercase\expandafter{\abstractname}} OF THE DISSERTATION\par
-\vspace{.5in}
+\vspace{.4in}
 \ssp\@title\par
-\vspace{.25in}
+\vspace{.2in}
 by\par
-\vspace{.25in}
+\vspace{.2in}
 \@author\par
-\vspace{.25in}
+\vspace{.2in}
 {\@degree}, Graduate Program in \@field\par
 University of California, {\@campus}, {\@degreemonth} {\@degreeyear}\par
 {\@chair}, Chairperson}
-\vspace{.25in}
+\vspace{.2in}
 \ssp\end{center}}
 
 \def\endabstract{\par\vfil\null\end{alwayssingle}

@@ -122,7 +122,7 @@ which is one of the reasons it performs well in practice.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \vspace{-0.1in}
-\section{Problem Setting}
+\section{Problem setting}
 \label{sec:owa:problem}
 
 \vspace{-0.05in}
@@ -184,7 +184,7 @@ Our goal is to design a merging procedure that has good error bounds in a more g
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{The  OWA Algorithm}
+\section{The algorithm}
 \label{sec:owa:alg}
 
 %We propose a modification to the averaging estimator called the \emph{optimal weighted average} (OWA). 
@@ -394,7 +394,7 @@ So the total data transmitted in both rounds is $O(dm^2 + m^3n/d)$.
 %so whenever $d>m^2$ and $d>mn/d$, OWA has the same asymptotic communication complexity as averaging.
 %When $d<m\nowa$, this is the same order of bits as the averaging estimator.
 
-\subsection{Implementing OWA with Existing Optimizers}
+\subsection{Implementing OWA with existing optimizers}
 \label{sec:lambda2}
 
 Equations \ref{eq:vfull} and \ref{eq:wowa} cannot be solved directly using off-the-shelf optimizers because existing optimizers do not support the non-standard regularization term $\reg(\matW\vv)$.
@@ -1052,7 +1052,7 @@ and as we shall see $\wowa$ still tends to perform better.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \vspace{-0.1in}
-\subsection{Synthetic Data}
+\subsection{Synthetic data}
 
 \vspace{-0.05in}
 We generate the data according to a sparse logistic regression model.
@@ -1114,7 +1114,7 @@ The $\wowa$ estimator is more robust to the choice of $\lambda$ than the other d
 %This is likely due to additional regularization induced by the approximation in Equation \ref{eq:approxreg}.
 
 \vspace{-0.1in}
-\subsection{Real World Advertising Data}
+\subsection{Real world advertising data}
 
 \vspace{-0.05in}
 We evaluate the estimators on real world data from the KDD 2012 Cup \citep{kddcup2012}.

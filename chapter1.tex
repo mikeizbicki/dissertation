@@ -18,48 +18,175 @@ and determine which ads are the most profitable to display \citep{he2014practica
 These learning algorithms run on an estimated ``hundreds of thousands'' of servers located at six data centers around the world \citep{facebookFAQ}.
 Developing algorithms that work at this scale is one of the central problems of modern machine learning research.
 
-A standard approach to scaling machine learning is to use parallel algorithms.
-Designing parallel algorithms is difficult because they must tuned for the
 
-Many families of parallel algorithms have been studied.
-The most common is the family of \defn{interactive learning algorithms}.
-These algorithms use many rounds of communication between the processing units.
-When communication is cheap 
-(e.g.\ the processors are multiple CPUs on a shared memory computer)
-these algorithms work well.
-Representative examples include \citet{boyd2011distributed}, \citet{li2014scaling}, \cite{ma2015adding}, and \cite{zhao2017scope}. 
-But, interactive algorithms have three main disadvantages.
-First, these algorithms are slow when communication latency is the bottleneck.
-An extreme example occurs in the \defn{federated learning} environment proposed by \cite{mcmahan2017communication}, which uses cell phones as the computational nodes. 
-Second, these algorithms require special implementations.
-They do not work with off-the-shelf statistics libraries provided by (for example) Python, R, and Matlab.
-Third, because of the many rounds of communication, any sensitive information in the data is likely to leak between machines.
+%This thesis addresses three challenges with parallel algorithms.
+%\begin{enumerate}
+    %\item \emph{Communication}.
+        %An extreme example occurs in the \defn{federated learning} environment proposed by \cite{mcmahan2017communication}, which uses cell phones as the computational nodes. 
+        %Cell phone network connections are relatively slow,
+        %and cell phones often lose their internet connections completely when (for example) the user walks into a concrete building.
+    %\item \emph{Privacy}.
+    %\item \emph{Model selection}.
+        %Existing parallel learning algorithms focus on parallelizing
+%\end{enumerate}
+%Designing parallel algorithms is difficult because they must tuned for the
 
-This thesis studies a particular subset of parallel algorithms called mergeable algorithms.
+%The most popular \defn{Interactive algorithms} require many rounds of communication between machines.
+%Representative examples include \citet{boyd2011distributed}, \citet{li2014scaling}, \cite{ma2015adding}, and \cite{zhao2017scope}. 
+%These algorithms resemble standard iterative algorithms where each iteration is followed by a communication step. 
+%The appeal of interactive algorithms is that they enjoy the same statistical performance as standard sequential algorithms.
+%That is, given $m$ machines each with $n$ data points of dimension $d$, interactive algorithms have error that decays as $O(\sqrt{d/mn})$.
+%But, interactive algorithms have three main disadvantages.
+%First, these algorithms are slow when communication latency is the bottleneck.
+%An extreme example occurs in the \emph{federated learning} environment proposed by \cite{mcmahan2017communication}, which uses cell phones as the computational nodes. 
+%Second, these algorithms require special implementations.
+%They do not work with off-the-shelf statistics libraries provided by (for example) Python, R, and Matlab.
+%Third, because of the many rounds of communication, any sensitive information in the data is likely to leak between machines.
+%
+%\emph{Non-interactive} algorithms require only a single round of communication.
+%Each machine independently solves the learning problem on a small subset of data,
+%then a master machine merges the solutions together.
+%These algorithms solve all the problems of interactive ones:
+%they are fast when communication is the main bottleneck;
+%they are easy to implement with off-the-shelf statistics packages;
+%and they are robust to privacy considerations.
+%The downside is worse statistical performance.
+%The popular averaging estimator has worst case performance $O(\sqrt{d/n})$ completely independent of the number of machines $m$. 
+%A growing body of work improves the analysis of the averaging estimator under special conditions 
+%(e.g.
+%\citet{mcdonald2009efficient},
+%\citet{zhang2012communication},
+%\citet{zhang2013divide},
+%and
+%\citet{rosenblatt2016optimality})
+%and develops more robust non-interactive estimators
+%(e.g.
+%\citet{zinkevich2010parallelized},
+%\citet{liu2014distributed},  
+%\citet{lee2015communication}, 
+%\citet{battey2015distributed},
+%\citet{han2016bootstrap},
+%and \citet{jordan2016communication}).
+%Existing estimators either work on only a limited class of models or have computationally intractable merge procedures.
+
+
+%Many families of parallel algorithms have been studied.
+%The most common is the family of \defn{interactive learning algorithms}.
+%These algorithms use many rounds of communication between the processing units.
+%When communication is cheap 
+%(e.g.\ the processors are multiple CPUs on a shared memory computer)
+%these algorithms work well.
+%Representative examples include \citet{boyd2011distributed}, \citet{li2014scaling}, \cite{ma2015adding}, and \cite{zhao2017scope}. 
+%But, interactive algorithms have three main disadvantages.
+%First, these algorithms are slow when communication latency is the bottleneck.
+%Second, these algorithms require special implementations.
+%They do not work with off-the-shelf statistics libraries provided by (for example) Python, R, and Matlab.
+%Third, because of the many rounds of communication, any sensitive information in the data is likely to leak between machines.
+
+%A standard way to scale machine learning algorithms to these large datasets is through parallel algorithms.
+Parallel algorithms are needed to solve these large scale problems,
+but designing parallel algorithms is difficult.
+There are many architectures for parallel computing,
+and most parallel algorithms work well only for certain architectures.
+The simplest architecture is the \defn{shared memory model},
+which corresponds to a typical desktop computer with with multiple cores.
+Communication between cores has almost no overhead,
+so shared memory parallel algorithms may perform many rounds of communication without slowing down.
+The Hogwild learning algorithm \citep{recht2011hogwild} is a famous example. 
+The \defn{distributed model} of computing is an alternative where communication between processors is more expensive.
+In distributed algorithms,
+the dataset is too large to fit in the memory of a single machine.
+So the data is partitioned onto a cluster of machines connected by a network.
+Communication is relatively expensive and good distributed algorithms use clever tricks to minimize communication.
+In a typical distributed environment,
+all machines are located in the same building with high speed network connections;
+so communication takes on the order of milliseconds.
+But some examples are more extreme.
+Google recently proposed the \defn{federated learning model} of computation where the processors are user cellphones \citep{mcmahan2017communication}.
+Cellphones have only intermittent network connectivity,
+and so communication can take hours or days.
+%Many systems have been designed to simplify distributed computing, such as MPI \citep{}, MapReduce \citep{dean2008mapreduce}, and Apache Spark \citep{meng2016mllib}.
+
+This thesis studies a particularly simple class of parallel algorithms called \defn{mergeable learning algorithms}.
 In a mergeable algorithm,
-each machine independently solves the learning problem on a small subset of data.
-Then a master machine merges the solutions together.
-These algorithms solve all the problems of interactive ones:
-they are fast when communication is the main bottleneck;
-they are easy to implement with off-the-shelf statistics packages;
-and they are robust to privacy considerations.
-Many previous researchers have studied mergable learning algorithms for specific contexts,
-but this work has often occurred independently of other related work.
-Chapter \ref{chapter:merge} presents the first systematic study of mergeable learning algorithms.
-Then, we show that learning algorithms have a fast cross validation algorithm.
+each processor independently solves the learning problem on a small subset of data.
+Then a master processor merges the solutions together with only a single round of communication.
+Mergeable algorithms are growing in popularity due to three attractive properties:
+\begin{enumerate}
+    \item
+        \emph{They have small communication complexity.}
+    This makes them suitable for essentially all parallel computing models.
+    MapReduce \citep{dean2008mapreduce} and Apache Spark \citep{meng2016mllib} are popular choices.
+    Twitter developed the Summingbird open souce library specifically to facilitate the deployment of mergeable algorithms \citep{boykin2014summingbird}.
+    \item
+        \emph{They are easy to implement. }
+    Because each processor works independently on a small dataset,
+    these processors can use standard libraries for solving small scale learning problems. 
+    For example, these processors could use Python's scikit-learn \citep{scikit-learn},
+    C++'s MLPack \citep{curtin2013mlpack},
+    or the libraries provided by the R \citep{R} or Julia \citep{bezanson2017julia} languages.
+    To implement a mergeable algorithm, the programmer need only implement the merge function.
+    This function is typically much simpler than the actual learning procedure.
+    \item
+        \emph{They have strong privacy guarantees.}
+    %Differential privacy is the standard mathematical technique for preserving privacy \citep{dwork2014algorithmic}.
+    A standard result of differential privacy is that the composition of a differentially private function with an arbitrary function preserves differential privacy \citep{dwork2014algorithmic}.
+    Therefore, a mergeable learning algorithm can be made differentially private by using a differentially private local learning method.
+    Such locally private methods are now well understood \citep{chaudhuri2011differentially}.
+    Using these locally private methods ensures that confidential data doesn't leak between machines or leak to the outside world.
+\end{enumerate}
+These three advantages are well known,
+and they are the primary motivation for a recent growth in popularity of mergeable algorithms.
+Chapter \ref{chapter:merge} describes $\nummerge$ recently developed mergeable algorithms.
+They come from many subfields of machine learning, including
+density estimation, regularized loss minimization, dimensionality reduction, submodular optimization, variational inference, and markov chain monte carlo.
+Much of this work appears to be unaware of the developments in mergeable estimators from other subfields of machine learning,
+and our survey points out how these fields can benefit from each other.
+For example, we show how the regularized loss minimization methods can be directly applied to solve variational inference problems,
+improving the known results for variational merge procedures.
 
-Regularized loss minimization (RLM) is one of the most important learning paradigms.
+This first major contribution of this thesis is to show that mergeable algorithms have a fourth benefit:
+\begin{enumerate}
+    \item[4]
+        \emph{They have a fast cross validation algorithm.}
+    Cross validation is a method for estimating the quality of a machine learning algorithm.
+    Standard $k$-fold cross validation takes time linear in $k$ and cannot be used on large scale datasets.
+    Chapter \ref{chapter:merge} shows that all mergeable algorithms have a fast cross validation method that takes constant time independent of $k$.
+    This fast cross validation method is suitable even in the distributed environment where communication is expensive.
+\end{enumerate}
+We emphasize that this fast cross validation algorithm is applicable to all $\nummerge$ mergeable estimators that we present in Chapter \ref{chapter:merge}.
+For many of these problems, no previous fast cross validation procedure was known,
+and so cross validation could not be performed on large scale datasets.
+
+The remainder of this thesis develops two new mergeable estimators.
+Chapter \ref{chapter:owa} presents the \defn{optimal weighted average} for regularized risk minimization (RLM).
+RLM is one of the most important learning paradigms.
 It includes important models such as logistic regression, kernel algorithms, and neural networks.
-Existing mergeable algorithms for RLM have limitations.
-In particular, they either have poor statistical performance or poor computational performance.
-Chapter \ref{chapter:owa} presents the first mergeable RLM algorithm that has booth good statistical and computational performance.
-The key insight is that the merge procedure depends on the data.
+As we show in the survey portion of Chapter \ref{chapter:merge}, 
+existing merge procedures for RLM either have poor statistical performance or poor computational performance.
+The OWA merge procedure is the first algorithm that has booth good statistical and computational performance.
+The key insight of OWA is that the merge procedure depends on the data,
+whereas all previous merge procedures for RLM do not depend on the data.
 
-Chapter \ref{chapter:covertree} discusses a data structure called the cover tree.
-The cover tree was introduced by \citet{beygelzimer2006cover},
-and is a data structure that makes non-parametric learning faster.
-The most common example is faster nearest neighbor queries.
-An advantage of cover trees is that they work in arbitrary metric spaces.
+Chapter \ref{chapter:covertree} discusses the cover tree data structure for fast nearest neighbor queries in arbitrary metric spaces.
+Cover trees were first introduced by \cite{beygelzimer2006cover},
+and they have seen widespread use in the machine learning community since then.
+This chapter shows that cover trees can be merged together,
+providing the first parallel construction and fast cross validation algorithms.
+We also improve the cover tree's theoretical and practical performance by introducing a new data structure called the \defn{simplified cover tree}.
+As an example, 
+the original cover tree was able to find nearest neighbors in time $O(\cexp^{12}\log n)$,
+and we improve this bound to $O(\chole^4\log n)$ for i.i.d.\ data.
+Here $\cexp$ and $\chole$ are measures of the ``intrinsic dimensionality'' of the data.
+We will show that on typical datasets $\cexp \approx \chole$,
+and we will argue that in pathological data sets $\chole$ more accurately represents our intuitive notion of dimensionality.
+We further provide practical improvements to the cover tree's implementation.
+%Experiments show that with these improvements,
+%the cover tree is the fastest technique available for nearest neighbor queries on many tasks.
+We use benchmark datasets with the Euclidean distance to show that our simplified cover tree implementation is faster than both existing cover tree implementations and other techniques specialized for Euclidean distance nearest neighbor queries such as $k$d-trees and locality sensitive hashing.
+We also compare the simplified and original cover trees on non-Euclidean protein interaction and computer vision problems.
+
+Chapter \ref{chapter:conclusion} concludes the thesis with a summary of future work.
 
 %\cite{karloff2010model} introduce the \defn{map reduce class} model of computation as an alternative to the PRAM model for analyzing algorithms.
 %Specifically, they define $MRC^i$ to be the class of functions computable on a MapReduce architecture with $O(\log^i n)$ rounds of computation.
