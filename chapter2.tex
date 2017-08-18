@@ -377,7 +377,7 @@ Effectively, this results in ``free'' cross validation estimate whenever we trai
         validation set & $n$ & ${n}/{p}$ & low & high& -- \\
         bootstrap & $kn$ & ${kn}/{p}$ & low & low & --\\
         $k$-fold cross validation & $kn$ & ${kn}/{p}$ & low & low & --\\
-        fast $k$-fold cross validation & $k+n$ & ${n}/{p}$ & low & low & mergable, $k=p$\\
+        fast $k$-fold cross validation & $n$ & ${n}/{p}$ & low & low & mergable, $k=p$\\
     \end{tabular}
     \caption{Summary of the estimators of a model's true error.
         For simplicity, we have assumed the runtime of learning is $O(n)$,

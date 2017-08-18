@@ -6,21 +6,57 @@
 \chapter{Conclusion}
 \label{chapter:conclusion}
 
-Mergeable machine learning algorithms are important.
+\noindent
+This thesis has argued that mergeable learning algorithms are an important tool in designing large scale learning systems.
+We conclude by reviewing some open questions. 
 
-They need not have poor statistical bounds.
+Possibly the most important open question is:
+What is the best possible merge procedure for models?
+As discussed in Section \ref{sec:merge:ave}, 
+\citet{liu2014distributed} showed that in the case of regularized loss minimization (RLM),
+merge procedures that do not depend on the data will incur a loss proportional to the statistical curvature of a problem.
+Other notions of curvature make sense for non-RLM models as well.
+For example, the curvature of a submodular problem is known to affect the quality of approximation in submodular optimization (see Section \ref{sec:merge:submodular}).
+Currently, there is no existing general notion of curvature that applies in all learning environments.
+Finding a suitable curvature could help create general bounds on the quality of merge procedures in general learning scenarios.
+Another limitation of the bound due to \citet{liu2014distributed} is that the bound assumes the merge function does not depend on the data.
+This bound does not apply to the OWA algorithm introduced in Chapter \ref{chapter:owa}
+because OWA does depend on the data.
+Currently, OWA is limited to linear models,
+but it seems likely that similar data-dependent merge techniques could be developed for more general learning problems.
 
-The can be used as a warm start to interactive algorithms.
+There are several open questions related to the cover tree presented in Chapter \ref{chapter:covertree}.
+%For example: What is the best notion of dimension for exact nearest neighbor queries?
+We gave an algorithm for merging simplified cover trees,
+and we showed this algorithm was fast in practice.
+But we did not provide an explicit bound on the runtime.
+How good can such a bound be?
+In the worst case, the runtime must be at least $\Omega(n)$.
+To see this, consider merging two cover trees $T_1$ and $T_2$,
+where the data in $T_2$ is translated by some arbitrary small amount from the data in $T_1$.
+Then every data point in $T_2$ will be added to a leaf in $T_1$, 
+and every leaf in $T_1$ will gain a data point.
+Thus, the merge function must visit every node in $T_1$.
+What additional structure do we need to assume the data satisfies so that this pathological case is unlikely?
+Answering these questions will improve our understanding of large scale learning.
+%When this is the case, can a merge procedure with sublinear $o(n)$ runtime be found?
+%If so, this would imply the existence of a linear time construction 
+%A merge procedure taking time $o(n)$ would imply a cover tree construction procedure taking time $O(n)$.
+%Currently, all known nearest neighbor search techniques require time $O(n\log n)$ because constructing the data structure takes time $O(n\log n)$.
 
-Need more work to determine common themes among mergeable algorithms, especially wrt curvature.
+%This exploration of mergeable algorithms was largely inspired by the semigroup algebraic structure.
+%A \defn{semigroup} is a set equipped with an associative binary operation.
+%This is the merge function in our framework.
+%There are other important algebraic structures that can inspire future development in machine learning algorithms.
+%For example, a \defn{group} is a semigroup where each element in the set has an inverse,
+%and this inverse function defines a notion of subtraction.
+%The ability to subtract data from a machine learning model implies a new cross validation algorithm.
+%Many recent machine learning deployments suffer from poor training sets,
+%and subtracting data could be useful.
+%
+%Relational algebra supports merging along columns of data (joins).
+%Copulae already handle this case.
 
-Future work on algebra.
-
-Relational algebra supports merging along columns of data (joins).
-Copulae already handle this case.
-
-Groups allow subtracting of data points.
-This is unstudied.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %\bibliography{bibfile}

@@ -89,7 +89,7 @@ but designing parallel algorithms is difficult.
 There are many architectures for parallel computing,
 and most parallel algorithms work well only for certain architectures.
 The simplest architecture is the \defn{shared memory model},
-which corresponds to a typical desktop computer with with multiple cores.
+which corresponds to a typical desktop computer with multiple cores.
 Communication between cores has almost no overhead,
 so shared memory parallel algorithms may perform many rounds of communication without slowing down.
 The Hogwild learning algorithm \citep{recht2011hogwild} is a famous example. 
@@ -98,6 +98,7 @@ In distributed algorithms,
 the dataset is too large to fit in the memory of a single machine.
 So the data is partitioned onto a cluster of machines connected by a network.
 Communication is relatively expensive and good distributed algorithms use clever tricks to minimize communication.
+Frameworks such as MPI \citep{mpi}, MapReduce \citep{dean2008mapreduce} and Spark \citep{meng2016mllib} have been developed to provide simple abstractions to manage this communication.
 In a typical distributed environment,
 all machines are located in the same building with high speed network connections;
 so communication takes on the order of milliseconds.
@@ -106,6 +107,7 @@ Google recently proposed the \defn{federated learning model} of computation wher
 Cellphones have only intermittent network connectivity,
 and so communication can take hours or days.
 %Many systems have been designed to simplify distributed computing, such as MPI \citep{}, MapReduce \citep{dean2008mapreduce}, and Apache Spark \citep{meng2016mllib}.
+The use of cellphones as processing nodes further raises privacy concerns.
 
 This thesis studies a particularly simple class of parallel algorithms called \defn{mergeable learning algorithms}.
 In a mergeable algorithm,
@@ -116,7 +118,6 @@ Mergeable algorithms are growing in popularity due to three attractive propertie
     \item
         \emph{They have small communication complexity.}
     This makes them suitable for essentially all parallel computing models.
-    MapReduce \citep{dean2008mapreduce} and Apache Spark \citep{meng2016mllib} are popular choices.
     Twitter developed the Summingbird open souce library specifically to facilitate the deployment of mergeable algorithms \citep{boykin2014summingbird}.
     \item
         \emph{They are easy to implement. }
@@ -129,8 +130,8 @@ Mergeable algorithms are growing in popularity due to three attractive propertie
     This function is typically much simpler than the actual learning procedure.
     \item
         \emph{They have strong privacy guarantees.}
-    %Differential privacy is the standard mathematical technique for preserving privacy \citep{dwork2014algorithmic}.
-    A standard result of differential privacy is that the composition of a differentially private function with an arbitrary function preserves differential privacy \citep{dwork2014algorithmic}.
+    Differential privacy is the standard mathematical technique for privacy preserving data analysis \citep{dwork2014algorithmic}.
+    A standard result is that the composition of a differentially private function with an arbitrary function preserves differential privacy. 
     Therefore, a mergeable learning algorithm can be made differentially private by using a differentially private local learning method.
     Such locally private methods are now well understood \citep{chaudhuri2011differentially}.
     Using these locally private methods ensures that confidential data doesn't leak between machines or leak to the outside world.
@@ -178,7 +179,7 @@ As an example,
 the original cover tree was able to find nearest neighbors in time $O(\cexp^{12}\log n)$,
 and we improve this bound to $O(\chole^4\log n)$ for i.i.d.\ data.
 Here $\cexp$ and $\chole$ are measures of the ``intrinsic dimensionality'' of the data.
-We will show that on typical datasets $\cexp \approx \chole$,
+We will show that on typical datasets $\cexp > \chole$,
 and we will argue that in pathological data sets $\chole$ more accurately represents our intuitive notion of dimensionality.
 We further provide practical improvements to the cover tree's implementation.
 %Experiments show that with these improvements,
@@ -186,7 +187,9 @@ We further provide practical improvements to the cover tree's implementation.
 We use benchmark datasets with the Euclidean distance to show that our simplified cover tree implementation is faster than both existing cover tree implementations and other techniques specialized for Euclidean distance nearest neighbor queries such as $k$d-trees and locality sensitive hashing.
 We also compare the simplified and original cover trees on non-Euclidean protein interaction and computer vision problems.
 
-Chapter \ref{chapter:conclusion} concludes the thesis with a summary of future work.
+Chapter \ref{chapter:conclusion} concludes the thesis with a summary of open problems.
+We argue that little is known about the best possible merge procedures,
+and that the existing merge procedures likely are suboptimal.
 
 %\cite{karloff2010model} introduce the \defn{map reduce class} model of computation as an alternative to the PRAM model for analyzing algorithms.
 %Specifically, they define $MRC^i$ to be the class of functions computable on a MapReduce architecture with $O(\log^i n)$ rounds of computation.

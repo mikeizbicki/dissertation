@@ -340,16 +340,35 @@ This is shown formally in the following standard lemma.
 \noindent
 Unfortunately, the expansion dimension is known to have many defects which make runtime bounds less useful.
 The algorithmic consequence of these defects is that runtime bounds based on the expansion dimension are often trivial.
+%The following example shows that the expansion dimension
 
 \begin{example}
+    \label{ex:cexp:1}
     A subset of a metric space may have arbitrarily large expansion dimension compared to the host space.
-    \fixme{}
+    Let $x_i = 2^{-i}$ for all $i\in\mathbb N$,
+    and $X_n = \{x_0,x_1,...,x_n\}$.
+    $X_n$ is a subset of $\mathbb R$, which has expansion number $O(1)$,
+    but $X_n$ has expansion number $O(n)$.
 \end{example}
 
 \begin{example}
+    \label{ex:cexp:2}
     Adding a single point to a space may change the expansion dimension by an arbitrary amount.
-    \fixme{}
+    Let $X$ be a finite metric space with $n$ elements and expansion constant $\cexp\ltlt n$,
+    and let $\diam{X}$ be the maximum distance between any two points in $X$.
+    Construct a new space $Y=X\cup\{y\}$ where $y$ is a point not in $X$.
+    Define the distance between $y$ and any point in $X$ to be $\diam{X}$.
+    This distance satisfies the triangle inequality,
+    and so $Y$ is a metric space.
+    The expansion dimension of $Y$ is $n$.
 \end{example}
+
+The doubling dimension discussed next does not suffer from either of the defects in Examples \ref{ex:cexp:1} or \ref{ex:cexp:2}.
+Unfortunately, it cannot be used to measure the difficulty of exact nearest neighbor queries.
+The hole dimension (introduced in two sections) sits ``in between'' the doubling dimension and the expansion dimension.
+It does not suffer from the defect of Example \ref{ex:cexp:1},
+but it does suffer from the defect of Example \ref{ex:cexp:2}.
+Unlike the doubling dimension, however, the hole dimension is suitable for measuring the difficulty of exact nearest neighbor queries.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -491,7 +510,15 @@ as shown in the following two standard lemmas.
 \end{lemma}
 
 \begin{proof}
-    \fixme{}
+    \fixme{Several papers state this without proof or reference.  I need to find the original source.}
+    %Let $P$ be a minimal cover of $\set X$.
+    %If $P\subseteq X$, then \eqref{eq:cdoubinclusion} holds.
+    %Otherwise, there must exist a point $x$ in $P$ not in $X$.
+    %We show that removing a single point from $\set X$ cannot increase the doubling number.
+    %The inequality \eqref{eq:cdoubinclusion} then follows by induction.
+    %Let $P$ be a minimal covering of $\set X$, and $x$ be an arbitrary point in $\set X$.
+    %If $x\not\in P$, then $P$ is a covering of $\set X$ and so $\cdoub(\set X-\{x\})\le\cdoub(\set X)$.
+
     %To prove \eqref{eq:cdoubinclusion},
     %let $x$ be a point in $\set X$ and $\delta\in\mathbb R^+$.
     %Then any valid $\delta$-packing of $B_{\set X_1}(x,2\delta)$ is also a valid $\delta$-packing of $B_{\set X_2}(x,2\delta)$.
@@ -581,15 +608,17 @@ The following theorem shows that the doubling dimension is not suitable for boun
         The resulting distance is non-Euclidean, but still satisfies the requirements of a metric space.
         There is no way to tell which point $y$ was modified in this way without checking all the points,
         thus the worst case nearest neighbor runtime is $O(n)$.
-\fixme{more formality/discussion}
+%\fixme{more formality/discussion}
 \end{proof}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Hole dimension}
 
-The hole dimension is a novel measure of a set's dimensionality suitable for measuring the complexity of exact nearest neighbor queries.
-The \defn{hole number} is defined as
+The hole dimension is a novel measure of a set's dimensionality. 
+The idea is to create a dimension that is suitable for measuring the difficulty of exact nearest neighbor queries while being more robust than the expansion dimension.
+To do this, we modify the definition of the doubling dimension so that we ignore ``holes'' around each point in the space.
+In particular, the \defn{hole number} is defined as
 \begin{align}
     \label{eq:chole}
     \chole
@@ -603,12 +632,12 @@ The \defn{hole number} is defined as
     B(x,\epsilon+\delta) \setminus B(x,\delta) = \{\}
     .
 \end{align}
-The \defn{hole dimension} is
+The \defn{hole dimension} is then
 \begin{align}
     \holedim = \log_2 \chole
     .
 \end{align}
-
+The value of the hole dimension is related to the doubling dimension by the following lemma.
 \begin{lemma}
     \label{lemma:chole}
     For any finite metric space,
@@ -616,12 +645,48 @@ The \defn{hole dimension} is
         $\cdoub \le \chole + 1$.
     %\end{equation}
 \end{lemma}
-
 \begin{proof}
     The inequality is tight when $\epsilon=0$ in \eqref{eq:chole}.
+    More generally,
+    when the value of $\epsilon$ in \eqref{eq:chole} is small,
+    then the hole dimension is close to the doubling dimension.
+    When the value of $\epsilon$ is large, 
+    then the hole dimension is larger than the doubling dimension.
 \end{proof}
 
-\fixme{more discussion}
+\noindent 
+We justify calling the hole dimension a ``dimension'' by the following lemma.
+\begin{lemma}
+    Let $\set X=\R^d$ with the standard $L_2$ distance function.
+    Then $\holedim\set X = \Theta(d)$.
+\end{lemma}
+\begin{proof}
+    For all points $x\in\set X$,
+    the value of $\epsilon$ in \eqref{eq:chole} is 0.
+    Therefore the hole dimension is equivalent to the doubling dimension.
+    The result follows by Lemma \ref{lemma:doubleEuclidean},
+    which bounds the doubling dimension of Euclidean space.
+\end{proof}
+
+\noindent
+The following example shows that the hole dimension is more robust than the expansion dimension.
+
+\begin{example}
+    \label{ex:chole:1}
+    The hole dimension of a metric space may be arbitrarily smaller than the expansion dimension of the space.
+    We show this using the same metric space as from Example \ref{ex:cexp:1}.
+    Let $x_i = 2^{-i}$ for all $i\in\mathbb N$,
+    and $X_n = \{x_0,x_1,...,x_n\}$.
+    Then $X_n$ has expansion number $O(n)$ and hole dimension $O(1)$.
+\end{example}
+
+\noindent
+In Section \ref{sec:original},
+we provide novel runtime bounds for the cover tree based on the hole dimension.
+We show that the runtime in terms of the hole dimension is significantly smaller than the runtime in terms of the expansion dimension ($O(\chole^4)$ vs $O(\cexp^{12}$).
+Combined with the fact that $\chole$ can be much smaller than $\cexp$,
+this implies a bound that is potentially much stronger for certain datasets.
+%\fixme{more discussion}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1065,10 +1130,16 @@ The downside of the cover tree is that the analysis is in terms of the less robu
 \cite{curtin2013tree} provide a generic framework for solving distance problems.
 Of all the spacial data structures, 
 the cover tree has seen the most widespread adoption.
-This is likely due to the fast, easy to use reference implementation by John Langford.
-\cite{moore2014fast} use cover trees for faster gaussian process posteriors.
-
-\fixme{add more examples of cover tree uses}
+For example,
+cover trees have been used to speed up
+support vector machines \citep{Segata2010},
+dimensionality reduction \citep{Lisitsyn2013},
+gaussian processes \citep{moore2014fast}, 
+and reinforcement learning \citep{Tziortziotis2014}.
+%
+%\fixme{add more examples of cover tree uses}
+This widespread adoption is likely due to the fast, 
+easy to use reference implementation provided by \citet{beygelzimer2006cover}.
 
 %%%%%%%%%%%%%%%%%%%%
 \ignore{
