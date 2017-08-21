@@ -9,6 +9,7 @@
 \usepackage{multirow,array,lscape,chngpage,rotating}
 \usepackage{colortbl,calc,fp}
 \usepackage{setspace}
+\usepackage{listings}
 
 \usepackage{tikz}
 \usetikzlibrary{snakes,patterns,shapes,calc}
@@ -128,24 +129,24 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+\input{slides/title}
+\input{slides/faster}
+\input{slides/outline}
 
-%\input{slides/title}
-%\input{slides/faster}
-%\input{slides/outline}
-%
-%\spacer{mergeable learning algorithms}
-%\input{slides/mapreduce.tex}
-%\input{slides/merge-examples.tex}
-%\input{slides/owa/mle.tex}
-%\input{slides/owa/ave}
-%
-%\spacer{the optimal weighted average}
-%\input{slides/owa/owa.tex}
+\spacer{mergeable learning algorithms}
+\input{slides/mapreduce.tex}
+\input{slides/merge-examples.tex}
+\input{slides/owa/mle.tex}
+\input{slides/crossvalidation.tex}
+
+\spacer{the optimal weighted average}
+\input{slides/owa/ave}
+\input{slides/owa/owa.tex}
 \input{slides/owa/theory.tex}
-%\input{slides/owa/experiment-scalability-artificial.tex}
-%\input{slides/owa/experiment-scalability-ads.tex}
-%\input{slides/owa/experiment-round2.tex}
-%
+\input{slides/owa/experiment-scalability-artificial.tex}
+\input{slides/owa/experiment-scalability-ads.tex}
+\input{slides/owa/experiment-round2.tex}
+
 %\spacer{the cover tree}
 %\include{slides/metric}
 
