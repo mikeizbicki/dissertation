@@ -1,0 +1,62 @@
+\begin{frame}{Scalability}
+\textbf{Theory:}
+The error of $\wmle_i$ and $\wave$ scales as $O(1/\sqrt{n})$.
+
+\hspace{0.55in} The error of $\wowa$ and $\wmle$ scales as $O(1/\sqrt{mn})$.
+
+\hspace{0.55in} The error of $\wboot$ scales as $O(1/\sqrt{mn} + 1/\sqrt{n^3})$.
+
+
+%\uncover<2>{
+%\hspace{1.69in} $\E\ltwo{\wstar~~-\wowa}\le O(\sqrt{d/mn})$
+%}
+
+\vspace{0.15in}
+\textbf{Experiment:}
+%Same data as before with $\nowa=2^{10}$
+Ad-click data with $m=128$, $mn=2.3\times10^8$, $d=7.4\times10^5$
+
+\begin{center}
+\begin{tabular}{cc}
+\rotatebox{90}{\hspace{0.5cm}log-loss on held out data}
+&
+\hspace{-0.25cm}
+\begin{tikzpicture}
+\node at (5.3,1.35) {\textcolor{wave}{$\wave$}};
+\draw[->,wave] (5.1,1.1) -- (5,0.9);
+\node at (2.5,2.35) {\textcolor{wboot}{$\wboot$}};
+\draw[->,wboot,thick] (2.2,2.1) -- (2,1.75);
+\node at (1.0,0.85) {\textcolor{wowa}{$\wowa$}};
+\draw[->,wowa, very thick] (1.0,1.2) -- (1.2,1.4);
+
+\begin{axis}
+    [ width=4in
+    , height=2.3in
+    , xmin=2
+    , xmax=128
+    , ymin = 0.137
+    , ymax = 0.142
+    , ytick={0.137,0.138,0.139,0.14,0.141,0.142}
+    , y tick label style={
+        /pgf/number format/.cd,
+            fixed,
+            fixed zerofill,
+            precision=3,
+        /tikz/.cd
+    },
+    %, xtick={2,4,128}
+    , log basis x={2}
+    , xmode=log
+    ]
+\addplot[wave,no marks] table [x=n,y=avell] {dat/kdd-scaling.dat};
+\addplot[thick,wboot,no marks] table [x=n,y=bootll] {dat/kdd-scaling.dat};
+\addplot[very thick,wowa,no marks] table [x=n,y=owall] {dat/kdd-scaling.dat};
+\end{axis}
+\end{tikzpicture}
+\\
+&
+\hspace{0.5cm}number of machines ($m$)
+\end{tabular}
+\end{center}
+\end{frame}
+

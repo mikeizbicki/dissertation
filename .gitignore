@@ -11,6 +11,10 @@
 *.lof
 *.out
 
+*.nav
+*.vrb
+*.snm
+
 *.gz
 
 *.swp

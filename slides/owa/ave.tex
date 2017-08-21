@@ -1,0 +1,125 @@
+\begin{frame}{The averaging distributed estimator}
+
+Procedure:
+
+\begin{itemize}
+
+%\item Assign to each machine $i\in\{1...m\}$ a dataset $Z_i$ with $n$ datapoints
+
+\item In the \textbf{map} phase, each machine calculates the local ERM
+
+\begin{equation}
+\wmle_i = \argmin_{\w} \sum_{(y,\x)\in Z_i} \loss(y;\trans\w\x) + \lambda\reg(\w)
+\end{equation}
+
+where $Z_i$ is the local data set of machine $i$.
+
+%\item A central server calculates the averaging estimator
+
+\item
+In the \textbf{reduce} phase, we calculate
+\begin{equation}
+\wave = \frac{1}{m}\sum_{i=1}^m \wmle_i
+.
+\end{equation}
+
+\end{itemize}
+
+\textbf{Theory:}
+
+\vspace{-0.2in}
+\begin{equation}
+\ltwo{\wstar-\wave} \le 
+\ltwo{\wstar-\E\wave} 
++
+\ltwo{\E\wave-\wave} 
+\end{equation}
+
+\hspace{1.9in}
+$O(\sqrt{d/n})$
+\hspace{0.3in}
+$O(\sqrt{d/mn})$
+
+\vspace{0.15in}
+(McDonald et al., 2009; Zhang et al., 2012; Rosenblatt and Nadler, 2016)
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Can we do better than averaging? Yes!}
+
+Estimators with bias reduction
+\begin{itemize}
+%\item
+%If the datasets on each machine overlap each other, then there is a reduction in bias
+%(Zinkevich et al., 2012)
+%
+%\textcolor{darkgreen}{Good: simple}
+%; 
+%\textcolor{red}{Bad: different problem setup}
+
+\item
+Estimate the bias via a bootstrap subsample (Zhang et al., 2012)
+
+\textcolor{darkgreen}{easy to implement}
+; 
+\textcolor{red}{suboptimal scalability}
+
+\item
+Closed form formula for the optimal $\lambda$ in kernel ridge regeression (Zhang et al., 2013)
+
+\textcolor{darkgreen}{easy to implement}
+; 
+\textcolor{red}{applies to limited models}
+
+\item
+Closed form estimates of the bias in certain L1 penalized models
+
+(Lee et al., 2015; Battey et al., 2015)
+
+\textcolor{darkgreen}{easy to implement}
+; 
+\textcolor{red}{applies to limited models}
+
+\item
+Averaging the models with the KL average (Liu and Ihler, 2014)
+
+\textcolor{darkgreen}{good statistical guarantees}
+; 
+\textcolor{red}{must solve intractable integral}
+
+\end{itemize}
+
+\pause
+
+Goal: 
+\begin{itemize}
+    \item easy to implement 
+    \item good statistical guarantees 
+    \item efficiently calculatable
+\end{itemize}
+
+%\vspace{0.15in}
+%Impossibility theorems
+%
+%\begin{itemize}
+
+%\item
+%At least $\Omega(m\min\{n,d\})$ bits must be transferred for $O(\sqrt{d/mn})$ error rate
+%(Braverman et al., 2016)
+
+%\item
+%No merged estimator can achieve $O(\sqrt{d/mn})$ error rate
+%
+%(Zhang et al. 2013; Shamir 2014; Garg et al. 2014; Liu and Ihler 2014)\!\!\!\!
+%
+%%\begin{itemize}
+%\item
+%All results assume that the merge procedure does not depend on data
+%%\end{itemize}
+%
+%\end{itemize}
+
+\end{frame}
+
+

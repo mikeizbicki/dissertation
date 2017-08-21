@@ -1,0 +1,154 @@
+\documentclass{beamer}
+% \usetheme{default}
+\usetheme{Boadilla}
+\usepackage[utf8x]{inputenc}
+\usepackage{default}
+\usepackage{amsmath,amsthm,amsfonts,amssymb,graphicx,xcolor,ifthen}
+\usepackage{algorithm,listings}
+\usepackage{algorithmicx,algpseudocode}
+\usepackage{multirow,array,lscape,chngpage,rotating}
+\usepackage{colortbl,calc,fp}
+\usepackage{setspace}
+
+\usepackage{tikz}
+\usetikzlibrary{snakes,patterns,shapes,calc}
+\usepackage{pgfplots}
+\pgfplotsset{width=7cm,compat=1.8}
+\definecolor{darkgreen}{RGB}{0,127,0}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\smin}{s_\text{min}}
+\newcommand{\smax}{s_\text{max}}
+\newcommand{\qhi}{q_\text{hi}}
+\newcommand{\qlo}{q_\text{lo}}
+\newcommand{\zero}{\text{\textbf{0}}}
+\newcommand{\Zproj}{Z^{\textit{proj}}}
+\newcommand{\Zowa}{Z^{\textit{owa}}}
+\newcommand{\nowa}{n^{\textit{owa}}}
+\newcommand{\Q}{\mathcal{Q}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\X}{\mathcal{X}}
+\newcommand{\matW}{\hat W}
+\newcommand{\matV}{\hat V}
+\newcommand{\W}{{\mathcal{W}}}
+\newcommand{\Wowa}{{\hat \W^{\textit{owa}}}}
+\newcommand{\Waff}{\mathcal{\hat A}}
+\newcommand{\WaffE}{{\mathcal{\hat A}_\E}}
+\newcommand{\Wave}{{\mathcal{\hat W}^{ave}}}
+\newcommand{\Wtave}{{\mathcal{W}^{ave,*}}}
+\newcommand{\V}{\mathcal{V}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\D}{\mathcal{D}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\vv}{\mathbf{v}}
+\newcommand{\z}{\mathbf{z}}
+\newcommand{\x}{\mathbf{x}}
+\newcommand{\y}{\mathbf{y}}
+\newcommand{\w}{\mathbf{w}}
+\newcommand{\wkl}{\hat\w^{kl}}
+\newcommand{\ahat}{\hat\alpha}
+\newcommand{\astar}{\alpha^*}
+\newcommand{\afull}{\ahat^{\textit{full}}}
+\newcommand{\wowa}{\hat\w^{owa}}
+\newcommand{\wowafull}{\hat\w^{\textit{owa,full}}}
+\newcommand{\wowastar}{\hat\w^{\textit{owa,*}}}
+\newcommand{\wave}{\hat\w^{ave}}
+\newcommand{\wtave}{\E\hat\w^{ave}}
+\newcommand{\waver}{\hat\w^{ave,r}}
+\newcommand{\wboot}{\hat\w^{boot}}
+\newcommand{\wmle}{\hat\w^{erm}}
+\newcommand{\wmlerr}{\hat\w^{erm,rr}}
+\newcommand{\wmler}{\hat\w^{erm,r}}
+\newcommand{\wstar}{{\w^{*}}}
+\newcommand{\what}{{\hat\w}}
+\newcommand{\wq}{\hat\w^{q}}
+\newcommand{\wqstar}{\hat\w^{q^*}}
+\newcommand{\reg}{r}
+\newcommand{\loss}{\ell}
+\newcommand{\Loss}{\mathcal{L}}
+\newcommand{\R}{\mathbb{R}}
+
+\newcommand{\trans}[1]{\ensuremath{{#1}^{\mathsf{T}}}}
+\newcommand{\pinv}[1]{\ensuremath{{#1}^{\mathsf{\dagger}}}}
+\newcommand{\ltwo}[1]{{\lVert {#1} \rVert}}
+\newcommand{\ltwobig}[1]{{\left\lVert {#1} \right\rVert}}
+\newcommand{\lone}[1]{{\lVert {#1} \rVert}_1}
+\newcommand{\lzero}[1]{{\lVert {#1} \rVert}_0}
+\newcommand{\proj}[1]{\pi_{{#1}}}
+\newcommand{\prob}[1]{\Pr\left[{#1}\right]}
+
+\newcommand{\I}{\mathcal I}
+%\newcommand{\I^{-1}}{\I^{-1}}
+\newcommand{\law}{\ensuremath{\xrightarrow{L}}}
+\newcommand{\normal}[2]{\ensuremath{\mathcal{N}\left({{#1}},{{#2}}\right)}}
+
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\vecspan}{span}
+\DeclareMathOperator*{\affspan}{aff}
+\DeclareMathOperator*{\subG}{subG}
+\DeclareMathOperator*{\tr}{tr}
+
+\definecolor{wmle}{RGB}{0,0,0}
+%\definecolor{wmlei}{RGB}{230,159,0}
+\definecolor{wmlei}{RGB}{150,100,0}
+\definecolor{wave}{RGB}{40,090,233}
+\definecolor{wboot}{RGB}{204,021,167}
+\definecolor{wowa}{RGB}{0,158,115}
+
+\definecolor{lightred}{RGB}{255,200,200}
+\definecolor{lightgreen}{RGB}{200,255,200}
+\definecolor{lightblue}{RGB}{200,200,255}
+\definecolor{darkred}{RGB}{127,0,0}
+\definecolor{darkgreen}{RGB}{0,127,0}
+\definecolor{darkblue}{RGB}{0,0,127}
+\definecolor{darkbrown}{RGB}{101,67,33}
+
+\newcommand{\spacer}[1]{
+    \begin{frame}
+    \begin{center}
+    \Huge\em{#1}
+    \end{center}
+    \end{frame}
+}
+
+\newcommand{\ignore}[1]{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\author {Mike Izbicki}
+\institute{UC Riverside}
+\title[Dissertation Defense]{}
+\date{August 23, 2017}
+
+\begin{document}
+
+\beamertemplatenavigationsymbolsempty
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%\input{slides/title}
+%\input{slides/faster}
+%\input{slides/outline}
+%
+%\spacer{mergeable learning algorithms}
+%\input{slides/mapreduce.tex}
+%\input{slides/merge-examples.tex}
+%\input{slides/owa/mle.tex}
+%\input{slides/owa/ave}
+%
+%\spacer{the optimal weighted average}
+%\input{slides/owa/owa.tex}
+\input{slides/owa/theory.tex}
+%\input{slides/owa/experiment-scalability-artificial.tex}
+%\input{slides/owa/experiment-scalability-ads.tex}
+%\input{slides/owa/experiment-round2.tex}
+%
+%\spacer{the cover tree}
+%\include{slides/metric}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}

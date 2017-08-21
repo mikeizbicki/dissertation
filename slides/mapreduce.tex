@@ -1,0 +1,113 @@
+\tikzstyle{blackbox}=[shape=rectangle, draw, fill=black, draw=white, draw opacity=0, line width=0.15in, text=white, minimum size=0.3in]
+\tikzstyle{whitebox}=[shape=rectangle, draw, fill=white, draw=black, minimum size=0.3in]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{Motivation: parallelization with MapReduce }
+\centering
+\begin{tikzpicture}[line width=2pt]
+\node[color=white] at (-6,-1) {\begin{sideways} partition \end{sideways}};
+\node[minimum width=12cm,minimum height=1.7cm,fill=white,opacity=0.1] at (-0.5,-1) {};
+
+\node (long) {\includegraphics[width=4in]{/home/user/docs/research/presentation_lib/dna/long}};
+
+\uncover<1> {
+\node at (-3,-1) {big data};
+%\node at (-0.5,-3) {\rotatebox{90}{training}};
+\node at (-1.1,-3) {{training}};
+\node at (1.2,-5.8) {model};
+}
+
+\node[blackbox] (mc) [below of = long, node distance = 2.3in] {};
+
+\draw[->,line width=2pt] (long) to (mc);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pause
+\node[minimum width=5in,minimum height=2.5in,fill=white] at (0,-1.05in) {};
+
+\node at (-6,-1) {\begin{sideways} partition \end{sideways}};
+\node[minimum width=12cm,minimum height=1.7cm,fill=green,opacity=0.1] at (-0.5,-1) {};
+
+\node at (-6,-3) {\begin{sideways} map \end{sideways}};
+\node[minimum width=12cm,minimum height=1.7cm,fill=green,opacity=0.1] at (-0.5,-3) {};
+
+\node at (-6,-5) {\begin{sideways} reduce \end{sideways}};
+\node[minimum width=12cm,minimum height=1.7cm,fill=green,opacity=0.1] at (-0.5,-5) {};
+
+\node (long) {\includegraphics[width=4in]{/home/user/docs/research/presentation_lib/dna/long}};
+
+\node (short1) at (-1.5in,-0.75in) {\includegraphics[width=1in]{/home/user/docs/research/presentation_lib/dna/short3}};
+\node (short2) at (-0.5in,-0.75in) {\includegraphics[width=1in]{/home/user/docs/research/presentation_lib/dna/short2}};
+\node (short3) at (0.5in,-0.75in) {\includegraphics[width=1in]{/home/user/docs/research/presentation_lib/dna/short1}};
+\node (short4) at (1.5in,-0.75in) {\includegraphics[width=1in]{/home/user/docs/research/presentation_lib/dna/short2}};
+
+\node[blackbox] (mc1) [below of=short1, node distance = 0.8in] {};
+\node[blackbox] (mc2) [below of=short2, node distance = 0.8in] {};
+\node[blackbox] (mc3) [below of=short3, node distance = 0.8in] {};
+\node[blackbox] (mc4) [below of=short4, node distance = 0.8in] {};
+
+\node[blackbox] at (-1.0125in,-2in) [out=270 ,in=180] (mc12) {};
+\node[blackbox] at (1.0125in,-2in) (mc34) {};
+
+\node[blackbox] (mc) [below of = long, node distance = 2.3in] {};
+
+\draw[->] (-1.5in,-0.25in) to (-1.5in,-0.4in);
+\draw[->] (-0.5in,-0.25in) to (-0.5in,-0.4in);
+\draw[->] (0.5in,-0.25in) to (0.5in,-0.4in);
+\draw[->] (1.5in,-0.25in) to (1.5in,-0.4in);
+%\draw[->] (long) to (short1);
+%\draw[->] (long) to (short2);
+%\draw[->] (long) to (short3);
+
+\draw[->] (short1) to (mc1);
+\draw[->] (short2) to (mc2);
+\draw[->] (short3) to (mc3);
+\draw[->] (short4) to (mc4);
+
+\draw[->] (mc1.south) to (mc12);
+\draw[->] (mc2.south) to (mc12);
+\draw[->] (mc3.south) to (mc34);
+\draw[->] (mc4.south) to (mc34);
+
+\draw[->] (mc12) to (mc);
+\draw[->] (mc34) to (mc);
+
+%\uncover<3>{
+%\node[draw=red, line width = 2pt, fill=white, minimum width=4in, minimum height=1.5in] at (-0.1in,-0.4in) {
+    %\parbox{3.5in}{
+    %Computations over finite, constant-time monoids are complete in the parallel complexity class $\mathbb{NC}^1$.
+%
+    %$$
+    %\mathbb{NC}^1 \subseteq \mathbb{NC} \subseteq \mathbb{P} \subseteq \mathbb{NP}
+    %$$
+    %}
+%};}
+
+\uncover<3> {
+\node at (-0.5,-6.75) {\color{darkgreen} \textbf{
+    Advantages: simple, implement with standard libraries, privacy 
+}};
+}
+
+\uncover<4-5>{
+\draw[color=red,line width=2pt,fill=lightred, opacity=0.5] (-2.55,-4.3) ellipse (2cm and 1.3cm);
+\draw[color=red,line width=2pt                           ] (-2.55,-4.3) ellipse (2cm and 1.3cm);
+
+\node at (-3.3,-6.3) {\color{red} \textbf{
+    How do we merge two models?
+    }};
+}
+
+\uncover<5> {
+\node at (-3.1,-6.9) {\color{red} \textbf{What else does merging give us?}};
+}
+
+\onslide<1->
+\end{tikzpicture}
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+

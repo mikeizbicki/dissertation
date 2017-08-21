@@ -1,0 +1,52 @@
+\begin{frame}{The empirical risk minimization (ERM) framework}
+
+Solve the following optimization
+\begin{equation}
+\wmle = \argmin_{\w\in\W} \sum_{(y,\x)\in Z} \loss(y;\trans\w\x) + \lambda\reg(\w)
+\end{equation}
+where
+\begin{itemize}
+\item $Z$ is a dataset with $mn$ points ($m$ machines each with $n$ points)
+\item $y\in\Y\subset\mathbb R$
+\item $\x\in\X\subset\mathbb R^d$
+\item $\w\in\W\subset\mathbb R^d$
+\item $\loss$ is the (not necessarily convex) loss function
+\item $\reg : \W\to\mathbb R$ is the regularization function
+\end{itemize}
+
+\vspace{0.15in}
+\textbf{Theory:} the statistical error decays as $\ltwo{\wstar-\wmle} \le O(\sqrt{d/mn})$ where $\wstar$ is the optimal parameter in $\W$.
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}{ERM for ridge regression can be exactly parallelized}
+In ridge regression, we set
+\begin{equation}
+\loss(\y,\trans\w\x) = \ltwo{\y-\trans\w\x}^2 
+~~~ \text{and} ~~~
+\reg(\w) = \ltwo{\w}^2,
+\end{equation}
+so the estimator has closed form solution
+\begin{equation}
+\wmlerr = (\trans X X - \lambda I)^{-1}(\trans X Y),
+\end{equation}
+where $X : \R^{mn\times d}$ and $Y : \R^{mn\times 1}$ are the design and response matrices.
+
+\pause
+\hrulefill
+\vspace{0.1in}
+
+In the \textbf{map} phase, each machine $i$ calculates
+\begin{equation}
+A_i = \trans X_i X_i
+~~~\text{and}~~~
+B_i = \trans X_i Y_i
+\end{equation}
+where $X_i : \R^{n\times d}$ and $Y : \R^{n\times 1}$ are the design and response matrices for only the data on machine $i$.
+In the \textbf{reduce} phase, calculate
+\begin{equation}
+\textstyle
+\wmlerr = \left(\sum_{i=1}^m A_i - \lambda I\right)^{-1}\left(\sum_{i=1}^m B_i\right).
+\end{equation}
+\end{frame}

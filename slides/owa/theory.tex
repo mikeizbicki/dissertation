@@ -1,0 +1,140 @@
+\newtheorem*{sgt}{The subgaussian tail condition}
+\newtheorem*{thm1}{Theorem 1: error of $\wowafull$}
+\newtheorem*{thm2}{Theorem 2: error of $\wowa$}
+
+\pgfmathdeclarefunction{gauss}{2}{%
+  \pgfmathparse{1/(#2*sqrt(2*pi))*exp(-((x-#1)^2)/(2*#2^2))}%
+}
+
+\pgfmathdeclarefunction{multi}{2}{%
+    \pgfmathparse{(0.0001+abs(sin((x-0.2)/100)))*1/(#2*sqrt(2*pi))*exp(-((x-0.4)^2)/(2*#2^2))}%
+}
+
+\pgfmathdeclarefunction{truncated}{2}{%
+    \pgfmathparse{(abs(x)<1.5)*1/(#2*sqrt(2*pi))*exp(-((x-#1)^2)/(2*#2^2))}%
+}
+
+\newcommand{\mkdensity}[2]{
+\begin{axis}[
+  no markers, 
+  domain=-3.5:3.5, 
+  samples=100,
+  axis lines=left, 
+  xlabel=$\ltwo{\wstar-\wmle_i}$,
+  every axis y label/.style={at=(current axis.above origin),anchor=south},
+  every axis x label/.style={at=(current axis.right of origin),anchor=west},
+  height=4.5cm, 
+  width=10cm,
+  xtick=0, 
+  ytick=\empty,
+  enlargelimits=false, 
+  clip=false, 
+  axis on top,
+  grid = major
+  ]
+%\addplot [very thick,cyan!50!black] {gauss(0, 1)};
+  \addplot [very thick,cyan!50!black] {{#2}};
+\end{axis}
+\node[text width=10cm] at (4,3.5) {Example: {#1}};
+\node at (-0.5,1.5) {\rotatebox{90}{density}};
+}
+
+\begin{frame}{OWA's theoretical analysis}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{sgt}
+%Let $\wmle_i$ be a linear estimator trained on $n$ data points of dimension $d$.
+Let $t>0$.
+Then, for each machine $i$, with probability at least $1-\exp(-t)$,
+\begin{equation}
+%\ltwo{\wstar-\what} \le O\left( \sqrt\frac {dt} {n} \right)
+\ltwo{\wstar-\wmle_i} \le O\left( \sqrt{dt/n} \right)
+.
+\label{eq:sgt}
+\end{equation}
+\end{sgt}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{center}
+\begin{tikzpicture}
+\uncover<2>{\mkdensity{standard gaussian distribution}{gauss(0,1)}}
+\uncover<3>{\mkdensity{truncated gaussian distribution}{truncated(0,1)}}
+\uncover<4>{\mkdensity{biased gaussian distribution}{gauss(1.5,1)}}
+\uncover<5>{\mkdensity{multimodal distributions}{multi(0,1)}}
+\end{tikzpicture}
+\vspace{-1.8in}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\vspace{0.15in}
+\uncover<6>{
+This is a mild condition known to hold in many situations of interest.
+
+\begin{itemize}
+\item
+In the asymptotic regime as $n\to\infty$,
+\begin{equation}
+\sqrt{n}\ltwobig{\I^{-1/2}(\wstar-\wmle_i)} \law \normal{0}{I}
+\end{equation}
+where $\I$ is the Fisher information matrix.
+The loss $\loss$ may be nonconvex,
+and the data may even be non-i.i.d.\
+(Le Can, 1960).
+
+\item
+Similar results hold in the finite sample regime (Spokoiny, 2012).
+
+\item
+Important: biased estimators satisfy this condition!
+\end{itemize}
+    \vspace{-1.8in}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\uncover<7-8>{
+\begin{thm1}
+\label{theorem:wowafull}
+%Assume the Hessian Condition and that the $\wmle_i$s satisfy the SGT condition.
+Let $t>0$.
+Then with probability at least $1-\exp(-t)$, 
+\begin{equation}
+%\ltwo{\wowafull-\wstar} \le \sqrt{\frac{\qhi}{\qlo}}\ltwo{\proj{\Wowa}\wstar}
+%\ltwo{\wowafull-\wstar} \le \sqrt{\frac{\qhi}{\qlo}}\sqrt{\frac{v_t}{n}}
+\ltwo{\wstar-\wowafull} \le O\left(
+%\sqrt{\frac{dt}{mn}}
+\sqrt{{dt}/{mn}}
+\right)
+.
+\end{equation}
+\end{thm1}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\uncover<8>{
+    %\vspace{-2in}
+\begin{thm2}
+\label{theorem:wowafull}
+%Assume the Hessian Condition and that the $\wmle_i$s satisfy the SGT condition.
+Let $t>0$ and $\nowa=mn/d$.
+Then with probability at least $1-\exp(-t)$, 
+\begin{equation}
+%\ltwo{\wowafull-\wstar} \le \sqrt{\frac{\qhi}{\qlo}}\ltwo{\proj{\Wowa}\wstar}
+%\ltwo{\wowafull-\wstar} \le \sqrt{\frac{\qhi}{\qlo}}\sqrt{\frac{v_t}{n}}
+\ltwo{\wstar-\wowa} \le O\left(
+%\sqrt{\frac{dt}{mn}}
+\sqrt{{dt}/{mn}}
+\right)
+.
+\end{equation}
+\end{thm2}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{frame}
+

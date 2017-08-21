@@ -1,0 +1,74 @@
+\begin{frame}[fragile]{Scalability}
+\vspace{0.15in}
+
+\textbf{Theory:}
+%Given $mn$ data points, the single machine ERM achieves optimal error rate with $\lambda=O(\sqrt{d/mn})$.
+The error of $\wmle_i$ and $\wave$ scales as $O(1/\sqrt{n})$.
+
+\hspace{0.55in} The error of $\wowa$ and $\wmle$ scales as $O(1/\sqrt{mn})$.
+
+\hspace{0.55in} The error of $\wboot$ scales as $O(1/\sqrt{mn} + 1/\sqrt{n^3})$.
+
+\vspace{0.15in}
+
+\textbf{Experiment:}
+Synthetic data drawn from a logistic regression model.
+
+$n=1000$, $d=100$; each trial repeated 100 times
+
+\begin{center}
+\newcommand{\mklambdaplot}[4]{
+\begin{tikzpicture}
+    [ yscale=0.8
+    ]
+#3
+\begin{axis}
+    [ width=4in
+    , height=2.3in
+    %, xmode=log
+    , ymode=log
+    , xmin=1
+    , xmax=100
+#2
+    ]
+
+\addplot[wmle,no marks] table [x index=0,y index=5] {#1};
+\addplot[wmlei,no marks] table [x index=0,y index=7] {#1};
+\addplot[wave,no marks] table [x index=0,y index=9] {#1};
+\addplot[wboot,thick,no marks] table [x index=0,y index=#4] {#1};
+\only<2>{\addplot[wowa,very thick,no marks] table [x index=0,y index=55] {#1};}
+%\addplot[wowa,dotted,very thick,no marks] table [x index=0,y index=56] {#1};
+%\addplot[wowa,very thin,no marks] table [x index=0,y index=56] {#1};
+%\addplot[thick,red,no marks] table [x=n,y=bootll] {dat/kdd-scaling.dat};
+%\addplot[very thick,darkgreen,no marks] table [x=n,y=owall] {dat/kdd-scaling.dat};
+\end{axis}
+\end{tikzpicture}
+}
+\begin{tabular}{cc}
+{\rotatebox{90}{\hspace{1.0cm}error $\ltwo{\wstar-\what}$}}
+&\hspace{-0.5cm}\mklambdaplot
+    {dat/logl1-auto-logl2-auto-spike-log-1000-100-star.pdf.csv}
+    {,ymin=10^-2,ymax=10^1}
+    { \node at (6.2,3.6) {\textcolor{wmlei}{$\wmle_i$}};
+      \draw[->,wmlei] (6.3,3.5) -- (6.4,3.2);
+      \node at (5.2,3.6) {\textcolor{wave}{$\wave$}};
+      \draw[->,wave] (5.1,3.4) -- (5.2,2.75);
+      \node at (4.75,2.15) {\textcolor{wboot}{$\wboot$}};
+      \draw[->,thick,wboot] (4.75,2.35) -- (4.85,2.6);
+      \node at (3.3,2.2) {$\wmle$};
+      \draw[->] (3.0,1.95) -- (2.9,1.75);
+      %\node at (0.8,0.5) {\textcolor{wowa}{$\wowafull$}};
+      %\draw[->,wowa,dotted,thick] (0.8,0.65) -- (0.9,0.8);
+      %\draw[->,wowa,very thin] (0.8,0.65) -- (0.9,0.8);
+      \uncover<2>{
+      \node at (2.1,0.6) {\textcolor{wowa}{$\wowa$}};
+      \draw[->,wowa,thick] (2.2,0.85) -- (2.3,1.05);
+  }
+    }
+    {19}
+\\
+& \hspace{0.2cm} {number of machines ($m$)}
+\end{tabular}
+\end{center}
+
+\end{frame}
