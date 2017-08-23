@@ -1,0 +1,33 @@
+\begin{frame}[fragile]{How should $\lambda$ be set?}
+
+Local gridsearch over $\Lambda\subset\mathbb{R}$: 
+\vspace{0.1in}
+
+\noindent\fbox{%
+%\begin{varwidth}{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}
+\begin{varwidth}{\linewidth}
+\begin{algorithmic}
+\State each machine $i$ in parallel:
+\State ~~~~~\textbf{for} {$\lambda\in\Lambda$} \textbf{do}
+    \State ~~~~~~~~~~calculates $\wmle_i(\lambda)$
+    \State ~~~~~~~~~~evaluates $\wmle_i(\lambda)$ on local heldout set
+    \State ~~~~~\textbf{end for}
+    \State ~~~~~broadcasts locally optimal $\wmle_i$ to master
+\State the master machine:
+\State ~~~~~calculates and outputs $\wowa$ \hspace{2.45in}
+    %\State ~~~~~evaluates $\wowa$ on a heldout validation set
+%\State the master machine:
+%\State ~~~~~outputs the $\wowa(\lambda)$ with lowest validation set error\hspace{1in}
+\end{algorithmic}
+\end{varwidth}%
+}
+
+\vspace{0.15in}
+\textcolor{darkgreen}{one round of communication} ;
+\textcolor{red}{greater bias due to incorrect $\lambda$}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+

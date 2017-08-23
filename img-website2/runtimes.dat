@@ -1,0 +1,11 @@
+dataset                     mnist       twitter     tinyimages100k  yearpredict
+"HLearn\n(simplified cover tree)"      1031.03     1589.36     814.37          11531.0
+spacer
+"FLANN\n(kd-tree)"          1089.38     18000.0     2861.5          9529.0
+"Julia\n(kd-tree)"          5863.0      2822.03     5974.0          8982.0
+"Langford\n(cover tree)"    1439.76     1982.3      4292.0          18000.0
+"MLPack\n(kd-tree)"         2858.83     1267.19     4465.0          6673.0
+"MLPack\n(cover tree)"      2884.88     3811.0      6663.0          18000.0
+"scikit-learn\n(ball tree)" 5057.0      18000.0     6142.0          18000.0
+"scikit-learn\n(kd tree)"   7327.0      2403.39     8093.0          13877.0
+"R\n(kd-tree)"              5403.0      3264.97     4193.0          18000.0

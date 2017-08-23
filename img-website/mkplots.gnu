@@ -30,7 +30,7 @@ set output "twitter.ps"
 set title "Twitter dataset (583250 datapoints; 78 dimensions)"
 set yrange [0:9000]
 set y2tics ("0:26.5" 1589)
-set label 1 at 3.6,8000 'took more than 5 hours'
+set label 1 at 4.3,8000 'took more than 5 hours'
 set arrow 1 from 3.8,7500 to 3.4,7000 fill
 set arrow 2 from 7.5,7500 to 7.9,7000 fill
 plot "runtimes.dat" using 3:xticlabels(1) lc rgb "#7777ff" lt 1
@@ -50,7 +50,7 @@ set title "YearPredict dataset (515345 datapoints; 90 dimensions)"
 set yrange [0:18000]
 set ytics ("0:00" 0, "1:00" 3600, "2:00" 7200, "3:00" 10800, "4:00" 14400, "5:00" 18000)
 set y2tics ("3:12.2" 11531)
-set label 1 at 0.4,16000 'took more than 5 hours'
+set label 1 at 1.4,16000 'took more than 5 hours'
 set arrow 1 from 4.6,15600,1 to 4.9,15500,1 fill front
 set arrow 2 from 4.6,15800,1 to 6.9,15500,1 head filled size 0.15,12 front
 set arrow 3 from 4.6,16000,1 to 7.9,16000,1 head filled size 0.15,12 front
@@ -95,6 +95,6 @@ set arrow 2 from 3,2500 to 3.3,3300 fill lc rgb '#007700'
 set label 3 at 3,7500 "MLPack's kd-tree (one core only)" tc rgb '#555555'
 set bmargin 3
 #set y2tics ("" 6673) scale 0
-plot "runtimes-parallel.dat" using 1:2 with lines lw 2,\
+plot "runtimes-parallel.dat" using 1:2 with lines lw 2 lc rgb '#ff0000',\
      "runtimes-parallel.dat" using 1:3 with lines lw 2 lc rgb '#007700',\
      "runtimes-parallel.dat" using 1:4 with lines lw 2 lc rgb '#555555'

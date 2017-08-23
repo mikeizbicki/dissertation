@@ -10,12 +10,33 @@
 \usepackage{colortbl,calc,fp}
 \usepackage{setspace}
 \usepackage{listings}
+\usepackage{varwidth}
 
 \usepackage{tikz}
 \usetikzlibrary{snakes,patterns,shapes,calc}
 \usepackage{pgfplots}
 \pgfplotsset{width=7cm,compat=1.8}
 \definecolor{darkgreen}{RGB}{0,127,0}
+
+\definecolor{lightyellow}{RGB}{255,255,200}
+\newcommand{\hl}[1]{\colorbox{lightyellow}{#1}}
+
+\usepackage[most]{tcolorbox}
+
+\tcbset{
+    frame code={}
+    center title,
+    left=0pt,
+    right=0pt,
+    top=0pt,
+    bottom=0pt,
+    colback=gray!70,
+    colframe=white,
+    width=\dimexpr\textwidth\relax,
+    enlarge left by=0mm,
+    boxsep=5pt,
+    arc=0pt,outer arc=0pt,
+    }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -58,9 +79,9 @@
 \newcommand{\wtave}{\E\hat\w^{ave}}
 \newcommand{\waver}{\hat\w^{ave,r}}
 \newcommand{\wboot}{\hat\w^{boot}}
-\newcommand{\wmle}{\hat\w^{erm}}
-\newcommand{\wmlerr}{\hat\w^{erm,rr}}
-\newcommand{\wmler}{\hat\w^{erm,r}}
+\newcommand{\wmle}{\hat\w^{rlm}}
+\newcommand{\wmlerr}{\hat\w^{rlm,rr}}
+\newcommand{\wmler}{\hat\w^{rlm,r}}
 \newcommand{\wstar}{{\w^{*}}}
 \newcommand{\what}{{\hat\w}}
 \newcommand{\wq}{\hat\w^{q}}
@@ -120,7 +141,7 @@
 
 \author {Mike Izbicki}
 \institute{UC Riverside}
-\title[Dissertation Defense]{}
+\title[Faster Machine Learning]{}
 \date{August 23, 2017}
 
 \begin{document}
@@ -134,12 +155,14 @@
 \input{slides/outline}
 
 \spacer{mergeable learning algorithms}
+\input{slides/merge-overview}
 \input{slides/mapreduce.tex}
 \input{slides/merge-examples.tex}
 \input{slides/owa/mle.tex}
 \input{slides/crossvalidation.tex}
 
 \spacer{the optimal weighted average}
+\input {slides/owa/overview}
 \input{slides/owa/ave}
 \input{slides/owa/owa.tex}
 \input{slides/owa/theory.tex}
@@ -147,8 +170,39 @@
 \input{slides/owa/experiment-scalability-ads.tex}
 \input{slides/owa/experiment-round2.tex}
 
-%\spacer{the cover tree}
-%\include{slides/metric}
+\spacer{the cover tree}
+\input{slides/covertree/overview}
+\input{slides/covertree/simplified}
+\input{slides/covertree/runtimes}
+\input{slides/covertree/intrinsic}
+\input{slides/covertree/experimental-setup}
+\input{slides/covertree/experiment-protein}
+\input{slides/covertree/experiment-image}
+\input{slides/covertree/experiment-euclidean}
+\input{slides/covertree/other}
+
+\spacer{conclusion}
+\input{slides/conclusion}
+\input{slides/summary}
+
+\spacer{thank you! \\ \vspace{0.75in} questions?}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcounter{finalframe}
+\setcounter{finalframe}{\value{framenumber}}
+
+\input{slides/owa/setlambda.tex}
+\input{slides/owa/experiment-lambda2.tex}
+\input{slides/owa/owa2.tex}
+\input{slides/covertree/metricspace-short}
+\input{slides/covertree/metrics-protein}
+\input{slides/covertree/metrics-image}
+\input{slides/covertree/contributions-simplified}
+\input{slides/covertree/contributions-ancestor-simple}
+\input{slides/covertree/contributions-cache}
+\input{slides/covertree/contributions-merge}
+
+\setcounter{framenumber}{\value{finalframe}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

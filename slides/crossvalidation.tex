@@ -34,7 +34,7 @@
 %\newcommand{\vector}[1]{\textbf{{{#1}}}}
 \newcommand{\elem}[1]{\textbf{{#1}}}
 \newcommand\op{\ensuremath{\diamond}}
-\newcommand\id{\ensuremath{\mathbf{\epsilon}}}
+\newcommand\id{\ensuremath{\mathbf{epsilon}}}
 \newcommand\+{\op}
 %\newcommand\+{\mdoubleplus}
 \newcommand\doubleplus{+\kern-1.3ex+\kern0.8ex}
@@ -124,13 +124,13 @@ ridge regression & $O(n)$ & $O(1)$ & $O(n^2)$ & $O(kn)$ \\
 for i = 1..n
     m[i] <- train on dp[i]
 
-prefix[1] = mempty
+prefix[1] = empty
 for i = 2..n
-    prefix[i] = merge(prefix[i-1],m[i])
+    prefix[i]=merge(prefix[i-1],m[i-1])
 
-suffix[n] = mempty
+suffix[n] = empty 
 for i = n-1..1
-    suffix[i] = merge(suffix[i+1],m[i])
+    suffix[i]=merge(suffix[i+1],m[i+1])
 
 for i = 1..n
     m <- merge(prefix[i], suffix[i])

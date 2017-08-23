@@ -6,13 +6,13 @@ Procedure:
 
 %\item Assign to each machine $i\in\{1...m\}$ a dataset $Z_i$ with $n$ datapoints
 
-\item In the \textbf{map} phase, each machine calculates the local ERM
+\item In the \textbf{map} phase, each machine calculates the local RLM 
 
 \begin{equation}
-\wmle_i = \argmin_{\w} \sum_{(y,\x)\in Z_i} \loss(y;\trans\w\x) + \lambda\reg(\w)
+\wmle_i = \argmin_{\w\in\W} \sum_{(y,\x)\in Z_i} \loss(y;\trans\w\x) + \lambda\reg(\w)
 \end{equation}
 
-where $Z_i$ is the local data set of machine $i$.
+where $Z_i$ is the local data set of machine $i$ with $n$ data points.
 
 %\item A central server calculates the averaging estimator
 
@@ -63,7 +63,7 @@ Estimate the bias via a bootstrap subsample (Zhang et al., 2012)
 
 \textcolor{darkgreen}{easy to implement}
 ; 
-\textcolor{red}{suboptimal scalability}
+\textcolor{red}{suboptimal statistical guarantees}
 
 \item
 Closed form formula for the optimal $\lambda$ in kernel ridge regeression (Zhang et al., 2013)

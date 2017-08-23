@@ -1,0 +1,26 @@
+\begin{frame}[fragile]{How should $\lambda$ be set?}
+\noindent\fbox{%
+%\begin{varwidth}{\dimexpr\linewidth-2\fboxsep-2\fboxrule\relax}
+\begin{varwidth}{\linewidth}
+\begin{algorithmic}
+\State each machine $i$ in parallel:
+\State ~~~~~\textbf{for} {$\lambda\in\Lambda$} \textbf{do}
+    \State ~~~~~~~~~~calculates $\wmle_i(\lambda)$
+    \State ~~~~~~~~~~evaluates $\wmle_i(\lambda)$ on local heldout set
+    \State ~~~~~\textbf{end for}
+    \State ~~~~~broadcasts locally optimal $\wmle_i$ to each other machine
+\State each machine $i$ in parallel:
+\State ~~~~~calculates $\wowa_{-i}$ excluding the local $\wmle_i$
+\State ~~~~~evaluates $\wowa_{-i}$ on a local validation set
+\State ~~~~~broadcasts the loss to the master
+\State the master machine:
+\State ~~~~~calculates and outputs the average loss of each machine
+\State ~~~~~calculates and outputs $\wowa$ \hspace{2.45in}
+    %\State ~~~~~evaluates $\wowa$ on a heldout validation set
+%\State the master machine:
+%\State ~~~~~outputs the $\wowa(\lambda)$ with lowest validation set error\hspace{1in}
+\end{algorithmic}
+\end{varwidth}%
+}
+\end{frame}
+
